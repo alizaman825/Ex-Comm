@@ -12,6 +12,12 @@ async function refreshProductStats(productId) {
     return;
   }
 
+  // Retail/supplier minimums prefer in-stock offers but still report a price when everything is out of stock.
+  const roleMin = (supplierRole) => {
+    const of = (list) => list.filter((l) => (l.role === 'supplier') === supplierRole);
+    const pool = of(inStock).length ? of(inStock) : of(listings);
+    return pool.length ? Math.min(...pool.map((l) => l.price)) : null;
+  };
   const cheapest = priced.reduce((a, b) => (b.price < a.price ? b : a));
   const prices = priced.map((l) => l.price);
   const rated = listings.filter((l) => l.rating);
@@ -36,6 +42,8 @@ async function refreshProductStats(productId) {
   if (!product) return;
   Object.assign(product, {
     minPrice,
+    retailMinPrice: roleMin(false),
+    supplierMinPrice: roleMin(true),
     maxPrice: Math.max(...prices),
     lowestPlatform: cheapest.platform,
     platforms: [...new Set(listings.map((l) => l.platform))].sort(),

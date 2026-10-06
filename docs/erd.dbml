@@ -26,6 +26,32 @@ Enum scrape_status {
   skipped
 }
 
+Enum listing_role {
+  retail
+  supplier
+}
+
+Enum data_source {
+  live
+  saved
+}
+
+Table categories {
+  _id objectid [pk]
+  slug varchar [not null, unique, note: 'mobiles, laptops, audio, watches, home-appliances, fashion']
+  name varchar [not null]
+  icon varchar
+  keywords varchar[] [note: 'preset searches shown on the category page']
+  sortOrder int
+}
+
+Table settings {
+  _id objectid [pk]
+  key varchar [not null, unique, note: 'usdToPkr, shippingPkr, customsPct, feePct']
+  value json
+  updatedAt datetime
+}
+
 Table users {
   _id objectid [pk]
   name varchar [not null]
@@ -41,8 +67,10 @@ Table products {
   title varchar [not null, note: 'display title']
   matchKey varchar [not null, unique, note: 'normalized brand + model + variant tokens used to group listings']
   brand varchar
-  category varchar
+  category varchar [ref: > categories.slug, note: 'category slug']
   image varchar
+  retailMinPrice decimal [note: 'cheapest Daraz/PriceOye listing']
+  supplierMinPrice decimal [note: 'cheapest AliExpress listing (PKR)']
   minPrice decimal [note: 'lowest current price across listings (PKR)']
   maxPrice decimal
   lowestPlatform platform
@@ -65,17 +93,20 @@ Table listings {
   _id objectid [pk]
   productId objectid [not null, ref: > products._id]
   platform platform [not null]
+  role listing_role [default: 'retail', note: 'aliexpress = supplier']
   externalId varchar [not null, note: 'item id on the platform']
   title varchar [not null]
   url varchar [not null]
   image varchar
   price decimal [not null, note: 'PKR']
   originalPrice decimal
+  priceUsd decimal [note: 'supplier listings keep the original USD price']
   currency varchar [default: 'PKR']
   rating decimal [note: '0-5']
   reviewCount int
   inStock boolean [default: true]
   seeded boolean [default: false, note: 'true = sample data']
+  dataSource data_source [default: 'live', note: 'badge in the UI']
   lastScrapedAt datetime
   createdAt datetime
   updatedAt datetime
@@ -106,6 +137,8 @@ Table searchcaches {
   query varchar
   productIds objectid[] [note: 'ordered result products']
   source search_source
+  hits int [default: 0, note: 'times searched; drives trending']
+  lastSearchedAt datetime
   platformStatus json [note: 'per-platform status of the last scrape']
   fetchedAt datetime [not null]
 }

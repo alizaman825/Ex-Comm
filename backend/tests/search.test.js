@@ -133,12 +133,12 @@ describe('live ingestion', () => {
 
   test('creates a new product when nothing similar is stored', async () => {
     mockScrapers({
-      daraz: [{ platform: 'daraz', externalId: 'dz-9', title: 'Ninja Foodi Dual Zone Air Fryer 7.6L', price: 54999, url: 'https://www.daraz.pk/x', currency: 'PKR', reviewCount: 3, rating: 4.5, inStock: true }],
+      daraz: [{ platform: 'daraz', externalId: 'dz-9', title: 'Tefal Easy Fry Dual Air Fryer 8.3L', price: 54999, url: 'https://www.daraz.pk/x', currency: 'PKR', reviewCount: 3, rating: 4.5, inStock: true }],
       priceoye: async () => [],
     });
-    const res = await get('q=ninja air fryer');
+    const res = await get('q=tefal air fryer');
     expect(res.body.total).toBe(1);
-    expect(res.body.results[0]).toMatchObject({ title: 'Ninja Foodi Dual Zone Air Fryer 7.6L', minPrice: 54999 });
+    expect(res.body.results[0]).toMatchObject({ title: 'Tefal Easy Fry Dual Air Fryer 8.3L', minPrice: 54999, category: 'home-appliances' });
   });
 
   test('ingesting the same listing twice does not duplicate rows', async () => {

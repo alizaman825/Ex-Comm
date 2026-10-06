@@ -36,7 +36,9 @@ const BRANDS = new Set(
   `apple samsung xiaomi google sony asus lenovo dell hp anker microsoft infinix tecno vivo oppo realme
   oneplus huawei honor nokia motorola itel jbl audionic haylou baseus ugreen logitech sandisk redragon
   nintendo philips anex tp-link tplink gopro dji canon nikon acer msi amazfit lg tcl hisense haier
-  dawlance kenwood westpoint qcy boat lenovo soundpeats realme zte`.split(/\s+/)
+  dawlance kenwood westpoint qcy boat lenovo soundpeats realme zte
+  nike adidas puma levi levis rayban converse vans skechers crocs herschel fjallraven casio garmin fossil
+  ninja instant dyson tefal`.split(/\s+/)
 );
 
 function normalizeText(title) {

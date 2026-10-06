@@ -42,6 +42,9 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | FR-12 | The system shall paginate search results. |
 | FR-13 | The system shall show where results came from (live, cached, or sample data) and when they were last updated. |
 
+| FR-34 | The system shall organise products into six categories (Mobiles, Laptops, Audio, Watches, Home Appliances, Fashion), let the user browse a category and filter search results by category, and show preset searches per category. |
+| FR-35 | The system shall show popular (trending) searches on the home page, based on how often queries were searched. |
+
 ### 2.3 Products and comparison
 | ID | Requirement |
 |---|---|

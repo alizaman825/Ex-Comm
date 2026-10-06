@@ -8,5 +8,7 @@ module.exports = {
   Alert: require('./Alert'),
   Notification: require('./Notification'),
   ScrapeLog: require('./ScrapeLog'),
+  Category: require('./Category'),
+  Setting: require('./Setting'),
   PLATFORMS: require('./plugins').PLATFORMS,
 };

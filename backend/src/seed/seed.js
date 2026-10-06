@@ -5,7 +5,10 @@ const mongoose = require('mongoose');
 const catalog = require('./catalog');
 const { analyzeTitle } = require('../services/matching');
 const { refreshProductStats } = require('../services/productStats');
-const { Product, Listing, PriceHistory, SearchCache, User, Wishlist, Alert, Notification, ScrapeLog } = require('../models');
+const { ensureCategories, resolveCategory } = require('../services/categories');
+const { queryKeyOf, localSearch } = require('../services/search');
+const { parseQuery } = require('../services/relevance');
+const { Product, Listing, PriceHistory, SearchCache, User, Wishlist, Alert, Notification, ScrapeLog, Category, Setting } = require('../models');
 
 const DAY = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 90;
@@ -29,6 +32,17 @@ const PROFILE = {
   daraz: { factor: [-0.04, 0.05], mrp: [1.1, 1.4], rating: [3.9, 4.8], reviews: [20, 2500] },
   priceoye: { factor: [-0.03, 0.03], mrp: [1.02, 1.12], rating: [4.0, 4.9], reviews: [5, 400] },
   aliexpress: { factor: [-0.12, 0.04], mrp: [1.3, 2.0], rating: [3.8, 4.8], reviews: [50, 8000] },
+};
+
+// AliExpress (supplier) price relative to Pakistani retail, by category: phones/laptops are close to
+// retail, generic electronics, watches and fashion are much cheaper at the source.
+const SUPPLIER_FACTOR = {
+  mobiles: [-0.18, -0.04],
+  laptops: [-0.2, -0.05],
+  audio: [-0.5, -0.2],
+  watches: [-0.5, -0.2],
+  'home-appliances': [-0.45, -0.15],
+  fashion: [-0.6, -0.3],
 };
 
 const roundPrice = (p) => (p >= 1000 ? Math.round(p / 100) * 100 - 1 : Math.round(p));
@@ -71,9 +85,36 @@ function priceSeries(current, rand, { recentDrop }) {
   return series;
 }
 
+// Popular searches shown on the home page. Seeded as fresh cache entries so they respond instantly
+// (and work in DEMO_MODE) without scraping.
+const TRENDING = [
+  ['iphone 16', 214], ['samsung galaxy a55', 188], ['airpods pro', 163], ['redmi note 14', 141],
+  ['macbook air', 127], ['air fryer', 119], ['sony headphones', 96], ['apple watch', 88],
+  ['jbl speaker', 74], ["men's sneakers", 61],
+];
+
+async function seedTrending() {
+  for (const [query, hits] of TRENDING) {
+    // eslint-disable-next-line no-await-in-loop
+    const products = await localSearch(parseQuery(query));
+    // eslint-disable-next-line no-await-in-loop
+    await SearchCache.updateOne(
+      { queryKey: queryKeyOf(query) },
+      {
+        $set: {
+          query, hits, source: 'cache', lastSearchedAt: new Date(), fetchedAt: new Date(),
+          productIds: products.map((p) => p._id),
+          platformStatus: { daraz: { status: 'success', saved: true }, priceoye: { status: 'success', saved: true } },
+        },
+      },
+      { upsert: true }
+    );
+  }
+}
+
 async function clearAll() {
   await Promise.all(
-    [Product, Listing, PriceHistory, SearchCache, Wishlist, Alert, Notification, ScrapeLog].map((M) => M.deleteMany({}))
+    [Product, Listing, PriceHistory, SearchCache, Wishlist, Alert, Notification, ScrapeLog, Category].map((M) => M.deleteMany({}))
   );
   await User.deleteOne({ email: DEMO_USER.email });
 }
@@ -84,6 +125,11 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
   const between = ([lo, hi]) => lo + rand() * (hi - lo);
   if (reset) await clearAll();
   await Promise.all([Product, Listing, PriceHistory].map((M) => M.syncIndexes()));
+
+  await ensureCategories();
+  const settingRows = Object.entries(Setting.DEFAULTS);
+  await Promise.all(settingRows.map(([k, v]) => Setting.updateOne({ key: k }, { $setOnInsert: { value: v } }, { upsert: true })));
+  const fx = await Setting.getAll();
 
   const today = new Date();
   today.setHours(10, 0, 0, 0);
@@ -98,7 +144,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
       title: item.t,
       matchKey: analyzeTitle(item.t).key,
       brand: item.b,
-      category: item.c,
+      category: resolveCategory(item.c),
       popularity: Math.round(rand() * 60 + (item.c === 'Mobiles' ? 40 : 0)),
     });
     const recentDrop = idx % 7 === 3;
@@ -107,12 +153,16 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
       const platform = PLATFORM_OF[code];
       const prof = PROFILE[platform];
       const title = listingTitle(platform, item);
-      const price = roundPrice(item.p * (1 + between(prof.factor)));
+      const isSupplier = platform === 'aliexpress';
+      const factor = isSupplier ? SUPPLIER_FACTOR[resolveCategory(item.c)] : prof.factor;
+      const price = roundPrice(item.p * (1 + between(factor)));
       const listingId = new mongoose.Types.ObjectId();
       listings.push({
         _id: listingId,
         productId,
         platform,
+        role: isSupplier ? 'supplier' : 'retail',
+        priceUsd: isSupplier ? Math.round((price / fx.usdToPkr) * 100) / 100 : undefined,
         externalId: `seed-${slug(item.t)}-${platform}`,
         title,
         url: listingUrl(platform, item.t),
@@ -149,7 +199,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
   }
   const byTitle = async (t) => Product.findOne({ title: t });
   const wish = ['Samsung Galaxy A55 5G 8GB 256GB', 'Apple AirPods Pro 2 USB-C', 'Sony WH-1000XM5 Wireless Headphones',
-    'Apple MacBook Air M3 13in 8GB 256GB', 'Xiaomi Redmi Watch 5 Active', 'Sony PlayStation 5 Slim Digital Edition'];
+    'Apple MacBook Air M3 13in 8GB 256GB', 'Xiaomi Redmi Watch 5 Active', 'Apple Watch Series 10 46mm'];
   for (const [i, t] of wish.entries()) {
     // eslint-disable-next-line no-await-in-loop
     const p = await byTitle(t);
@@ -159,7 +209,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
 
   const a55 = await byTitle('Samsung Galaxy A55 5G 8GB 256GB');
   const airpods = await byTitle('Apple AirPods Pro 2 USB-C');
-  const ps5 = await byTitle('Sony PlayStation 5 Slim Digital Edition');
+  const ps5 = await byTitle('Apple Watch Series 10 46mm');
   const watch = await byTitle('Xiaomi Redmi Watch 5 Active');
   const triggeredAt = new Date(Date.now() - 2 * 3600 * 1000);
   const alerts = await Alert.insertMany([
@@ -181,9 +231,11 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
     },
   ]);
 
+  await seedTrending(rand);
+
   const summary = { products: products.length, listings: listings.length, priceHistory: history.length, demoUser: DEMO_USER.email, ms: Date.now() - t0 };
   log(`Seed complete: ${JSON.stringify(summary)}`);
   return summary;
 }
 
-module.exports = { seedDatabase, DEMO_USER };
+module.exports = { seedDatabase, DEMO_USER, TRENDING };

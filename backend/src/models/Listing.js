@@ -5,6 +5,7 @@ const { toJSON, PLATFORMS } = require('./plugins');
 const listingSchema = new mongoose.Schema(
   {
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true, index: true },
+    role: { type: String, enum: ['retail', 'supplier'], default: 'retail' }, // aliexpress = supplier
     platform: { type: String, enum: PLATFORMS, required: true },
     externalId: { type: String, required: true },
     title: { type: String, required: true },
@@ -12,6 +13,7 @@ const listingSchema = new mongoose.Schema(
     image: String,
     price: { type: Number, required: true, min: 0 },
     originalPrice: Number,
+    priceUsd: Number, // supplier listings keep the original USD price
     currency: { type: String, default: 'PKR' },
     rating: Number,
     reviewCount: { type: Number, default: 0 },

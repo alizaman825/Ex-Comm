@@ -28,4 +28,5 @@ Price comparison platform (Daraz, PriceOye, AliExpress). University final-year p
 ## Run commands
 - Backend: `cd backend && npm install && npm run dev` (API on :5000); `npm test` runs Jest.
 - `MONGO_URI=memory` in `backend/.env` = embedded MongoDB persisted in `backend/.data/` (dev/demo fallback).
+- Tooling quirk: backslashes in text passed to Write/Edit/node -e can be dropped (`d` becomes `d`, `` a backspace char). In code, avoid backslashes (use `[0-9]`, space-padded text) or verify the file afterwards.
 - Git Bash: prefix commands with `MSYS_NO_PATHCONV=1` when passing `/api/...` paths as args. Write multi-line files with the Write tool, not heredocs containing backticks.

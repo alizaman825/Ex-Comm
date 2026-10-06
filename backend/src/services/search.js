@@ -4,6 +4,7 @@ const { config } = require('../config/env');
 const { Product, Listing, SearchCache } = require('../models');
 const scrapers = require('../scrapers');
 const { normalizeText } = require('./matching');
+const { resolveCategory } = require('./categories');
 const { parseQuery, isRelevant, relevanceScore } = require('./relevance');
 const { ingestListings } = require('./ingest');
 
@@ -22,7 +23,7 @@ function withTimeout(promise, ms, fallback) {
 // Products already stored that answer the query, ordered by relevance (or popularity when no query).
 async function localSearch(parsed, { category } = {}) {
   const filter = {};
-  if (category) filter.category = new RegExp(`^${escapeRegex(category)}$`, 'i');
+  if (category) filter.category = resolveCategory(category) || '__none__';
   if (parsed.tokens.length) {
     filter.$and = parsed.tokens.map((t) => ({
       $or: [
@@ -102,6 +103,8 @@ function offersFor(listings) {
     .map((l) => ({
       listingId: String(l._id),
       platform: l.platform,
+      role: l.role || 'retail',
+      priceUsd: l.priceUsd || null,
       price: l.price,
       originalPrice: l.originalPrice || null,
       rating: l.rating || null,

@@ -3,6 +3,7 @@
 const { Product, Listing, PriceHistory } = require('../models');
 const { analyzeTitle, findBestMatch } = require('./matching');
 const { refreshProductStats } = require('./productStats');
+const { classify } = require('./categories');
 
 const HISTORY_MIN_GAP_MS = 12 * 60 * 60 * 1000;
 
@@ -49,7 +50,7 @@ async function createProduct(listing, analyzed) {
           title: cleanTitle(listing.title),
           matchKey: analyzed.key,
           brand: capitalize(analyzed.brand || listing.brand || '') || undefined,
-          category: listing.category || undefined,
+          category: classify(listing.title, listing.category) || undefined,
           image: listing.image || undefined,
         },
       },

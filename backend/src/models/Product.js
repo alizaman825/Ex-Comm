@@ -12,6 +12,8 @@ const productSchema = new mongoose.Schema(
     // Denormalized from listings by services/productStats.js
     minPrice: Number,
     maxPrice: Number,
+    retailMinPrice: Number, // cheapest Daraz/PriceOye listing
+    supplierMinPrice: Number, // cheapest AliExpress listing (PKR)
     lowestPlatform: { type: String, enum: [...PLATFORMS, null] },
     platforms: [{ type: String, enum: PLATFORMS }],
     listingCount: { type: Number, default: 0 },
