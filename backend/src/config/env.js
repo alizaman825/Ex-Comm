@@ -10,6 +10,8 @@ const config = {
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  autoSeed: (process.env.AUTO_SEED || 'true') === 'true',
+  demoMode: process.env.DEMO_MODE === 'true',
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map((s) => s.trim()),
   rateLimit: {
     windowMs: 15 * 60 * 1000,

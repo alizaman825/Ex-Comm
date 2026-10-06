@@ -45,7 +45,13 @@ Table products {
   image varchar
   minPrice decimal [note: 'lowest current price across listings (PKR)']
   maxPrice decimal
+  lowestPlatform platform
+  platforms platform[]
   listingCount int
+  rating decimal [note: 'review-weighted average of listings']
+  reviewCount int
+  priceChange7d decimal [note: '% change of minPrice vs 7 days ago']
+  popularity int [note: 'used for trending']
   createdAt datetime
   updatedAt datetime
 
@@ -69,6 +75,7 @@ Table listings {
   rating decimal [note: '0-5']
   reviewCount int
   inStock boolean [default: true]
+  seeded boolean [default: false, note: 'true = sample data']
   lastScrapedAt datetime
   createdAt datetime
   updatedAt datetime
@@ -107,6 +114,7 @@ Table wishlists {
   _id objectid [pk]
   userId objectid [not null, ref: > users._id]
   productId objectid [not null, ref: > products._id]
+  priceWhenAdded decimal
   createdAt datetime
 
   Indexes {
@@ -151,6 +159,7 @@ Table scrapelogs {
   _id objectid [pk]
   platform platform [not null]
   query varchar
+  kind varchar [note: 'search | price-check']
   status scrape_status [not null]
   itemCount int
   durationMs int
