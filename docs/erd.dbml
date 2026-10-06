@@ -1,0 +1,159 @@
+// Ex-Comm database schema (MongoDB via Mongoose), for dbdiagram.io
+// Collections are shown as tables; ObjectId references are shown as foreign keys.
+// Version 1.0 — 2026-10-07
+
+Project ExComm {
+  database_type: 'MongoDB'
+  Note: 'Price comparison platform: Daraz, PriceOye, AliExpress'
+}
+
+Enum platform {
+  daraz
+  priceoye
+  aliexpress
+}
+
+Enum search_source {
+  live
+  cache
+  fallback
+}
+
+Enum scrape_status {
+  success
+  partial
+  failed
+  skipped
+}
+
+Table users {
+  _id objectid [pk]
+  name varchar [not null]
+  email varchar [not null, unique, note: 'stored lowercase']
+  passwordHash varchar [not null, note: 'bcrypt; never returned by the API']
+  emailAlerts boolean [default: false]
+  createdAt datetime
+  updatedAt datetime
+}
+
+Table products {
+  _id objectid [pk]
+  title varchar [not null, note: 'display title']
+  matchKey varchar [not null, unique, note: 'normalized brand + model + variant tokens used to group listings']
+  brand varchar
+  category varchar
+  image varchar
+  minPrice decimal [note: 'lowest current price across listings (PKR)']
+  maxPrice decimal
+  listingCount int
+  createdAt datetime
+  updatedAt datetime
+
+  Indexes {
+    (title, brand) [type: 'text', name: 'text search']
+    category
+  }
+}
+
+Table listings {
+  _id objectid [pk]
+  productId objectid [not null, ref: > products._id]
+  platform platform [not null]
+  externalId varchar [not null, note: 'item id on the platform']
+  title varchar [not null]
+  url varchar [not null]
+  image varchar
+  price decimal [not null, note: 'PKR']
+  originalPrice decimal
+  currency varchar [default: 'PKR']
+  rating decimal [note: '0-5']
+  reviewCount int
+  inStock boolean [default: true]
+  lastScrapedAt datetime
+  createdAt datetime
+  updatedAt datetime
+
+  Indexes {
+    (platform, externalId) [unique]
+    productId
+  }
+}
+
+Table pricehistory {
+  _id objectid [pk]
+  listingId objectid [not null, ref: > listings._id]
+  productId objectid [not null, ref: > products._id]
+  platform platform [not null]
+  price decimal [not null]
+  scrapedAt datetime [not null]
+
+  Indexes {
+    (listingId, scrapedAt)
+    (productId, scrapedAt)
+  }
+}
+
+Table searchcaches {
+  _id objectid [pk]
+  queryKey varchar [not null, unique, note: 'normalized query + platform set']
+  query varchar
+  productIds objectid[] [note: 'ordered result products']
+  source search_source
+  platformStatus json [note: 'per-platform status of the last scrape']
+  fetchedAt datetime [not null]
+}
+
+Table wishlists {
+  _id objectid [pk]
+  userId objectid [not null, ref: > users._id]
+  productId objectid [not null, ref: > products._id]
+  createdAt datetime
+
+  Indexes {
+    (userId, productId) [unique]
+  }
+}
+
+Table alerts {
+  _id objectid [pk]
+  userId objectid [not null, ref: > users._id]
+  productId objectid [not null, ref: > products._id]
+  targetPrice decimal [not null]
+  platform platform [null, note: 'null = any platform']
+  active boolean [default: true]
+  lastTriggeredAt datetime
+  createdAt datetime
+  updatedAt datetime
+
+  Indexes {
+    (userId, productId)
+    active
+  }
+}
+
+Table notifications {
+  _id objectid [pk]
+  userId objectid [not null, ref: > users._id]
+  alertId objectid [ref: > alerts._id]
+  productId objectid [ref: > products._id]
+  message varchar [not null]
+  price decimal
+  platform platform
+  read boolean [default: false]
+  createdAt datetime
+
+  Indexes {
+    (userId, read)
+  }
+}
+
+Table scrapelogs {
+  _id objectid [pk]
+  platform platform [not null]
+  query varchar
+  status scrape_status [not null]
+  itemCount int
+  durationMs int
+  error varchar
+  createdAt datetime
+}

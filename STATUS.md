@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T1 (backend foundation) done_
+_Last updated: 2026-10-07 — T1 done, report docs generated_
 
 ## Built
 - Phase 0: repo restructured (`/backend`, `/frontend`, `/docs`), fresh git history, secrets moved to `backend/.env`, pushed to github.com/alizaman825/Ex-Comm (private).
@@ -11,6 +11,8 @@ _Last updated: 2026-10-07 — T1 (backend foundation) done_
   - JWT secret rotated (`SECRET_TOKEN` → `JWT_SECRET`).
   - Tests: 18 passing (Jest + supertest + in-memory MongoDB).
 
+- Docs: `docs/requirements.md` (33 FR, 16 NFR), `docs/use_cases.md` (14 use cases, brief table format), `docs/erd.dbml` (9 collections), `docs/report_notes.md` (matching limitation).
+
 ## Working
 - API runs in dev and production mode; register/login verified against the embedded DB.
 - Daraz JSON search endpoint and PriceOye search HTML reachable without a browser (probed 2026-10-07).
@@ -20,4 +22,4 @@ _Last updated: 2026-10-07 — T1 (backend foundation) done_
 - Legacy AliExpress scraper (stale selectors, headful); parked in `backend/src/scrapers/legacy`, not mounted. AliExpress is the last, optional task.
 
 ## Next
-- Docs: `requirements.md`, `use_cases.md`, `erd.dbml`, `report_notes.md`. Then T2 (models + seed).
+- T2: Mongoose models + seed script.
