@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T3 (scrapers) done_
+_Last updated: 2026-10-07 — T3 done, plan revised (addendum)_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -25,4 +25,5 @@ _Last updated: 2026-10-07 — T3 (scrapers) done_
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
+- Plan revised: `docs/PLAN_ADDENDUM.md` merged into `docs/PLAN.md` §5 (T1–T21; remaining 50 h + 7 h NICE). Checkpoints: T8 backend, T12 end-to-end, T19 testing.
 - T4: search service (relevance filtering, grouping via matching, cache-first + fallback, filters, sort, pagination).

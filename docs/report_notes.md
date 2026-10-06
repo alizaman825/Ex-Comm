@@ -5,7 +5,7 @@ Material for the report's design, limitations, and future-work chapters. Updated
 ## Design decisions
 - **Backend kept in Node.js/Express.** The original scraper was written in it. MongoDB (Mongoose) was kept because the existing code already used it.
 - **Live sources are Daraz and PriceOye.** Both expose search results without a headless browser: Daraz returns JSON from its catalog endpoint, and PriceOye serves server-rendered HTML. This makes scraping fast (about 1–2 s) and reliable.
-- **AliExpress is optional.** Its pages need a headless browser, prices are in USD, and it often shows a slider captcha to automated clients. The seed data includes AliExpress listings so the comparison view still shows three stores.
+- **AliExpress is the supplier source and best-effort.** Its pages need a headless browser, prices are in USD, and it often shows a slider captcha to automated clients. The seed data includes AliExpress listings so the comparison view still shows three stores.
 - **Cache-first search.** Results are stored in the database. Fresh cache (under 6 hours) is served at once; otherwise the stores are scraped live. If scraping fails, stale cache or seed data is shown, and the UI labels where the data came from.
 
 ## Known limitations
@@ -23,6 +23,11 @@ Limitations to state in the report:
 - Accessories (cases, chargers) can look like the main product. Very cheap listings in a group are flagged rather than trusted.
 - Accuracy is measured on a small hand-labelled sample, not a large benchmark.
 - **Future work:** use barcodes/GTINs where stores publish them, add learned similarity (text embeddings), and let user feedback ("not the same product") improve matching.
+
+### Seller module (dropshipping margins)
+- **Margin figures are estimates.** They use a configurable USD→PKR rate and adjustable shipping, customs and platform-fee assumptions; the UI always shows the assumptions used. Real costs vary by product, courier and customs valuation.
+- **Supplier data may be saved data.** AliExpress needs a browser and often shows a captcha, so supplier prices are seeded/cached and labelled "saved" unless a live scrape succeeded ("live").
+- **Cross-store matching is fuzzy with manual fallback**, and cross-platform comparison is strongest in electronics, where model names are standardized; fashion and generic goods match poorly.
 
 ### Scraping
 - Scrapers depend on each store's current page structure and endpoints. A redesign can break them; fixture tests detect this quickly, and the cache/seed fallback keeps the app usable.

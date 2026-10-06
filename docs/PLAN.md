@@ -1,7 +1,9 @@
 # Ex-Comm — Phase 1 Plan
 
-Status: **approved** (2026-10-07) with these decisions:
-- Live sources: **Daraz + PriceOye**. AliExpress adapter is the **last task, only if time remains**; seed data still includes AliExpress listings so compare shows three stores.
+Status: **approved** (2026-10-07), **revised with scope addendum** (`docs/PLAN_ADDENDUM.md`, adopted 2026-10-07). Decisions:
+- Live sources: **Daraz + PriceOye** (retail). AliExpress is the **supplier source** for the seller module: best-effort live adapter, strong seeded/saved data so everything works in DEMO_MODE; listings labelled "live" or "saved".
+- Positioning: primary users are online sellers/dropshippers (compare supplier price vs local retail price, estimate margin); secondary users are regular shoppers.
+- Priority tiers (cut from the bottom if time runs short): **MUST** core product, **SHOULD** seller module, **NICE** landing animation / third store. See §5.
 - Database: MongoDB Atlas (user's cluster). Orders feature and old CRA app (`backend/frontend`) deleted.
 - T1 fixes security first: no password hashes in responses, auth on every user-modifying route, helmet, rate limiting on login/register, auth middleware path, production crash.
 - After T1, before T2: generate `docs/requirements.md`, `docs/use_cases.md`, `docs/erd.dbml`.
@@ -55,15 +57,19 @@ Next.js 14 (App Router, TS, Tailwind, Recharts)  --/api/* rewrite-->  Express AP
 
 | Collection | Key fields | Relations / indexes |
 |---|---|---|
-| `users` | name, email (unique), passwordHash, emailAlerts (bool), createdAt | — |
+| `users` | name, email (unique), passwordHash, emailAlerts (bool), marginDefaults {shippingPkr, customsPct, feePct}, createdAt | — |
 | `products` | title, matchKey (unique), brand, category, image, minPrice, maxPrice, createdAt | 1 → N listings |
-| `listings` | productId, platform, externalId, title, url, image, price, originalPrice, currency, rating, reviewCount, inStock, lastScrapedAt | N → 1 product; unique (platform, externalId) |
+| `listings` | productId, **role** (`retail` \| `supplier`), platform, externalId, title, url, image, price, originalPrice, currency, rating, reviewCount, inStock, lastScrapedAt | N → 1 product; unique (platform, externalId) |
 | `pricehistory` | listingId, productId, price, scrapedAt | N → 1 listing; index (listingId, scrapedAt) |
-| `searchcache` | queryKey (normalized q + platform), productIds[], fetchedAt, status | unique queryKey |
+| `searchcache` | queryKey (normalized q + platform), query, productIds[], fetchedAt, status, **hits**, **lastSearchedAt** | unique queryKey; `hits` drives trending searches |
 | `wishlists` | userId, productId, createdAt | unique (userId, productId) |
-| `alerts` | userId, productId, targetPrice, platform (optional, null = any), active, lastTriggeredAt | N → 1 user, N → 1 product |
+| `alerts` | userId, productId, **type** (`price` \| `supplier_drop` \| `margin`), targetPrice, **targetMargin** (%), platform (optional, null = any), active, lastTriggeredAt | N → 1 user, N → 1 product |
 | `notifications` | userId, alertId, productId, message, price, read, createdAt | index (userId, read) |
 | `scrapelogs` | platform, query, status, itemCount, durationMs, error, createdAt | used for reliability + report |
+| `categories` | slug (unique), name, icon, keywords[] (search presets), sortOrder | 6 categories: Mobiles, Laptops, Audio, Watches, Home Appliances, Fashion; `products.category` holds the slug |
+| `settings` | key (unique), value | `usdToPkr` exchange rate, default shipping/customs/fee for the margin calculator, `fxUpdatedAt` |
+
+**Addendum fields on existing collections:** `listings.priceUsd` (supplier listings keep the original USD price), `listings.dataSource` (`live` \| `saved`, shown as a badge), `products.supplierMinPrice` (PKR, cheapest AliExpress listing), `products.retailMinPrice` (PKR, cheapest Daraz/PriceOye listing), `products.estMargin` (% with default assumptions, for ranking opportunities).
 
 ## 4. API endpoints (prefix `/api`)
 
@@ -72,35 +78,66 @@ Next.js 14 (App Router, TS, Tailwind, Recharts)  --/api/* rewrite-->  Express AP
 | Health | `GET /health` | – |
 | Auth | `POST /auth/register`, `POST /auth/login`, `POST /auth/logout`, `GET /auth/me` | –/–/✓/✓ |
 | Profile | `PATCH /users/me`, `PATCH /users/me/password`, `DELETE /users/me` | ✓ |
-| Search | `GET /search?q&platform&minPrice&maxPrice&minRating&sort&page&live` | – (rate-limited) |
+| Search | `GET /search?q&category&platform&minPrice&maxPrice&minRating&sort&page&live` | – (rate-limited) |
 | Products | `GET /products/trending`, `GET /products/:id` (with listings), `GET /products/:id/history?days=` | – |
 | Compare | `GET /compare?ids=a,b,c` | – |
-| Meta | `GET /platforms`, `GET /categories` | – |
+| Meta | `GET /platforms`, `GET /categories` (with keyword presets and product counts), `GET /search/trending` (popular searches from cache) | – |
 | Wishlist | `GET /wishlist`, `POST /wishlist` {productId}, `DELETE /wishlist/:productId` | ✓ |
-| Alerts | `GET /alerts`, `POST /alerts`, `PATCH /alerts/:id`, `DELETE /alerts/:id` | ✓ |
+| Alerts | `GET /alerts`, `POST /alerts` {productId, type, targetPrice \| targetMargin, platform?}, `PATCH /alerts/:id`, `DELETE /alerts/:id` | ✓ |
 | Notifications | `GET /notifications`, `GET /notifications/unread-count`, `PATCH /notifications/:id/read`, `PATCH /notifications/read-all` | ✓ |
+| Seller | `GET /seller/settings` (fx rate + default assumptions), `PATCH /seller/settings` (user defaults), `POST /seller/margin` {productId \| supplierPrice, retailPrice, shipping, customsPct, feePct} → profit, margin %, assumptions used | – / ✓ |
+| Seller | `GET /seller/opportunities?category&minMargin&sort&page` (products ranked by estimated margin, with supplier "live/saved" label) | – |
 | Jobs | `POST /jobs/price-check` (manual trigger for demo; requires `JOB_KEY`) | key |
 
-## 5. Task list (6-day schedule, ~44 h)
+## 5. Task list (revised with addendum)
 
-| Day | # | Task | Est. |
+Estimates in hours. Order follows the tiers: MUST first, then SHOULD, then NICE; checkpoints are in bold.
+
+### MUST: core product
+| # | Task | Est. | Status |
 |---|---|---|---|
-| 1 | T1 | Backend foundation: `src/` layout, config, error handler, helmet/CORS/rate limit, health; remove orders + old CRA frontend (if approved); fix bugs | 3 h |
-| 1 | T2 | Mongoose models + seed script (~60 products × 2–3 platforms, 60 days price history, demo user) + `erd.dbml`, `requirements.md` | 4 h |
-| 2 | T3 | Scraper adapters: Daraz (JSON), PriceOye (cheerio), AliExpress (refactor existing Puppeteer code, best-effort); polite delays, timeouts, fixture tests | 5 h |
-| 2 | T4 | Search service: matching/grouping, cache-first + fallback, filters, sort, pagination | 3 h |
-| 3 | T5 | Auth + profile API, JWT cookie, validation, tests | 2.5 h |
-| 3 | T6 | Products/compare/history, wishlist, alerts, notifications APIs + tests | 3.5 h |
-| 3 | T7 | node-cron price-check job → price history → alert notifications (+ optional email); manual trigger → **Checkpoint: backend API** | 2 h |
-| 4 | T8 | Next.js scaffold, Tailwind design system, layout/nav, API client, auth pages (login, register) | 4 h |
-| 4 | T9 | Landing, search results (filters/sort, loading/empty/error states), about, 404 | 3 h |
-| 5 | T10 | Product detail + price-history chart, compare view | 3.5 h |
-| 5 | T11 | Wishlist, alerts list/create, notifications, profile/settings → **Checkpoint: frontend E2E** | 4 h |
-| 6 | T12 | Run all tests, write ≥20 test cases in `test_cases.md`, fix bugs | 3 h |
-| 6 | T13 | Finish docs: use cases, diagrams (context, DFD 0/1, activity, class, sequence), screenshots checklist | 2.5 h |
-| 6 | T14 | Demo hardening: `DEMO_MODE` (cache-only), rehearsal of demo script → **Checkpoint: testing** | 1 h |
+| T1 | Backend foundation, security fixes, auth + profile API | 3 | done |
+| T2 | Models + matching + seed (60 products) + docs (requirements, use cases, ERD) | 4 | done |
+| T3 | Scrapers: Daraz, PriceOye, polite queue, fixture tests | 5 | done |
+| T4 | Search service: relevance filtering, grouping via matching, cache-first + fallback, filters, sort, pagination | 3.5 | |
+| T5 | Categories: `categories` collection with keyword presets, category filter on search, `GET /categories`, trending searches (`searchcache.hits`); reshape seed to 6 categories × ~15 products (90) with history, supplier (AliExpress) listings flagged `saved` | 3 | |
+| T6 | Products, compare, history, wishlist, alerts (price type), notifications APIs + tests | 3.5 | |
+| T7 | node-cron price-check job → history → alert notifications, manual trigger | 2 | |
+| T8 | Search test sweep: 15+ varied terms across categories (incl. "air fryer", "men's sneakers"); report per-platform results; fix per-category parsing → **Checkpoint 1: backend API** | 2.5 | |
+| T9 | Next.js scaffold, Tailwind design system, layout/nav, API client, login/register | 4 | |
+| T10 | Landing (trending searches, categories), categories page, search results (filters/sort/states), about, 404 | 4 | |
+| T11 | Product detail + price chart, compare view | 3.5 | |
+| T12 | Wishlist, alerts, notifications, profile → **Checkpoint 2: end-to-end** | 4 | |
+| | **MUST remaining** | **30** | |
 
-Docs (`requirements.md`, `use_cases.md`, `erd.dbml`, `diagrams/`) are updated within each task, finished in T13.
+### SHOULD: seller module
+| # | Task | Est. | Status |
+|---|---|---|---|
+| T13 | AliExpress supplier: refactor/replace the legacy scraper (best-effort live, `live`/`saved` labels), fx rate setting, strong seeded supplier data | 4 | |
+| T14 | Margin calculator service + API, opportunities ranking API + tests | 3 | |
+| T15 | Alerts extension: `supplier_drop` and `margin` alert types in the price job + tests | 2 | |
+| T16 | Seller UI: margin calculator, opportunities page (category filter), new alert types in the alerts form | 4 | |
+| | **SHOULD total** | **13** | |
+
+### Closing (always done; shaped by what was built)
+| # | Task | Est. | Status |
+|---|---|---|---|
+| T17 | Run all tests, ≥ 20 test cases in `test_cases.md` (incl. seller module) | 3 | |
+| T18 | Finish docs: use cases (seller), diagrams (context, DFD 0/1, activity, class, sequence), screenshots checklist, report_notes limitations | 3 | |
+| T19 | Demo hardening: `DEMO_MODE` rehearsal (seller module fully works from saved data) → **Checkpoint 3: testing** | 1 | |
+| | **Closing total** | **7** | |
+
+### NICE: only after Checkpoint 2
+| # | Task | Est. |
+|---|---|---|
+| T20 | Landing-page polish: GSAP ScrollTrigger, one hero scrubbing a frame sequence/3D model on scroll (asset supplied by user in `frontend/public/hero/`), lazy-loaded, static fallback for `prefers-reduced-motion` and slow devices; landing page only | 4 |
+| T21 | Third easy-to-scrape Pakistani store for non-electronics, only if investigation shows it is cheap | 3 |
+| | **NICE total** | **7** |
+
+**Totals:** done 12 h (T1–T3). Remaining: MUST 30 h + SHOULD 13 h + closing 7 h = **50 h**; with NICE **57 h**. Whole project **62 h** (**69 h** with NICE), versus 44 h in the original plan.
+
+Docs (`requirements.md`, `use_cases.md`, `erd.dbml`, `report_notes.md`) are updated within each task for the seller module (new requirements and use cases for margin calculator, opportunities, supplier alerts; ERD fields above), finished in T18.
+
 
 ## 6. Demo risks & fallbacks
 
