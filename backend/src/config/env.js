@@ -12,6 +12,13 @@ const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   autoSeed: (process.env.AUTO_SEED || 'true') === 'true',
   demoMode: process.env.DEMO_MODE === 'true',
+  scraper: {
+    livePlatforms: (process.env.LIVE_PLATFORMS || 'daraz,priceoye').split(',').map((s) => s.trim()).filter(Boolean),
+    timeoutMs: Number(process.env.SCRAPER_TIMEOUT_MS) || 8000,
+    minDelayMs: Number(process.env.SCRAPER_MIN_DELAY_MS ?? 1500),
+    maxDelayMs: Number(process.env.SCRAPER_MAX_DELAY_MS ?? 3000),
+    circuitCooldownMs: Number(process.env.SCRAPER_COOLDOWN_MS) || 10 * 60 * 1000,
+  },
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map((s) => s.trim()),
   rateLimit: {
     windowMs: 15 * 60 * 1000,

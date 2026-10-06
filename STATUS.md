@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T2 (models + seed) done_
+_Last updated: 2026-10-07 — T3 (scrapers) done_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -12,7 +12,8 @@ _Last updated: 2026-10-07 — T2 (models + seed) done_
   - `services/matching.js`: title normalization + fuzzy match (brand/model/variant/storage/accessory rules).
   - `services/productStats.js`: min/max price, platforms, rating, 7-day change.
   - Seed (`npm run seed`; auto on empty DB): 60 products, 161 listings (Daraz/PriceOye/AliExpress), 90 days of daily history, demo user `demo@excomm.pk` / `demo1234` with wishlist, alerts, notifications.
-- Tests: 42 passing (foundation, auth, matching, catalog matching, seed).
+- T3: scraper adapters `backend/src/scrapers`: Daraz (JSON), PriceOye (cheerio), shared HTTP client (8 s timeout, 1 retry), PoliteQueue (1 request at a time, 1.5–3 s random delay, circuit breaker after 3 failures, 10 min cooldown), registry with ScrapeLog logging and DEMO_MODE skip. Offline fixture tests in `tests/fixtures`. `node scripts/live-check.js "query"` hits the real sites.
+- Tests: 61 passing (foundation, auth, matching, seed, scrapers, registry).
 
 ## Working
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
@@ -20,8 +21,8 @@ _Last updated: 2026-10-07 — T2 (models + seed) done_
 
 ## Broken / blocked
 - **`MONGO_URI` in `backend/.env` points to `cluster0.qp8uz.mongodb.net`, which no longer exists (DNS NXDOMAIN).** Probably the old owner's cluster. Needs the user's own Atlas URI. Until then, use `MONGO_URI=memory`.
-- Seed products have no images yet (frontend will show a placeholder; T3 may fill real images from live scrapes).
+- Live search quality: PriceOye search is loose (returns unrelated products) and Daraz returns many accessories; T4 must filter by query relevance. Seed products have no images yet (frontend will show a placeholder; T3 may fill real images from live scrapes).
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
-- T3: Daraz + PriceOye scraper adapters (polite delays, timeouts, circuit breaker, fixture tests).
+- T4: search service (relevance filtering, grouping via matching, cache-first + fallback, filters, sort, pagination).
