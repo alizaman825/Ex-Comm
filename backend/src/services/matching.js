@@ -85,6 +85,19 @@ function analyzeTitle(title) {
   return { brand, tokens: rest, key };
 }
 
+// All meaningful tokens of a text (brand included), for query relevance checks.
+function significantTokens(text) {
+  const out = [];
+  for (const t of normalizeText(text).split(' ')) {
+    if (!t || STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (t.length === 1 && !/\d/.test(t)) continue;
+    if (!out.includes(t)) out.push(t);
+  }
+  return out;
+}
+
+const hasAccessoryWord = (tokens) => tokens.some((t) => ACCESSORY_WORDS.has(t));
+
 const isStorage = (t) => /^\d+(gb|tb)$/.test(t);
 const isUnit = (t) => /^\d+(\.\d+)?(mah|w|hz|mp|mm|cm|in|ml|l|kg)$/.test(t);
 const isModel = (t) => /\d/.test(t) && !isStorage(t) && !isUnit(t);
@@ -153,4 +166,4 @@ function findBestMatch(analyzed, candidates) {
   return bestScore >= MATCH_THRESHOLD ? { candidate: best, score: bestScore } : null;
 }
 
-module.exports = { normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
+module.exports = { significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };

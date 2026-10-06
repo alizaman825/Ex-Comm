@@ -11,4 +11,8 @@ const apiLimiter = () =>
 const authLimiter = () =>
   rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.rateLimit.authMax, standardHeaders: 'draft-7', legacyHeaders: false, handler });
 
-module.exports = { apiLimiter, authLimiter };
+// Search can trigger live scraping, so it gets a tighter limit than the rest of the API.
+const searchLimiter = () =>
+  rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.search.rateLimitMax, standardHeaders: 'draft-7', legacyHeaders: false, handler });
+
+module.exports = { apiLimiter, authLimiter, searchLimiter };

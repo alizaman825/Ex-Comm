@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T3 done, plan revised (addendum)_
+_Last updated: 2026-10-07 — T4 (search service) done_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -13,7 +13,8 @@ _Last updated: 2026-10-07 — T3 done, plan revised (addendum)_
   - `services/productStats.js`: min/max price, platforms, rating, 7-day change.
   - Seed (`npm run seed`; auto on empty DB): 60 products, 161 listings (Daraz/PriceOye/AliExpress), 90 days of daily history, demo user `demo@excomm.pk` / `demo1234` with wishlist, alerts, notifications.
 - T3: scraper adapters `backend/src/scrapers`: Daraz (JSON), PriceOye (cheerio), shared HTTP client (8 s timeout, 1 retry), PoliteQueue (1 request at a time, 1.5–3 s random delay, circuit breaker after 3 failures, 10 min cooldown), registry with ScrapeLog logging and DEMO_MODE skip. Offline fixture tests in `tests/fixtures`. `node scripts/live-check.js "query"` hits the real sites.
-- Tests: 61 passing (foundation, auth, matching, seed, scrapers, registry).
+- T4: `GET /api/search?q&category&platform&minPrice&maxPrice&minRating&sort&page&pageSize&live`. Cache-first (6 h) → live scrape (10 s budget, per-platform failure isolation) → fallback to stored/sample data; response has `source` live|cache|fallback and per-platform status. Query-relevance filter (model numbers must match, accessories dropped unless asked), ingestion groups listings into products by fuzzy match, adopts seeded listings (keeps history), appends price history. Search rate limit 60/15 min. Verified live: "samsung galaxy a56", "air fryer", "men's sneakers".
+- Tests: 92 passing.
 
 ## Working
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
@@ -21,9 +22,8 @@ _Last updated: 2026-10-07 — T3 done, plan revised (addendum)_
 
 ## Broken / blocked
 - **`MONGO_URI` in `backend/.env` points to `cluster0.qp8uz.mongodb.net`, which no longer exists (DNS NXDOMAIN).** Probably the old owner's cluster. Needs the user's own Atlas URI. Until then, use `MONGO_URI=memory`.
-- Live search quality: PriceOye search is loose (returns unrelated products) and Daraz returns many accessories; T4 must filter by query relevance. Seed products have no images yet (frontend will show a placeholder; T3 may fill real images from live scrapes).
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
-- Plan revised: `docs/PLAN_ADDENDUM.md` merged into `docs/PLAN.md` §5 (T1–T21; remaining 50 h + 7 h NICE). Checkpoints: T8 backend, T12 end-to-end, T19 testing.
-- T4: search service (relevance filtering, grouping via matching, cache-first + fallback, filters, sort, pagination).
+- T5: categories (collection + keyword presets, category filter, `GET /categories`), trending searches, reshape seed to 6 categories × ~15 products.
+- Then T6 (products/compare/history/wishlist/alerts/notifications APIs), T7 (price-check job), T8 (15-term search sweep → Checkpoint 1).

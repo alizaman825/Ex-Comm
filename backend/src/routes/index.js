@@ -14,6 +14,7 @@ module.exports = () => {
 
   api.use('/auth', require('./auth.routes')());
   api.use('/users', require('./user.routes')());
+  api.use('/search', require('./search.routes')());
 
   return api;
 };

@@ -17,6 +17,7 @@ const listingSchema = new mongoose.Schema(
     reviewCount: { type: Number, default: 0 },
     inStock: { type: Boolean, default: true },
     seeded: { type: Boolean, default: false }, // true = sample data, not scraped
+    dataSource: { type: String, enum: ['live', 'saved'], default: 'live' }, // shown as a badge in the UI
     lastScrapedAt: Date,
   },
   { timestamps: true }

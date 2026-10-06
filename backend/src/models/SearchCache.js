@@ -8,6 +8,8 @@ const searchCacheSchema = new mongoose.Schema({
   source: { type: String, enum: ['live', 'cache', 'fallback'] },
   // e.g. { daraz: { status: 'success', count: 40, ms: 900 }, priceoye: { status: 'failed', error: 'timeout' } }
   platformStatus: { type: mongoose.Schema.Types.Mixed, default: {} },
+  hits: { type: Number, default: 0 }, // times searched; drives trending searches
+  lastSearchedAt: Date,
   fetchedAt: { type: Date, required: true, default: Date.now },
 });
 

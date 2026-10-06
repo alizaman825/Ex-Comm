@@ -12,6 +12,12 @@ const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   autoSeed: (process.env.AUTO_SEED || 'true') === 'true',
   demoMode: process.env.DEMO_MODE === 'true',
+  search: {
+    cacheTtlMs: Number(process.env.SEARCH_CACHE_TTL_MS) || 6 * 60 * 60 * 1000,
+    liveBudgetMs: Number(process.env.SEARCH_LIVE_BUDGET_MS) || 10000,
+    maxIngestPerPlatform: 25,
+    rateLimitMax: Number(process.env.SEARCH_RATE_LIMIT_MAX) || 60,
+  },
   scraper: {
     livePlatforms: (process.env.LIVE_PLATFORMS || 'daraz,priceoye').split(',').map((s) => s.trim()).filter(Boolean),
     timeoutMs: Number(process.env.SCRAPER_TIMEOUT_MS) || 8000,

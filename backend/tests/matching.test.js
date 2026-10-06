@@ -42,3 +42,13 @@ describe('isSameProduct', () => {
   ];
   test.each(different)('%s != %s', (a, b) => expect(isSameProduct(a, b)).toBe(false));
 });
+
+describe('cleanTitle', () => {
+  const { cleanTitle } = require('../src/services/ingest');
+  test.each([
+    ['Samsung Galaxy A55 5G - 8GB 256GB - 6.6" Display - PTA Approved', 'Samsung Galaxy A55 5G'],
+    ['Air Fryer - 8 Litre Digital Display Oil Free Cooker', 'Air Fryer - 8 Litre Digital Display Oil Free Cooker'],
+    ['Walkend || Sneakers for men || shoes for men ||', 'Walkend | Sneakers for men | shoes for men'],
+    ['Infinix Smart 20', 'Infinix Smart 20'],
+  ])('%s', (input, expected) => expect(cleanTitle(input)).toBe(expected));
+});

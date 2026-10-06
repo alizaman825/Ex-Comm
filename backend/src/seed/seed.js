@@ -123,6 +123,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
         reviewCount: Math.round(between(prof.reviews)),
         inStock: rand() > 0.05,
         seeded: true,
+        dataSource: 'saved',
         lastScrapedAt: new Date(today.getTime() - Math.floor(rand() * 6) * 3600 * 1000),
       });
       for (const { daysAgo, price: p } of priceSeries(price, rand, { recentDrop })) {
