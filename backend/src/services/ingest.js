@@ -62,6 +62,16 @@ async function createProduct(listing, analyzed) {
   }
 }
 
+// Adds a price-history point when the price changed or the last point is old.
+async function appendHistory(listing, price, now, { force = false } = {}) {
+  const last = await PriceHistory.findOne({ listingId: listing._id }).sort({ scrapedAt: -1 }).lean();
+  if (force || !last || last.price !== price || now - last.scrapedAt > HISTORY_MIN_GAP_MS) {
+    await PriceHistory.create({ listingId: listing._id, productId: listing.productId, platform: listing.platform, price, scrapedAt: now });
+    return true;
+  }
+  return false;
+}
+
 async function saveListing(product, l, now) {
   const fields = {
     productId: product._id,
@@ -90,10 +100,7 @@ async function saveListing(product, l, now) {
   Object.assign(doc, fields);
   await doc.save();
 
-  const last = isNew ? null : await PriceHistory.findOne({ listingId: doc._id }).sort({ scrapedAt: -1 }).lean();
-  if (!last || last.price !== l.price || now - last.scrapedAt > HISTORY_MIN_GAP_MS) {
-    await PriceHistory.create({ listingId: doc._id, productId: product._id, platform: l.platform, price: l.price, scrapedAt: now });
-  }
+  await appendHistory(doc, l.price, now, { force: isNew });
   return doc;
 }
 
@@ -122,4 +129,4 @@ async function ingestListings(listings) {
   return { productIds: [...touched], listingCount: count };
 }
 
-module.exports = { ingestListings, cleanTitle };
+module.exports = { ingestListings, cleanTitle, appendHistory };

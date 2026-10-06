@@ -68,6 +68,7 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | FR-23 | The system shall let a signed-in user create a price alert for a product with a target price, for any platform or one chosen platform. |
 | FR-24 | The system shall let a signed-in user view, edit, pause, resume, and delete their price alerts. |
 | FR-25 | A scheduled job shall regularly re-scrape products that have active alerts or are on a wishlist, and store each new price in the price history. |
+| FR-25a | A protected endpoint (job key) shall let the operator run the price check on demand; a demo "simulate" mode shall apply small random price changes to tracked listings instead of scraping, so alerts can be shown without internet access. Each run shall be recorded (duration, prices changed, alerts triggered, failures). |
 | FR-26 | When a tracked price is at or below an alert's target, the system shall create an in-app notification. The same alert shall not notify again for 24 hours. |
 | FR-27 | The system shall show the user's notifications, an unread count, and let the user mark one or all as read. |
 | FR-28 | If the user has enabled email alerts and email is configured, the system shall also send the notification by email (optional). |

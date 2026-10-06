@@ -28,6 +28,7 @@ module.exports = () => {
   api.use('/wishlist', wishlistRouter());
   api.use('/alerts', alertsRouter());
   api.use('/notifications', notificationsRouter());
+  api.use('/jobs', require('./jobs.routes')());
 
   return api;
 };

@@ -12,6 +12,19 @@ const config = {
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
   autoSeed: (process.env.AUTO_SEED || 'true') === 'true',
   demoMode: process.env.DEMO_MODE === 'true',
+  jobs: {
+    enabled: (process.env.JOBS_ENABLED || 'true') === 'true',
+    priceCheckCron: process.env.PRICE_CHECK_CRON || '0 */6 * * *',
+    key: process.env.JOB_KEY || '',
+    maxListingsPerRun: Number(process.env.PRICE_CHECK_MAX_LISTINGS) || 60,
+  },
+  smtp: {
+    host: process.env.SMTP_HOST || '',
+    port: Number(process.env.SMTP_PORT) || 587,
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASS || '',
+    from: process.env.SMTP_FROM || 'Ex-Comm <alerts@excomm.local>',
+  },
   search: {
     cacheTtlMs: Number(process.env.SEARCH_CACHE_TTL_MS) || 6 * 60 * 60 * 1000,
     liveBudgetMs: Number(process.env.SEARCH_LIVE_BUDGET_MS) || 10000,

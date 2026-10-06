@@ -34,6 +34,11 @@ Limitations to state in the report:
 - Prices are scraped at most every few hours, so a shown price can be slightly out of date. The UI shows "last updated" times.
 - Only public search pages are read, with polite random delays, one request at a time per store, and a circuit breaker. No login-protected or personal data is collected.
 
+### Price check job
+- The job re-scrapes only tracked listings (wishlisted or with an active alert), at most 60 per run, one request at a time per store. A listing is found again by exact store id, otherwise by fuzzy title match; if the store no longer shows a matching offer it is counted as "not found" and keeps its last price.
+- Real-store titles are noisy (warranty text, screen sizes, marketing words). Normalization removes the common noise, but some products are still not re-found. In a live run on the sample wishlist (12 listings) 6 prices were updated and 6 listings were not found.
+- Demo "simulate" mode changes stored prices randomly; it exists only so alerts and notifications can be demonstrated offline, and its results are not real prices.
+
 ### Other
 - Prices are shown in PKR. AliExpress seed prices were converted from USD at a fixed rate, so they are approximate.
 - Email alerts are optional and need SMTP settings. In-app notifications always work.

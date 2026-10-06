@@ -52,3 +52,19 @@ describe('cleanTitle', () => {
     ['Infinix Smart 20', 'Infinix Smart 20'],
   ])('%s', (input, expected) => expect(cleanTitle(input)).toBe(expected));
 });
+
+describe('real store titles with spec noise', () => {
+  const pairs = [
+    ['Samsung Galaxy A55 5G 8GB 256GB', 'Samsung Galaxy A55 5G - 8GB 256GB - 6.6" Display - 5000 mAh Battery - PTA Approved 1 Year Official Warranty'],
+    ['Samsung Galaxy A55 5G 8GB 256GB', 'Samsung Galaxy A55 5G || 8GB + 256GB || 6.6 Super AMOLED Display 120Hz'],
+    ['Sony WH-1000XM5 Wireless Headphones', 'Sony WH-1000XM5 The Best Wireless Noise Canceling Headphones with Auto Noise Canceling Optimizer, Crystal Clear Hands-Free Calling'],
+    ['Apple Watch Series 10 46mm', 'Apple Watch Series 10 Aluminum (46mm)'],
+  ];
+  test.each(pairs)('%s ~ %s', (a, b) => expect(isSameProduct(a, b)).toBe(true));
+
+  test('still separates different sizes and generations', () => {
+    expect(isSameProduct('Apple Watch Series 10 46mm', 'Apple Watch Series 10 Aluminum (42mm)')).toBe(false);
+    expect(isSameProduct('Apple Watch Series 10 46mm', 'Apple Watch Series 11 46mm')).toBe(false);
+    expect(isSameProduct('Apple AirPods Pro 2', 'Apple AirPods Pro 3')).toBe(false);
+  });
+});

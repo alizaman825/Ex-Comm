@@ -188,6 +188,18 @@ Table notifications {
   }
 }
 
+Table jobruns {
+  _id objectid [pk]
+  name varchar [not null, note: 'price-check']
+  mode varchar [note: 'live | simulate']
+  trigger varchar [note: 'schedule | manual']
+  status scrape_status [not null]
+  startedAt datetime [not null]
+  durationMs int
+  summary json [note: 'products, listingsChecked, pricesChanged, alertsTriggered, failures, skipped, notFound']
+  error varchar
+}
+
 Table scrapelogs {
   _id objectid [pk]
   platform platform [not null]

@@ -3,6 +3,7 @@ const { connectDB } = require('./config/db');
 const { createApp } = require('./app');
 const { Product } = require('./models');
 const { seedDatabase } = require('./seed/seed');
+const { startScheduler, stopScheduler } = require('./jobs/scheduler');
 
 async function start() {
   assertConfig();
@@ -12,12 +13,14 @@ async function start() {
     await seedDatabase({ reset: false });
   }
   const app = createApp();
+  startScheduler();
   const server = app.listen(config.port, () => {
     console.log(`Ex-Comm API listening on http://localhost:${config.port} (${config.env})`);
   });
 
   const shutdown = (signal) => {
     console.log(`${signal} received, shutting down`);
+    stopScheduler();
     server.close(() => process.exit(0));
   };
   process.on('SIGINT', shutdown);

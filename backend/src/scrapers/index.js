@@ -4,6 +4,7 @@ const { config } = require('../config/env');
 const { PoliteQueue } = require('./politeQueue');
 const { ScrapeLog } = require('../models');
 const { analyzeTitle, findBestMatch } = require('../services/matching');
+const { cleanTitle } = require('../services/ingest');
 
 const adapters = {
   daraz: require('./daraz'),
@@ -55,7 +56,7 @@ async function scrapeAll(query, platforms = livePlatforms(), opts) {
 
 // Price check: find the current offer for a stored listing by searching its title.
 async function fetchCurrentListing(listing) {
-  const result = await scrapePlatform(listing.platform, listing.title, { kind: 'price-check' });
+  const result = await scrapePlatform(listing.platform, cleanTitle(listing.title), { kind: 'price-check' });
   if (result.status !== 'success') return { ...result, listing: null };
   const exact = result.listings.find((l) => l.externalId === listing.externalId);
   if (exact) return { ...result, listing: exact };

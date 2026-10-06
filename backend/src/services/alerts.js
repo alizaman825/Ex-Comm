@@ -1,6 +1,7 @@
 // Alert evaluation and notification creation. Shared by the alerts API (immediate check on create)
 // and the scheduled price-check job (T7).
-const { Alert, Listing, Notification, Product } = require('../models');
+const { Alert, Listing, Notification, Product, User } = require('../models');
+const mailer = require('./mailer');
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const PLATFORM_LABEL = { daraz: 'Daraz', priceoye: 'PriceOye', aliexpress: 'AliExpress' };
@@ -26,6 +27,14 @@ function checkPriceAlert(alert, listings, now = Date.now()) {
   return { offer, triggered: !inCooldown(alert, now) };
 }
 
+// Optional email copy of a notification (only if the user enabled it and SMTP is configured).
+async function emailIfEnabled(userId, note) {
+  if (!mailer.isConfigured()) return;
+  const user = await User.findById(userId);
+  if (!user || !user.emailAlerts) return;
+  await mailer.sendMail({ to: user.email, subject: 'Ex-Comm price alert', text: note.message });
+}
+
 async function createNotification(alert, product, offer) {
   const where = PLATFORM_LABEL[offer.platform] || offer.platform;
   const note = await Notification.create({
@@ -38,6 +47,7 @@ async function createNotification(alert, product, offer) {
   });
   alert.lastTriggeredAt = new Date();
   await alert.save();
+  await emailIfEnabled(alert.userId, note);
   return note;
 }
 

@@ -6,3 +6,5 @@ process.env.AUTH_RATE_LIMIT_MAX = '5';
 process.env.SCRAPER_MIN_DELAY_MS = '0';
 process.env.SCRAPER_MAX_DELAY_MS = '0';
 process.env.SEARCH_RATE_LIMIT_MAX = '1000';
+process.env.JOB_KEY = 'test-job-key';
+process.env.JOBS_ENABLED = 'false';

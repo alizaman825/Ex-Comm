@@ -10,5 +10,6 @@ module.exports = {
   ScrapeLog: require('./ScrapeLog'),
   Category: require('./Category'),
   Setting: require('./Setting'),
+  JobRun: require('./JobRun'),
   PLATFORMS: require('./plugins').PLATFORMS,
 };

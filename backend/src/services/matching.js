@@ -61,6 +61,10 @@ function normalizeText(title) {
     .replace(/[^a-z0-9.\s-]/g, ' ')
     .replace(/(^|\s)[-.]+|[-.]+(?=\s|$)/g, ' ')
     .replace(/\s+/g, ' ')
+    // noise numbers that are not part of the model: warranty length ("1 year") and bare decimals (screen size "6.6")
+    .replace(/(^| )[0-9]+ ?(year|years|yr|yrs|month|months)(?= |$)/g, ' ')
+    .replace(/(^| )[0-9]+[.][0-9]+(?= |$)/g, ' ')
+    .replace(/ +/g, ' ')
     .trim();
 }
 
@@ -143,7 +147,8 @@ function similarity(a, b) {
   const inter = [...A].filter((t) => B.has(t)).length;
   const dice = (2 * inter) / (A.size + B.size);
   const overlap = inter / Math.min(A.size, B.size);
-  return 0.5 * dice + 0.5 * overlap;
+  // Weight containment higher: store titles often add many spec words around the same product name.
+  return 0.35 * dice + 0.65 * overlap;
 }
 
 const MATCH_THRESHOLD = 0.7;
