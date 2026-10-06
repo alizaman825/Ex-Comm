@@ -1,6 +1,12 @@
 # Ex-Comm — Phase 1 Plan
 
-Status: **awaiting approval** (2026-10-07)
+Status: **approved** (2026-10-07) with these decisions:
+- Live sources: **Daraz + PriceOye**. AliExpress adapter is the **last task, only if time remains**; seed data still includes AliExpress listings so compare shows three stores.
+- Database: MongoDB Atlas (user's cluster). Orders feature and old CRA app (`backend/frontend`) deleted.
+- T1 fixes security first: no password hashes in responses, auth on every user-modifying route, helmet, rate limiting on login/register, auth middleware path, production crash.
+- After T1, before T2: generate `docs/requirements.md`, `docs/use_cases.md`, `docs/erd.dbml`.
+- Matching: title normalization + fuzzy matching, manual selection as fallback; documented as a limitation in `docs/report_notes.md`.
+- Frontend: one design system (single palette, Tailwind, consistent type/spacing), loading/empty/error states on every page.
 
 ## 1. Audit of existing backend (`/backend`)
 

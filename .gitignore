@@ -33,3 +33,6 @@ Thumbs.db
 
 # Office lock files
 ~$*
+
+# Embedded dev database (MONGO_URI=memory)
+.data/

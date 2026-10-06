@@ -14,5 +14,18 @@ Price comparison platform (Daraz, PriceOye, AliExpress). University final-year p
 - Checkpoints: stop and summarize in under 15 lines.
 - Shell: Windows; Bash tool works (`/d/Code/Ex-Comm`). `gh` lives at `C:\Program Files\GitHub CLI\gh.exe`. Node 22.
 
+## Decisions (approved 2026-10-07)
+- Live scrapers: Daraz + PriceOye. AliExpress = last task, optional; seed data includes AliExpress listings.
+- Matching: normalized title + fuzzy match, manual selection fallback (limitation in `docs/report_notes.md`).
+- Run T1→T14 in order without pausing; stop only at checkpoints (backend, E2E, testing) or for decisions.
+
+## Backend conventions
+- `backend/src`: `app.js` (createApp factory), `server.js`, `config/`, `middleware/`, `models/`, `controllers/`, `routes/`, `utils/`, `scrapers/` (old AliExpress code in `scrapers/legacy`, not mounted).
+- Errors: throw `AppError(status, msg)`; wrap async handlers in `utils/asyncHandler`; zod schemas via `middleware/validate`.
+- Error shape: `{ error: { message, details? } }`. `User.passwordHash` is `select:false` and stripped in toJSON.
+- Tests: Jest + supertest + mongodb-memory-server (`tests/helpers.js`); never touch Atlas.
+
 ## Run commands
-(filled in as built)
+- Backend: `cd backend && npm install && npm run dev` (API on :5000); `npm test` runs Jest.
+- `MONGO_URI=memory` in `backend/.env` = embedded MongoDB persisted in `backend/.data/` (dev/demo fallback).
+- Git Bash: prefix commands with `MSYS_NO_PATHCONV=1` when passing `/api/...` paths as args. Write multi-line files with the Write tool, not heredocs containing backticks.
