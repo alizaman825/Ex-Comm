@@ -28,4 +28,18 @@ async function requireAuth(req, _res, next) {
   }
 }
 
-module.exports = { requireAuth };
+// Sets req.user when a valid session is present, but never rejects the request.
+async function optionalAuth(req, _res, next) {
+  try {
+    const token = readToken(req);
+    if (token) {
+      const payload = verifyToken(token);
+      req.user = (await User.findById(payload.sub)) || undefined;
+    }
+  } catch {
+    /* invalid token: treat as signed out */
+  }
+  next();
+}
+
+module.exports = { requireAuth, optionalAuth };

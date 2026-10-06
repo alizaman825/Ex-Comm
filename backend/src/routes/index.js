@@ -21,5 +21,13 @@ module.exports = () => {
   api.use('/users', require('./user.routes')());
   api.use('/search', require('./search.routes')());
 
+  const { productsRouter, compareRouter } = require('./products.routes');
+  const { wishlistRouter, alertsRouter, notificationsRouter } = require('./account.routes');
+  api.use('/products', productsRouter());
+  api.use('/compare', compareRouter());
+  api.use('/wishlist', wishlistRouter());
+  api.use('/alerts', alertsRouter());
+  api.use('/notifications', notificationsRouter());
+
   return api;
 };

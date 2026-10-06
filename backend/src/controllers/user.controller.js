@@ -1,5 +1,6 @@
 const { z } = require('zod');
 const User = require('../models/User');
+const { Wishlist, Alert, Notification } = require('../models');
 const AppError = require('../utils/AppError');
 const { COOKIE_NAME, clearCookieOptions } = require('../utils/token');
 
@@ -38,6 +39,11 @@ async function changePassword(req, res) {
 async function deleteAccount(req, res) {
   const user = await User.findById(req.user._id).select('+passwordHash');
   if (!(await user.checkPassword(req.body.password))) throw new AppError(400, 'Password is incorrect');
+  await Promise.all([
+    Wishlist.deleteMany({ userId: user._id }),
+    Alert.deleteMany({ userId: user._id }),
+    Notification.deleteMany({ userId: user._id }),
+  ]);
   await User.deleteOne({ _id: user._id });
   res.clearCookie(COOKIE_NAME, clearCookieOptions());
   res.status(204).end();
