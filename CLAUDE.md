@@ -15,7 +15,7 @@ Price comparison platform (Daraz, PriceOye, AliExpress). University final-year p
 - Shell: Windows; Bash tool works (`/d/Code/Ex-Comm`). `gh` lives at `C:\Program Files\GitHub CLI\gh.exe`. Node 22.
 
 ## Decisions (approved 2026-10-07)
-- Live scrapers: Daraz + PriceOye (retail). AliExpress = supplier source for the seller module (best-effort live, seeded `saved` data, labelled live/saved). Scope revised by `docs/PLAN_ADDENDUM.md` (tiers MUST > SHOULD > NICE; task list in PLAN.md §5, T1–T21).
+- Live scrapers: Daraz + PriceOye only. AliExpress = supplier source for the seller module from seed/cached data only (no live adapter), labelled "saved". Order after Checkpoint 1: T8b, frontend T9–T12, seller T14/T16, closing T17–T19, NICE T20–T21 last (PLAN.md §5).
 - Matching: normalized title + fuzzy match, manual selection fallback (limitation in `docs/report_notes.md`).
 - Run tasks in PLAN.md §5 order (T1→T19, NICE T20–T21 after checkpoint 2) without pausing; stop only at checkpoints (T8 backend, T12 end-to-end, T19 testing) or for decisions.
 

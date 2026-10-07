@@ -5,7 +5,9 @@ Material for the report's design, limitations, and future-work chapters. Updated
 ## Design decisions
 - **Backend kept in Node.js/Express.** The original scraper was written in it. MongoDB (Mongoose) was kept because the existing code already used it.
 - **Live sources are Daraz and PriceOye.** Both expose search results without a headless browser: Daraz returns JSON from its catalog endpoint, and PriceOye serves server-rendered HTML. This makes scraping fast (about 1–2 s) and reliable.
-- **AliExpress is the supplier source and best-effort.** Its pages need a headless browser, prices are in USD, and it often shows a slider captcha to automated clients. The seed data includes AliExpress listings so the comparison view still shows three stores.
+- **AliExpress is the supplier source, from saved data only.** There is no live AliExpress scraper: its pages need a headless browser, prices are in USD, and it shows slider captchas to automated clients. Supplier listings and prices are seeded sample data (USD converted to PKR at a configurable rate) and are always labelled "saved".
+- **Seed price history is generated sample data.** The 90 days of daily prices for every sample listing are produced by a deterministic generator (gentle trend, noise, short sales, occasional recent drops), not recorded from the stores. Only prices captured after the app starts (live searches and the price-check job) are real observations. Charts and "price drop" figures built from seed data illustrate the feature and must not be read as real market history.
+- **Supplier prices are saved data.** AliExpress prices are derived from retail prices with category-specific discounts, stored with their USD value, and never refreshed by the price-check job.
 - **Cache-first search.** Results are stored in the database. Fresh cache (under 6 hours) is served at once; otherwise the stores are scraped live. If scraping fails, stale cache or seed data is shown, and the UI labels where the data came from.
 
 ## Known limitations

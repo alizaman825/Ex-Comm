@@ -1,7 +1,7 @@
 # Ex-Comm — Phase 1 Plan
 
 Status: **approved** (2026-10-07), **revised with scope addendum** (`docs/PLAN_ADDENDUM.md`, adopted 2026-10-07). Decisions:
-- Live sources: **Daraz + PriceOye** (retail). AliExpress is the **supplier source** for the seller module: best-effort live adapter, strong seeded/saved data so everything works in DEMO_MODE; listings labelled "live" or "saved".
+- Live sources: **Daraz + PriceOye** (retail). AliExpress is the **supplier source for the seller module from seed/cached data only** (no live adapter; labelled "saved"). Decided after Checkpoint 1.
 - Positioning: primary users are online sellers/dropshippers (compare supplier price vs local retail price, estimate margin); secondary users are regular shoppers.
 - Priority tiers (cut from the bottom if time runs short): **MUST** core product, **SHOULD** seller module, **NICE** landing animation / third store. See §5.
 - Database: MongoDB Atlas (user's cluster). Orders feature and old CRA app (`backend/frontend`) deleted.
@@ -89,61 +89,60 @@ Next.js 14 (App Router, TS, Tailwind, Recharts)  --/api/* rewrite-->  Express AP
 | Seller | `GET /seller/opportunities?category&minMargin&sort&page` (products ranked by estimated margin, with supplier "live/saved" label) | – |
 | Jobs | `POST /jobs/price-check` (manual trigger for demo; requires `JOB_KEY`) | key |
 
-## 5. Task list (revised with addendum)
+## 5. Task list (revised after Checkpoint 1)
 
-Estimates in hours. Order follows the tiers: MUST first, then SHOULD, then NICE; checkpoints are in bold.
+Execution order: **(a)** T8b, then frontend MUST screens T9–T12 (all 10+ screens end to end, Checkpoint 2); **(b)** seller module T14, T16 (T15 optional); **closing** T17–T19 (Checkpoint 3); **(c)** NICE last. Estimates in hours.
 
-### MUST: core product
 | # | Task | Est. | Status |
 |---|---|---|---|
 | T1 | Backend foundation, security fixes, auth + profile API | 3 | done |
-| T2 | Models + matching + seed (60 products) + docs (requirements, use cases, ERD) | 4 | done |
+| T2 | Models + matching + seed + docs (requirements, use cases, ERD) | 4 | done |
 | T3 | Scrapers: Daraz, PriceOye, polite queue, fixture tests | 5 | done |
-| T4 | Search service: relevance filtering, grouping via matching, cache-first + fallback, filters, sort, pagination | 3.5 | |
-| T5 | Categories: `categories` collection with keyword presets, category filter on search, `GET /categories`, trending searches (`searchcache.hits`); reshape seed to 6 categories × ~15 products (90) with history, supplier (AliExpress) listings flagged `saved` | 3 | |
-| T6 | Products, compare, history, wishlist, alerts (price type), notifications APIs + tests | 3.5 | |
-| T7 | node-cron price-check job → history → alert notifications, manual trigger | 2 | |
-| T8 | Search test sweep: 15+ varied terms across categories (incl. "air fryer", "men's sneakers"); report per-platform results; fix per-category parsing → **Checkpoint 1: backend API** | 2.5 | |
-| T9 | Next.js scaffold, Tailwind design system, layout/nav, API client, login/register | 4 | |
-| T10 | Landing (trending searches, categories), categories page, search results (filters/sort/states), about, 404 | 4 | |
-| T11 | Product detail + price chart, compare view | 3.5 | |
-| T12 | Wishlist, alerts, notifications, profile → **Checkpoint 2: end-to-end** | 4 | |
-| | **MUST remaining** | **30** | |
+| T4 | Search service: relevance, grouping, cache-first + fallback, filters, sort, pagination | 3.5 | done |
+| T5 | Categories, trending, seed reshaped to 6 × 15 products | 3 | done |
+| T6 | Products, compare, history, wishlist, alerts, notifications APIs | 3.5 | done |
+| T7 | node-cron price-check job, alert notifications, email, demo simulate | 2 | done |
+| T8 | Search sweep (23 live terms) → **Checkpoint 1: backend API** | 2.5 | done |
 
-### SHOULD: seller module
+### (a) Frontend MUST screens
 | # | Task | Est. | Status |
 |---|---|---|---|
-| T13 | AliExpress supplier: refactor/replace the legacy scraper (best-effort live, `live`/`saved` labels), fx rate setting, strong seeded supplier data | 4 | |
-| T14 | Margin calculator service + API, opportunities ranking API + tests | 3 | |
-| T15 | Alerts extension: `supplier_drop` and `margin` alert types in the price job + tests | 2 | |
-| T16 | Seller UI: margin calculator, opportunities page (category filter), new alert types in the alerts form | 4 | |
-| | **SHOULD total** | **13** | |
+| T8b | Price job re-fetches each tracked listing by its stored URL/ID (no re-search); fuzzy matching kept only for discovering cross-store matches | 3 | |
+| T9 | Next.js scaffold, Tailwind design system, layout/nav, API client, login/register | 4 | |
+| T10 | Landing (trending, categories, drops), categories page, search results (filters/sort/states), about, 404 | 4 | |
+| T11 | Product detail + price chart, compare view | 3.5 | |
+| T12 | Wishlist, alerts, notifications, profile → **Checkpoint 2: end-to-end** | 4 | |
 
-### Closing (always done; shaped by what was built)
+### (b) Seller module (seeded supplier data, labelled "saved")
+| # | Task | Est. | Status |
+|---|---|---|---|
+| T13 | ~~AliExpress live adapter~~ **dropped** (supplier listings come from seed/cached data only) | 0 | dropped |
+| T14 | Margin calculator service + API, fx/assumption settings, opportunities ranking API + tests | 3 | |
+| T16 | Seller UI: margin calculator, opportunities page (category filter), "saved" labels | 4 | |
+| T15 | Alerts extension: `supplier_drop` and `margin` alert types (optional; first to cut) | 2 | |
+
+### Closing
 | # | Task | Est. | Status |
 |---|---|---|---|
 | T17 | Run all tests, ≥ 20 test cases in `test_cases.md` (incl. seller module) | 3 | |
-| T18 | Finish docs: use cases (seller), diagrams (context, DFD 0/1, activity, class, sequence), screenshots checklist, report_notes limitations | 3 | |
-| T19 | Demo hardening: `DEMO_MODE` rehearsal (seller module fully works from saved data) → **Checkpoint 3: testing** | 1 | |
-| | **Closing total** | **7** | |
+| T18 | Finish docs: seller use cases, diagrams (context, DFD 0/1, activity, class, sequence), screenshots checklist | 3 | |
+| T19 | Demo hardening: `DEMO_MODE` rehearsal → **Checkpoint 3: testing** | 1 | |
 
-### NICE: only after Checkpoint 2
+### (c) NICE: last
 | # | Task | Est. |
 |---|---|---|
-| T20 | Landing-page polish: GSAP ScrollTrigger, one hero scrubbing a frame sequence/3D model on scroll (asset supplied by user in `frontend/public/hero/`), lazy-loaded, static fallback for `prefers-reduced-motion` and slow devices; landing page only | 4 |
-| T21 | Third easy-to-scrape Pakistani store for non-electronics, only if investigation shows it is cheap | 3 |
-| | **NICE total** | **7** |
+| T20 | Landing-page polish: GSAP ScrollTrigger hero scrubbing a frame sequence/3D model (asset in `frontend/public/hero/`), lazy-loaded, static fallback for `prefers-reduced-motion`/slow devices; landing page only | 4 |
+| T21 | Third easy-to-scrape Pakistani store for non-electronics, only if cheap | 3 |
 
-**Totals:** done 12 h (T1–T3). Remaining: MUST 30 h + SHOULD 13 h + closing 7 h = **50 h**; with NICE **57 h**. Whole project **62 h** (**69 h** with NICE), versus 44 h in the original plan.
+**Remaining:** T8b 3 + frontend 15.5 + seller 9 (T14 3, T16 4, T15 2) + closing 7 = **34.5 h**; NICE 7 h; **41.5 h** in total.
 
-Docs (`requirements.md`, `use_cases.md`, `erd.dbml`, `report_notes.md`) are updated within each task for the seller module (new requirements and use cases for margin calculator, opportunities, supplier alerts; ERD fields above), finished in T18.
-
+Docs (`requirements.md`, `use_cases.md`, `erd.dbml`, `report_notes.md`) are updated within each task, finished in T18.
 
 ## 6. Demo risks & fallbacks
 
 | Risk | Likelihood | Fallback |
 |---|---|---|
-| AliExpress captcha / layout change | High | Best-effort adapter, off by default for live search; seed data covers it |
+| AliExpress anti-bot / layout change | n/a | No live AliExpress adapter; supplier data is seed/cached and labelled "saved" |
 | Daraz blocks IP / changes JSON | Medium | Timeout 8 s → serve cache/seed; `source` badge shown in UI |
 | PriceOye markup change | Medium | Selector fixture tests catch it; same fallback |
 | Slow scrapes (> 8 s) during demo | Medium | Cache-first; pre-warm demo queries via seed + one job run before demo |
