@@ -59,6 +59,15 @@ const config = {
     clientSecret: process.env.EBAY_CLIENT_SECRET || '',
     marketplaceId: process.env.EBAY_MARKETPLACE_ID || 'EBAY_US',
   },
+  // Bright Data (optional, both on demand): BRIGHTDATA_API_KEY alone enables Amazon ("Check on Amazon",
+  // via Bright Data's Amazon Scraper API). Adding BRIGHTDATA_ZONE (a Web Unlocker zone) also routes the
+  // AliExpress check through Bright Data's anti-bot network instead of a direct request, so it keeps
+  // working once AliExpress starts blocking this IP. Free trial: brightdata.com.
+  brightdata: {
+    apiKey: process.env.BRIGHTDATA_API_KEY || '',
+    zone: process.env.BRIGHTDATA_ZONE || '',
+    pollTimeoutMs: Number(process.env.BRIGHTDATA_POLL_TIMEOUT_MS) || 85000,
+  },
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map((s) => s.trim()),
   rateLimit: {
     windowMs: 15 * 60 * 1000,

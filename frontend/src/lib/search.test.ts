@@ -20,7 +20,7 @@ describe("search URL state", () => {
   });
 
   it("applies defaults and ignores invalid values from a hand-edited URL", () => {
-    const s = parse("platform=amazon,daraz&minPrice=abc&maxPrice=-5&minRating=9&sort=cheapest&page=0");
+    const s = parse("platform=walmart,daraz&minPrice=abc&maxPrice=-5&minRating=9&sort=cheapest&page=0");
     expect(s).toEqual({ q: "", category: "", platform: ["daraz"], minPrice: undefined, maxPrice: undefined, minRating: undefined, sort: "relevance", page: 1, show: 24 });
     expect(parse("page=2.9").page).toBe(2);
     expect(parse("page=abc").page).toBe(1);

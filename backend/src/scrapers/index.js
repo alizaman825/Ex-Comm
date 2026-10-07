@@ -9,6 +9,7 @@ const adapters = {
   priceoye: require('./priceoye'),
   aliexpress: require('./aliexpress'), // on demand only: not in LIVE_PLATFORMS, so ordinary searches never call it
   ebay: require('./ebay'), // on demand only, same reason
+  amazon: require('./amazon'), // on demand only, same reason
 };
 
 const queues = Object.fromEntries(Object.keys(adapters).map((name) => [name, new PoliteQueue(name)]));

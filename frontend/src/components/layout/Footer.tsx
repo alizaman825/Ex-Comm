@@ -37,7 +37,7 @@ export function Footer() {
           <div>
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-slate-500">
-              Compare prices across Daraz, PriceOye, AliExpress and eBay, watch price history, and get alerted when a product drops to the price you want.
+              Compare prices across Daraz, PriceOye, AliExpress, eBay and Amazon, watch price history, and get alerted when a product drops to the price you want.
             </p>
           </div>
           {COLUMNS.map((col) => (

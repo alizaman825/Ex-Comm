@@ -3,6 +3,7 @@ const { PLATFORMS } = require('../models');
 const search = require('../services/search');
 const aliexpress = require('../services/aliexpressCheck');
 const ebay = require('../services/ebayCheck');
+const amazon = require('../services/amazonCheck');
 const { config } = require('../config/env');
 const AppError = require('../utils/AppError');
 
@@ -36,6 +37,7 @@ const searchQuerySchema = z
 
 const aliexpressBodySchema = z.object({ q: z.string().trim().min(2, 'Search for at least 2 characters').max(100) });
 const ebayBodySchema = aliexpressBodySchema;
+const amazonBodySchema = aliexpressBodySchema;
 
 async function checkAliExpress(req, res) {
   if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
@@ -47,8 +49,22 @@ async function checkEbay(req, res) {
   res.json(await ebay.checkEbay(req.body.q));
 }
 
+async function checkAmazon(req, res) {
+  if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
+  res.json(await amazon.checkAmazon(req.body.q));
+}
+
 async function searchProducts(req, res) {
   res.json(await search.search(req.validQuery));
 }
 
-module.exports = { searchProducts, searchQuerySchema, checkAliExpress, aliexpressBodySchema, checkEbay, ebayBodySchema };
+module.exports = {
+  searchProducts,
+  searchQuerySchema,
+  checkAliExpress,
+  aliexpressBodySchema,
+  checkEbay,
+  ebayBodySchema,
+  checkAmazon,
+  amazonBodySchema,
+};

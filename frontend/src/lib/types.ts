@@ -1,6 +1,6 @@
 // Shapes returned by the Ex-Comm API (see docs/PLAN.md section 4).
 
-export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay";
+export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay" | "amazon";
 export type DataSource = "live" | "saved";
 export type SearchSource = "live" | "cache" | "fallback";
 
