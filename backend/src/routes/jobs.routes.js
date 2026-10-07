@@ -4,6 +4,7 @@ const { z } = require('zod');
 const { config } = require('../config/env');
 const { JobRun } = require('../models');
 const { runPriceCheck, isRunning } = require('../jobs/priceCheck');
+const { runCatalogSync, isRunning: syncRunning, catalogSyncProgress } = require('../jobs/catalogSync');
 const validate = require('../middleware/validate');
 const AppError = require('../utils/AppError');
 const ah = require('../utils/asyncHandler');
@@ -36,12 +37,27 @@ module.exports = () => {
     })
   );
 
+  // POST /api/jobs/catalog-sync: one batch of the background catalog sync (same as a scheduled run)
+  router.post(
+    '/catalog-sync',
+    ah(async (_req, res) => {
+      const result = await runCatalogSync({ trigger: 'manual' });
+      res.status(result.reason ? 409 : 200).json(result);
+    })
+  );
+
   // GET /api/jobs/status: recent runs
   router.get(
     '/status',
     ah(async (_req, res) => {
       const runs = await JobRun.find({ name: 'price-check' }).sort({ startedAt: -1 }).limit(10).lean();
-      res.json({ running: isRunning(), schedule: config.jobs.enabled ? config.jobs.priceCheckCron : null, runs });
+      const syncRuns = await JobRun.find({ name: 'catalog-sync' }).sort({ startedAt: -1 }).limit(10).lean();
+      res.json({
+        running: isRunning(),
+        schedule: config.jobs.enabled ? config.jobs.priceCheckCron : null,
+        runs,
+        catalogSync: { running: syncRunning(), schedule: config.jobs.enabled ? config.catalogSync.cron : null, progress: await catalogSyncProgress(), runs: syncRuns },
+      });
     })
   );
 

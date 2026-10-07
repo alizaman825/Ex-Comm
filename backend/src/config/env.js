@@ -20,6 +20,15 @@ const config = {
     key: process.env.JOB_KEY || '',
     maxListingsPerRun: Number(process.env.PRICE_CHECK_MAX_LISTINGS) || 60,
   },
+  catalogSync: {
+    // Slow background sync of the sample catalog's store listings (see jobs/catalogSync.js).
+    cron: process.env.CATALOG_SYNC_CRON || '*/30 * * * *',
+    batch: Number(process.env.CATALOG_SYNC_BATCH) || 8, // tasks per run: gentle enough for Daraz
+    pauseMs: Number(process.env.CATALOG_SYNC_PAUSE_MS ?? 5000),
+    platforms: (process.env.CATALOG_SYNC_PLATFORMS || 'daraz,priceoye').split(',').map((x) => x.trim()).filter(Boolean),
+    refreshHours: Number(process.env.CATALOG_SYNC_REFRESH_HOURS) || 24,
+    retryHours: Number(process.env.CATALOG_SYNC_RETRY_HOURS) || 168,
+  },
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: Number(process.env.SMTP_PORT) || 587,
