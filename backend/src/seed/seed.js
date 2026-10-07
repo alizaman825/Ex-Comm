@@ -10,6 +10,14 @@ const { queryKeyOf, localSearch } = require('../services/search');
 const { parseQuery } = require('../services/relevance');
 const { Product, Listing, PriceHistory, SearchCache, User, Wishlist, Alert, Notification, ScrapeLog, Category, Setting } = require('../models');
 
+// Product image URLs harvested from the live stores (scripts/calibrate-catalog.js); optional.
+let IMAGES = {};
+try {
+  IMAGES = require('./images.json');
+} catch {
+  IMAGES = {};
+}
+
 const DAY = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 90;
 const DEMO_USER = { name: 'Demo User', email: 'demo@excomm.pk', password: 'demo1234' };
@@ -145,6 +153,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
       matchKey: analyzeTitle(item.t).key,
       brand: item.b,
       category: resolveCategory(item.c),
+      image: IMAGES[item.t],
       popularity: Math.round(rand() * 60 + (item.c === 'Mobiles' ? 40 : 0)),
     });
     const recentDrop = idx % 7 === 3;
@@ -165,6 +174,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
         priceUsd: isSupplier ? Math.round((price / fx.usdToPkr) * 100) / 100 : undefined,
         externalId: `seed-${slug(item.t)}-${platform}`,
         title,
+        image: IMAGES[item.t],
         url: listingUrl(platform, item.t),
         price,
         originalPrice: rand() < 0.75 ? roundPrice(price * between(prof.mrp)) : null,

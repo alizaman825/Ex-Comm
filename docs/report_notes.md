@@ -34,6 +34,16 @@ Limitations to state in the report:
 - Prices are scraped at most every few hours, so a shown price can be slightly out of date. The UI shows "last updated" times.
 - Only public search pages are read, with polite random delays, one request at a time per store, and a circuit breaker. No login-protected or personal data is collected.
 
+### Search sweep (live test of 23 terms)
+Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep.js ../docs/search_sweep.md` from `backend/`). Terms covered mobiles, laptops, audio, watches, home appliances, fashion, and three non-electronics (kurta, bed sheet, protein powder).
+- **Reliability:** all 46 platform requests succeeded (no blocks or timeouts), about 0.7–2.4 s each.
+- **Daraz** returned relevant products for 20 of 23 terms, with images on 100% and ratings on 20–100% (new listings have no reviews yet). It is the only store with results for fashion and other non-electronics.
+- **PriceOye** returned relevant products for 10 of 23 terms, all electronics. For non-electronics it returns unrelated phones, which the relevance filter removes. Ratings are often missing for laptops and air conditioners (the site shows none).
+- **Loose store search:** both stores pad results with accessories and neighbouring models (Daraz: cases, straps, sleeves; PriceOye: other phones). The relevance filter requires model numbers to match, drops accessories unless asked for, and tolerates spacing variants ("g-shock" ~ "G Shock", "air fryer" ~ "airfryer").
+- **Zero results are sometimes correct:** "macbook air m3" and "apple watch series 10" return only cases and straps on Daraz; "ray-ban sunglasses" returns only unbranded "RB" listings with no brand name. These are shown as "no results on this store" rather than wrong matches.
+- **Categories:** products are classified from title keywords. Items outside the six categories (bed sheet, protein powder) get no category and are found by search but not by category browsing.
+- **Fixes made from the sweep:** spacing/gluing tolerance in relevance, brand terms for the watches category (Amazfit, Garmin, Fitbit), warranty/decimal noise removal in matching.
+
 ### Price check job
 - The job re-scrapes only tracked listings (wishlisted or with an active alert), at most 60 per run, one request at a time per store. A listing is found again by exact store id, otherwise by fuzzy title match; if the store no longer shows a matching offer it is counted as "not found" and keeps its last price.
 - Real-store titles are noisy (warranty text, screen sizes, marketing words). Normalization removes the common noise, but some products are still not re-found. In a live run on the sample wishlist (12 listings) 6 prices were updated and 6 listings were not found.

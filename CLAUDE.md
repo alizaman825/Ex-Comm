@@ -26,7 +26,8 @@ Price comparison platform (Daraz, PriceOye, AliExpress). University final-year p
 - Tests: Jest + supertest + mongodb-memory-server (`tests/helpers.js`); never touch Atlas.
 
 ## Run commands
-- Backend: `cd backend && npm install && npm run dev` (API on :5000); `npm test` runs Jest.
+- Backend: `cd backend && npm install && npm run dev` (API on :5000); `npm test` runs Jest; `npm run seed` resets sample data (demo login demo@excomm.pk / demo1234).
+- Live checks: `node scripts/live-check.js "query"`, `node scripts/search-sweep.js ../docs/search_sweep.md`. Price job demo: `POST /api/jobs/price-check` with header `x-job-key` and body `{"mode":"simulate"}`.
 - `MONGO_URI=memory` in `backend/.env` = embedded MongoDB persisted in `backend/.data/` (dev/demo fallback).
 - Tooling quirk: backslashes in text sent through Write/Edit/node -e get dropped or turned into control characters (a regex digit class loses its backslash). In code use [0-9] and space-padded text instead of backslash escapes, and check the file afterwards.
 - Git Bash: prefix commands with `MSYS_NO_PATHCONV=1` when passing `/api/...` paths as args. Write multi-line files with the Write tool, not heredocs containing backticks.

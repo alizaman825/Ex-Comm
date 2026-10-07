@@ -204,3 +204,14 @@ describe('filters, sort and pagination (stored data)', () => {
     expect(res.body).toMatchObject({ total: 0, results: [] });
   });
 });
+
+describe('relevance tolerance for spacing variants', () => {
+  test.each([
+    ['casio g-shock', 'Casio G Shock Square Digital Black Resin Watch', true],
+    ['casio g-shock', 'Casio G-Shock GA-2100 Analog Digital Watch', true],
+    ['ray-ban sunglasses', 'Ray Ban Wayfarer Classic Sunglasses', true],
+    ['ray-ban sunglasses', 'Oakley Holbrook Sunglasses', false],
+    ['air fryer', 'Digital Airfryer 6L', true],
+    ['air fryer', 'Air Purifier HEPA', false],
+  ])('%s vs %s -> %s', (q, title, expected) => expect(isRelevant(parseQuery(q), title)).toBe(expected));
+});

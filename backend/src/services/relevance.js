@@ -1,12 +1,17 @@
 // Query relevance: decides whether a listing/product title actually answers a search.
 // Needed because stores return loose results (PriceOye returns TVs for "galaxy a55",
 // Daraz returns cases and screen protectors for phone queries).
-const { significantTokens, hasAccessoryWord } = require('./matching');
+const { significantTokens, hasAccessoryWord, normalizeText } = require('./matching');
 
 const hasDigit = (t) => /\d/.test(t);
 
-function tokenMatches(q, titleTokens) {
+// Title without spaces/hyphens/dots, so "g-shock" matches "G Shock" and "rayban" matches "Ray Ban".
+const compactOf = (title) => normalizeText(title).split(' ').join('').split('-').join('').split('.').join('');
+const isWord = (t) => t.length >= 5 && !hasDigit(t);
+
+function tokenMatches(q, titleTokens, compact) {
   if (titleTokens.has(q)) return true;
+  if (compact && isWord(q) && compact.includes(q)) return true;
   if (titleTokens.has(`${q}s`)) return true;
   if (q.endsWith('s') && titleTokens.has(q.slice(0, -1))) return true;
   if (q.length >= 4) for (const t of titleTokens) if (t.length > q.length && t.startsWith(q)) return true;
@@ -23,13 +28,16 @@ function isRelevant(parsedQuery, title) {
   const { tokens, wantsAccessory } = parsedQuery;
   if (!tokens.length) return true;
   const titleTokens = new Set(significantTokens(title));
+  const compact = compactOf(title);
   if (!wantsAccessory && hasAccessoryWord([...titleTokens])) return false;
 
   const model = tokens.filter(hasDigit);
-  if (!model.every((t) => tokenMatches(t, titleTokens))) return false;
+  if (!model.every((t) => tokenMatches(t, titleTokens, compact))) return false;
   const words = tokens.filter((t) => !hasDigit(t));
   if (!words.length) return true;
-  const hit = words.filter((t) => tokenMatches(t, titleTokens)).length;
+  // A word also counts when it is glued to a neighbouring query word in the title ("air fryer" ~ "airfryer").
+  const glued = (i) => [i - 1, i + 1].some((j) => words[j] && compact.includes(j < i ? words[j] + words[i] : words[i] + words[j]));
+  const hit = words.filter((t, i) => tokenMatches(t, titleTokens, compact) || glued(i)).length;
   return hit >= Math.ceil((words.length * 2) / 3);
 }
 
@@ -38,7 +46,8 @@ function relevanceScore(parsedQuery, title) {
   const { tokens } = parsedQuery;
   if (!tokens.length) return 0;
   const titleTokens = new Set(significantTokens(title));
-  const hit = tokens.filter((t) => tokenMatches(t, titleTokens)).length;
+  const compact = compactOf(title);
+  const hit = tokens.filter((t) => tokenMatches(t, titleTokens, compact)).length;
   // Prefer concise titles with the same hits (closer to the exact product).
   return hit / tokens.length - Math.min(titleTokens.size, 30) * 0.002;
 }

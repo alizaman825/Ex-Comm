@@ -25,5 +25,13 @@ const { analyzeTitle, findBestMatch } = require('../src/services/matching');
     console.log(`${item.t.padEnd(50)} seed ${item.p}  daraz ${fmt(row.daraz)}  priceoye ${fmt(row.priceoye)}`);
   }
   fs.writeFileSync(out, JSON.stringify(report, null, 2));
+  // Image map for the seed: title -> best live image URL (daraz or priceoye).
+  const images = {};
+  for (const row of report) {
+    const img = (row.priceoye && row.priceoye.image) || (row.daraz && row.daraz.image);
+    if (img) images[row.t] = img;
+  }
+  fs.writeFileSync(require('path').join(__dirname, '../src/seed/images.json'), JSON.stringify(images, null, 2));
+  console.log('images found:', Object.keys(images).length, 'of', report.length);
   process.exit(0);
 })();

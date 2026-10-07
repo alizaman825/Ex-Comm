@@ -23,7 +23,7 @@ const CATEGORY_DEFS = [
   {
     slug: 'watches', name: 'Watches', icon: 'watch', sortOrder: 4,
     keywords: ['apple watch', 'smart watch', 'amazfit', 'fitness band', 'g-shock', 'galaxy watch'],
-    terms: ['watch', 'smartwatch', 'band', 'gshock', 'g-shock', 'tracker', 'forerunner'],
+    terms: ['watch', 'smartwatch', 'band', 'gshock', 'tracker', 'forerunner', 'amazfit', 'garmin', 'fitbit'],
   },
   {
     slug: 'home-appliances', name: 'Home Appliances', icon: 'home', sortOrder: 5,
