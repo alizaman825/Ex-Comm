@@ -65,7 +65,7 @@ export function SearchView() {
 
   const heading = state.q ? (
     <>
-      Results for <span className="text-brand-700">&ldquo;{state.q}&rdquo;</span>
+      Results for <span className="swash">&ldquo;{state.q}&rdquo;</span>
     </>
   ) : (
     categoryName ?? "Browse products"
@@ -136,7 +136,7 @@ export function SearchView() {
             <ErrorState title="We could not load results" description="The search service did not respond. Check your connection and try again." onRetry={() => mutate()} />
           ) : isLoading && !data ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-surface px-4 py-3 text-sm text-slate-600" role="status">
+              <div className="flex items-center gap-2.5 rounded-full bg-surface px-5 py-3 text-sm text-slate-600 shadow-card" role="status">
                 <Loader2 className="h-4 w-4 animate-spin text-brand-600" aria-hidden /> Checking Daraz and PriceOye for the latest prices. This can take up to 30 seconds if a store is slow.
               </div>
               <ProductGridSkeleton count={PAGE_SIZE} />
@@ -145,7 +145,7 @@ export function SearchView() {
             <NoResults query={state.q} filterCount={filterCount} onReset={reset} />
           ) : data ? (
             <>
-              <div className={clsx("mt-5 grid grid-cols-1 gap-5 transition-opacity sm:grid-cols-2 xl:grid-cols-3", (isValidating || refreshing) && "opacity-60")} data-testid="results-grid">
+              <div className={clsx("mt-5 grid grid-cols-1 gap-6 transition-opacity sm:grid-cols-2 xl:grid-cols-3", (isValidating || refreshing) && "opacity-60")} data-testid="results-grid">
                 {data.results.map((p, i) => (
                   <ProductCard key={p.id} product={p} priority={i < 3} />
                 ))}

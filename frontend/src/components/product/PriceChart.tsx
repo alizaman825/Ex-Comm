@@ -17,9 +17,9 @@ const axisPrice = (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : Strin
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
-    <div className="rounded-xl bg-slate-50 px-4 py-3">
+    <div className="rounded-2xl bg-slate-50 px-4 py-3">
       <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className={clsx("mt-0.5 text-lg font-semibold tabular-nums", tone === "good" ? "text-emerald-700" : tone === "bad" ? "text-rose-700" : "text-ink")}>{value}</p>
+      <p className={clsx("mt-0.5 font-display text-xl font-bold tabular-nums", tone === "good" ? "text-emerald-700" : tone === "bad" ? "text-rose-700" : "text-ink")}>{value}</p>
       {sub && <p className="text-xs text-slate-500">{sub}</p>}
     </div>
   );
@@ -34,7 +34,7 @@ interface TooltipEntry {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: readonly TooltipEntry[]; label?: string | number }) {
   if (!active || !payload?.length || typeof label !== "string") return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-surface px-3.5 py-2.5 text-xs shadow-lift">
+    <div className="rounded-2xl bg-surface px-3.5 py-2.5 text-xs shadow-lift">
       <p className="mb-1.5 font-semibold text-ink">{formatDate(label)}</p>
       {payload.map((p) => (
         <p key={String(p.dataKey)} className="flex items-center justify-between gap-6 py-0.5 text-slate-600">
@@ -80,9 +80,9 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
         <h2 id="history-heading" className="t-h2">
           Price history
         </h2>
-        <div className="inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="History range">
+        <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="History range">
           {RANGES.map((r) => (
-            <button key={r} type="button" onClick={() => setDays(r)} aria-pressed={days === r} className={clsx("rounded-md px-3.5 py-1.5 text-sm font-medium transition", days === r ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}>
+            <button key={r} type="button" onClick={() => setDays(r)} aria-pressed={days === r} className={clsx("rounded-full px-4 py-1.5 text-sm font-semibold transition duration-200", days === r ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}>
               {r} days
             </button>
           ))}
@@ -114,13 +114,13 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
                 <Stat label={`Change, ${days} days`} value={formatPercent(data.summary.changePct)} tone={data.summary.changePct < -0.5 ? "good" : data.summary.changePct > 0.5 ? "bad" : undefined} />
               </div>
             )}
-            <div className="mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${data.series.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
+            <div className="chart-draw mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${data.series.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
-                  <CartesianGrid stroke="#e2e8f0" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={{ stroke: "#e2e8f0" }} minTickGap={32} />
-                  <YAxis tickFormatter={axisPrice} tick={{ fontSize: 12, fill: "#64748b" }} tickLine={false} axisLine={false} width={44} domain={["auto", "auto"]} />
-                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: "#94a3b8", strokeDasharray: "3 3" }} />
+                  <CartesianGrid stroke="rgb(var(--slate-200))" strokeDasharray="3 3" vertical={false} />
+                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }} tickLine={false} axisLine={{ stroke: "rgb(var(--slate-200))" }} minTickGap={32} />
+                  <YAxis tickFormatter={axisPrice} tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }} tickLine={false} axisLine={false} width={44} domain={["auto", "auto"]} />
+                  <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(var(--slate-400))", strokeDasharray: "3 3" }} />
                   <Legend content={() => null} />
                   {data.series.map((s) => (
                     <Line key={s.platform} type="monotone" dataKey={s.platform} name={PLATFORM_LABEL[s.platform]} stroke={PLATFORM_COLOR[s.platform]} strokeWidth={2.25} strokeDasharray={s.role === "supplier" ? "6 4" : undefined} dot={false} activeDot={{ r: 4 }} connectNulls hide={hidden.has(s.platform)} isAnimationActive={false} />
@@ -131,15 +131,15 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Chart legend">
               {data.series.map((s) => (
                 <li key={s.platform}>
-                  <button type="button" onClick={() => toggle(s.platform)} aria-pressed={!hidden.has(s.platform)} className={clsx("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition", hidden.has(s.platform) ? "border-slate-200 bg-surface text-slate-400 line-through" : "border-slate-200 bg-slate-50 text-slate-700")}>
+                  <button type="button" onClick={() => toggle(s.platform)} aria-pressed={!hidden.has(s.platform)} className={clsx("inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition duration-200", hidden.has(s.platform) ? "bg-surface text-slate-500 line-through ring-1 ring-slate-200" : "bg-slate-100 text-slate-700")}>
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PLATFORM_COLOR[s.platform] }} />
                     {PLATFORM_LABEL[s.platform]}
-                    {s.role === "supplier" && <span className="text-slate-400">(supplier, dashed)</span>}
+                    {s.role === "supplier" && <span className="text-slate-500">(supplier, dashed)</span>}
                   </button>
                 </li>
               ))}
             </ul>
-            {hasSavedData && <p className="mt-4 rounded-lg bg-amber-50 px-3.5 py-2.5 text-xs leading-relaxed text-amber-800">Some prices on this page are saved sample data. For built-in sample products the history is generated to demonstrate the chart, so do not treat it as real market history.</p>}
+            {hasSavedData && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">Some prices on this page are saved sample data. For built-in sample products the history is generated to demonstrate the chart, so do not treat it as real market history.</p>}
           </>
         )}
       </div>

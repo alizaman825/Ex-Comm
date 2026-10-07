@@ -74,8 +74,8 @@ export function NewAlertFlow({ open, onClose, onSaved }: { open: boolean; onClos
           <ul className="max-h-72 space-y-1.5 overflow-y-auto" aria-label="Search results">
             {data.results.map((p) => (
               <li key={p.id}>
-                <button type="button" onClick={() => setPicked(p)} className="flex w-full items-center gap-3 rounded-xl border border-transparent p-2.5 text-left transition hover:border-brand-200 hover:bg-brand-50">
-                  <ProductImage src={p.image} alt="" category={p.category} className="h-12 w-12 shrink-0 rounded-lg p-1" />
+                <button type="button" onClick={() => setPicked(p)} className="flex w-full items-center gap-3 rounded-2xl border border-transparent p-2.5 text-left transition hover:border-brand-200 hover:bg-brand-50">
+                  <ProductImage src={p.image} alt="" category={p.category} className="h-12 w-12 shrink-0 rounded-2xl p-1" />
                   <span className="min-w-0 flex-1">
                     <span className="line-clamp-1 block text-sm font-medium text-ink">{p.title}</span>
                     <span className="text-xs text-slate-500">from {formatPrice(p.minPrice)}</span>

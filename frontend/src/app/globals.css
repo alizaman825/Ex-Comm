@@ -310,3 +310,10 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 @media (max-width: 640px) {
   html[data-motion="on"] .scene-inner { padding-top: 5rem; }
 }
+
+/* Chart lines reveal left to right when the chart first appears */
+.chart-draw { animation: chart-reveal 1.4s 0.1s cubic-bezier(0.22, 1, 0.36, 1) both; }
+@keyframes chart-reveal {
+  from { clip-path: inset(0 100% 0 0); }
+  to { clip-path: inset(0 0 0 0); }
+}

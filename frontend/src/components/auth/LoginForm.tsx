@@ -57,7 +57,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       {formError && (
-        <div role="alert" className="flex items-start gap-3 rounded-xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p>{formError}</p>
         </div>

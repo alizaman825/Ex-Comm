@@ -21,7 +21,7 @@ function Row({ n, onOpen }: { n: NotificationItem; onOpen: () => void }) {
     <li data-testid="notification" data-read={n.read}>
       <button type="button" onClick={onOpen} className={clsx("flex w-full items-start gap-4 px-4 py-4 text-left transition hover:bg-slate-50 sm:px-6", !n.read && "bg-brand-50/50")}>
         <span className="relative mt-0.5 shrink-0">
-          <ProductImage src={n.product?.image} alt="" category={null} className="h-14 w-14 rounded-xl border border-slate-100 p-1" />
+          <ProductImage src={n.product?.image} alt="" category={null} className="h-14 w-14 rounded-2xl border border-slate-100 p-1" />
           {!n.read && <span className="absolute -right-1 -top-1 h-3 w-3 rounded-full bg-brand-600 ring-2 ring-surface" aria-label="Unread" />}
         </span>
         <span className="min-w-0 flex-1">
@@ -88,7 +88,7 @@ export function NotificationsView() {
         }
       />
 
-      <div className="mb-5 inline-flex rounded-lg bg-slate-100 p-1" role="tablist" aria-label="Filter notifications">
+      <div className="mb-5 inline-flex rounded-full bg-slate-100 p-1" role="tablist" aria-label="Filter notifications">
         {(["all", "unread"] as const).map((f) => (
           <button
             key={f}
@@ -99,7 +99,7 @@ export function NotificationsView() {
               setFilter(f);
               setPage(1);
             }}
-            className={clsx("rounded-md px-4 py-1.5 text-sm font-medium transition", filter === f ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}
+            className={clsx("rounded-full px-4 py-1.5 text-sm font-medium transition", filter === f ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}
           >
             {f === "all" ? "All" : `Unread${unread ? ` (${unread})` : ""}`}
           </button>

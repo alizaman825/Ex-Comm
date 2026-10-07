@@ -22,7 +22,7 @@ export const PasswordField = forwardRef<HTMLInputElement, Props>(function Passwo
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
-          className="rounded-md p-2 text-slate-400 transition hover:text-slate-700"
+          className="rounded-full p-2 text-slate-400 transition hover:text-slate-700"
           aria-label={visible ? "Hide password" : "Show password"}
           aria-pressed={visible}
         >

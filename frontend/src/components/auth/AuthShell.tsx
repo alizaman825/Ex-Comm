@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { CategoryTile } from "@/components/product/ProductImage";
 import { BellRing, LineChart, ShieldCheck, Store } from "lucide-react";
 
 const POINTS = [
@@ -11,27 +12,31 @@ const POINTS = [
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer: ReactNode }) {
   return (
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="relative hidden overflow-hidden bg-gradient-to-br from-brand-700 via-brand-800 to-brand-900 p-12 text-white lg:flex lg:flex-col lg:justify-between">
-        <div className="pointer-events-none absolute -right-24 -top-24 h-80 w-80 rounded-full bg-brand-500/30 blur-3xl" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-32 -left-20 h-96 w-96 rounded-full bg-brand-400/20 blur-3xl" aria-hidden />
-        <div className="relative" />
+      <aside className="relative m-4 hidden overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-peach via-butter to-mint p-12 lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-10 top-10 h-64 w-64 rotate-12 rounded-[3rem] bg-lilac/80" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-16 right-10 h-56 w-56 rounded-full bg-sky/80" aria-hidden />
         <div className="relative">
-          <h2 className="max-w-md text-4xl font-bold leading-tight tracking-tight !text-white">Stop overpaying. Compare before you buy.</h2>
-          <ul className="mt-10 space-y-6">
+          <CategoryTile category="mobiles" label="" className="float-right !h-40 !w-40 rounded-[2rem] shadow-float animate-float" />
+        </div>
+        <div className="relative">
+          <h2 className="max-w-md font-display text-5xl font-extrabold leading-[1] tracking-tight text-ink">
+            Stop overpaying. <span className="swash">Compare first.</span>
+          </h2>
+          <ul className="mt-10 space-y-5">
             {POINTS.map(({ icon: Icon, title: t, text }) => (
               <li key={t} className="flex gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface/10 ring-1 ring-surface/15">
-                  <Icon className="h-5 w-5 text-brand-100" aria-hidden />
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface shadow-card">
+                  <Icon className="h-5 w-5 text-ink" aria-hidden />
                 </span>
                 <div>
-                  <p className="font-semibold text-white">{t}</p>
-                  <p className="text-sm text-brand-100/90">{text}</p>
+                  <p className="font-display font-bold text-ink">{t}</p>
+                  <p className="text-sm text-slate-700">{text}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative flex items-center gap-2 text-sm text-brand-100/80">
+        <p className="relative mt-8 flex items-center gap-2 text-sm text-slate-700">
           <ShieldCheck className="h-4 w-4" aria-hidden /> Your password is hashed and your session is kept in a secure cookie.
         </p>
       </aside>

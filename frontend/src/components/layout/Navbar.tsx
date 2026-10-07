@@ -65,7 +65,7 @@ function UserMenu() {
   }, [open]);
 
   if (!user) return null;
-  const item = "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100";
+  const item = "flex w-full items-center gap-2.5 rounded-2xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100";
   return (
     <div className="relative" ref={ref}>
       <button

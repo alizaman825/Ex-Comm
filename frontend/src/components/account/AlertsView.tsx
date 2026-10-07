@@ -55,7 +55,7 @@ function EditTarget({ alert, onClose, onSaved }: { alert: AlertItem; onClose: ()
   return (
     <Modal open onClose={onClose} title="Change target price" description={alert.product.title}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        <p className="rounded-lg bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
+        <p className="rounded-2xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
           Current price: <strong className="text-ink">{formatPrice(alert.currentPrice)}</strong>
           {alert.currentPlatform && <> on {PLATFORM_LABEL[alert.currentPlatform]}</>}
         </p>
@@ -107,7 +107,7 @@ function AlertRow({ alert, onEdit, onDelete, onToggle }: { alert: AlertItem; onE
   return (
     <li className={clsx("card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5", status === "paused" && "opacity-75")} data-testid="alert-item" data-status={status}>
       <Link href={`/products/${alert.product.id}`} className="flex min-w-0 flex-1 items-center gap-4">
-        <ProductImage src={alert.product.image} alt="" category={null} className="h-16 w-16 shrink-0 rounded-xl border border-slate-100 p-1.5" />
+        <ProductImage src={alert.product.image} alt="" category={null} className="h-16 w-16 shrink-0 rounded-2xl border border-slate-100 p-1.5" />
         <span className="min-w-0">
           <span className="line-clamp-2 block text-sm font-semibold leading-snug text-ink hover:text-brand-700">{alert.product.title}</span>
           <span className="mt-1.5 flex flex-wrap items-center gap-2">

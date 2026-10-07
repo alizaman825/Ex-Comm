@@ -167,7 +167,7 @@ function ProductsTable({ data, onRemove }: { data: CompareResponse; onRemove: (i
                     <X className="h-3.5 w-3.5" />
                   </button>
                   <Link href={`/products/${p.id}`} className="block">
-                    <ProductImage src={p.image} alt={p.title} category={p.category} className="mx-auto h-28 w-full rounded-lg p-2" />
+                    <ProductImage src={p.image} alt={p.title} category={p.category} className="mx-auto h-28 w-full rounded-2xl p-2" />
                     <span className="mt-3 line-clamp-2 block text-sm font-semibold leading-5 text-ink hover:text-brand-700">{p.title}</span>
                   </Link>
                 </div>
@@ -285,7 +285,7 @@ function Suggestions({ productId, ids, onAdd }: { productId: string; ids: string
       <ul className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
         {items.map((p) => (
           <li key={p.id} className="card flex items-center gap-3 p-3">
-            <ProductImage src={p.image} alt="" category={p.category} className="h-16 w-16 shrink-0 rounded-lg p-1" />
+            <ProductImage src={p.image} alt="" category={p.category} className="h-16 w-16 shrink-0 rounded-2xl p-1" />
             <div className="min-w-0 flex-1">
               <p className="line-clamp-2 text-sm font-medium leading-5 text-ink">{p.title}</p>
               <p className="text-xs text-slate-500">{formatPrice(p.minPrice)}</p>
@@ -401,7 +401,7 @@ export function CompareView() {
       ) : (
         <>
           {data.mode === "products" && data.cheapest && (
-            <div className="mb-5 flex flex-wrap gap-x-8 gap-y-2 rounded-xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-sm text-emerald-900" data-testid="compare-summary">
+            <div className="mb-5 flex flex-wrap gap-x-8 gap-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-sm text-emerald-900" data-testid="compare-summary">
               <p>
                 <strong>Best price:</strong> {data.products.find((p) => p.id === data.cheapest!.productId)?.title} at {formatPrice(data.cheapest.price)} on {PLATFORM_LABEL[data.cheapest.platform]}
               </p>
@@ -415,7 +415,7 @@ export function CompareView() {
           {data.mode === "platforms" ? (
             <Fragment>
               <div className="mb-5 flex items-center gap-4 rounded-card border border-slate-200 bg-surface p-4">
-                <ProductImage src={data.products[0].image} alt="" category={data.products[0].category} className="h-16 w-16 shrink-0 rounded-lg p-1" />
+                <ProductImage src={data.products[0].image} alt="" category={data.products[0].category} className="h-16 w-16 shrink-0 rounded-2xl p-1" />
                 <div className="min-w-0 flex-1">
                   <Link href={`/products/${data.products[0].id}`} className="line-clamp-2 text-base font-semibold text-ink hover:text-brand-700">
                     {data.products[0].title}

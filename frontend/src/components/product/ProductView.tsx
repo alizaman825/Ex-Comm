@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
+import clsx from "clsx";
 import Link from "next/link";
 import useSWR from "swr";
 import { useRouter } from "next/navigation";
-import { BellRing, ChevronRight, ExternalLink, PackageSearch, Scale } from "lucide-react";
+import { BellRing, ChevronRight, ExternalLink, PackageSearch, Scale , Crown} from "lucide-react";
 import { ApiError, fetcher } from "@/lib/api";
 import { useAuth } from "@/lib/auth";
 import { useCategories } from "@/lib/hooks";
@@ -17,7 +18,7 @@ import { OfferTable } from "./OfferTable";
 import { PriceChart } from "./PriceChart";
 import { AlertDialog } from "./AlertDialog";
 import { PriceChange, Rating } from "./badges";
-import { ProductImage } from "./ProductImage";
+import { ProductImage, categoryTint } from "./ProductImage";
 import { ProductCard, ProductCardSkeleton } from "./ProductCard";
 import { WishlistButton } from "./WishlistButton";
 
@@ -129,12 +130,14 @@ export function ProductView({ id }: { id: string }) {
       </nav>
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
-        <div className="card overflow-hidden self-start">
-          <ProductImage src={product.image ?? cheapest.image} alt={product.title} category={product.category} className="aspect-square w-full p-8 sm:p-12" />
+        <div className="card self-start p-3 lg:sticky lg:top-24">
+          <div className={clsx("overflow-hidden rounded-[1.25rem]", categoryTint(product.category))}>
+            <ProductImage src={product.image ?? cheapest.image} alt={product.title} category={product.category} className="aspect-square w-full animate-fade-in p-8 sm:p-14" />
+          </div>
         </div>
 
         <div>
-          <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{product.brand ?? categoryName}</p>
+          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{product.brand ?? categoryName}</p>
           <h1 className="t-h1 mt-1.5">{product.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Rating value={product.rating} count={product.reviewCount} />
@@ -151,10 +154,10 @@ export function ProductView({ id }: { id: string }) {
             )}
           </div>
 
-          <div className="card mt-6 p-5 sm:p-6" data-testid="price-box">
-            <p className="text-sm font-medium text-slate-500">Lowest price</p>
+          <div className="card mt-6 animate-fade-up p-5 sm:p-7" data-testid="price-box">
+            <p className="text-sm font-semibold text-slate-600">Lowest price</p>
             <div className="mt-1 flex flex-wrap items-end gap-x-3 gap-y-1">
-              <span className="text-4xl font-bold tracking-tight tabular-nums text-ink" data-testid="lowest-price">
+              <span className="animate-fade-up font-display text-[clamp(2.5rem,2rem+3vw,4rem)] font-extrabold leading-none tracking-tight tabular-nums text-ink" data-testid="lowest-price">
                 {formatPrice(cheapest.price)}
               </span>
               <span className="pb-1 text-sm text-slate-600">
@@ -162,15 +165,12 @@ export function ProductView({ id }: { id: string }) {
               </span>
               <PriceChange percent={product.priceChange7d} label=" this week" className="mb-1" />
             </div>
-            {view.spread > 0 && <p className="mt-2 text-sm font-medium text-emerald-700">You save up to {formatPrice(view.spread)} compared with the most expensive store.</p>}
+            {view.spread > 0 && <p className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-emerald-50 px-3 py-1 text-sm font-semibold text-emerald-700"><Crown className="h-3.5 w-3.5" aria-hidden />You save up to {formatPrice(view.spread)} compared with the most expensive store.</p>}
             <div className="mt-5 flex flex-col gap-3 sm:flex-row">
               <a href={cheapest.url} target="_blank" rel="noopener noreferrer" className="btn-primary btn-lg flex-1">
                 {cheapest.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[cheapest.platform]} <ExternalLink className="h-4 w-4" aria-hidden />
                 <span className="sr-only">(opens in a new tab)</span>
               </a>
-              <Button variant="secondary" size="lg" onClick={openAlert}>
-                <BellRing className="h-4 w-4" aria-hidden /> Set price alert
-              </Button>
             </div>
             <div className="mt-3 flex flex-wrap gap-3">
               <WishlistButton productId={product.id} title={product.title} variant="full" className="btn-sm" />
@@ -182,11 +182,24 @@ export function ProductView({ id }: { id: string }) {
               </Link>
             </div>
           </div>
+
+          <div className="sticky top-[5.25rem] z-20 mt-4 flex items-center justify-between gap-3 rounded-full bg-surface/85 py-2 pl-5 pr-2 shadow-card backdrop-blur-xl" data-testid="alert-bar">
+            <p className="min-w-0 truncate text-sm font-semibold text-slate-700">
+              <span className="hidden sm:inline">Waiting for a better price? </span>
+              <span className="tabular-nums text-ink">{formatPrice(cheapest.price)}</span> now
+            </p>
+            <Button size="md" onClick={openAlert}>
+              <BellRing className="h-4 w-4" aria-hidden /> Set price alert
+            </Button>
+          </div>
+
+          <div className="mt-6">
+            <OfferTable listings={product.listings} />
+          </div>
         </div>
       </div>
 
-      <div className="mt-10 space-y-8">
-        <OfferTable listings={product.listings} />
+      <div className="mt-12 space-y-8">
         <PriceChart productId={product.id} hasSavedData={view.hasSaved} />
       </div>
 

@@ -31,7 +31,7 @@ export default function AboutPage() {
             { icon: LineChart, t: "3. Track", d: "Save products, view price history, and set a target price. You get a notification when it is reached." },
           ].map(({ icon: Icon, t, d }) => (
             <li key={t} className="card p-5">
-              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-50 text-brand-600">
+              <span className="flex h-10 w-10 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
                 <Icon className="h-5 w-5" aria-hidden />
               </span>
               <h3 className="t-h3 mt-3">{t}</h3>
@@ -66,7 +66,7 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
-        <div className="mt-5 flex gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-sm text-slate-600">
+        <div className="mt-5 flex gap-3 rounded-2xl border border-slate-200 bg-surface p-4 text-sm text-slate-600">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" aria-hidden />
           <p>
             <strong className="text-ink">Known limits.</strong> Matching products across stores is fuzzy and can miss or mix up items. Prices change often, and sample-data price history is generated for demonstration. Always confirm the price on the store before you buy.

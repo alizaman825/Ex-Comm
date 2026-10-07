@@ -6,10 +6,10 @@ import { PlatformDot } from "@/components/product/badges";
 import { storeProblems } from "@/lib/stores";
 
 const TONE = {
-  live: { box: "border-emerald-200 bg-emerald-50 text-emerald-900", icon: CheckCircle2, iconTone: "text-emerald-600" },
-  cache: { box: "border-brand-200 bg-brand-50 text-brand-900", icon: CheckCircle2, iconTone: "text-brand-600" },
-  fallback: { box: "border-amber-200 bg-amber-50 text-amber-900", icon: AlertTriangle, iconTone: "text-amber-600" },
-  demo: { box: "border-amber-200 bg-amber-50 text-amber-900", icon: Database, iconTone: "text-amber-600" },
+  live: { chip: "Live", chipCls: "bg-emerald-600 text-onaccent", box: "bg-emerald-50 text-emerald-900", icon: CheckCircle2, iconTone: "text-emerald-600" },
+  cache: { chip: "Cached", chipCls: "bg-brand-600 text-onbrand", box: "bg-slate-100 text-slate-800", icon: CheckCircle2, iconTone: "text-brand-600" },
+  fallback: { chip: "Sample", chipCls: "bg-highlight text-onyellow", box: "bg-amber-50 text-amber-900", icon: AlertTriangle, iconTone: "text-amber-600" },
+  demo: { chip: "Sample", chipCls: "bg-highlight text-onyellow", box: "bg-amber-50 text-amber-900", icon: Database, iconTone: "text-amber-600" },
 } as const;
 
 type Kind = keyof typeof TONE;
@@ -38,9 +38,12 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
   const canRefresh = Boolean(onRefresh) && !data.demoMode;
   const problems = data.demoMode ? [] : storeProblems(data.platformStatus);
   return (
-    <div className={clsx("flex flex-col gap-3 rounded-xl border px-4 py-3 text-sm lg:flex-row lg:items-center lg:justify-between", tone.box)} data-testid="source-banner" data-source={data.source} data-demo={data.demoMode || undefined}>
+    <div className={clsx("flex flex-col gap-3 rounded-3xl px-5 py-3.5 text-sm lg:flex-row lg:items-center lg:justify-between", tone.box)} data-testid="source-banner" data-source={data.source} data-demo={data.demoMode || undefined}>
       <div className="flex items-start gap-2.5">
-        <Icon className={clsx("mt-0.5 h-4 w-4 shrink-0", tone.iconTone)} aria-hidden />
+        <span className={clsx("mt-px inline-flex shrink-0 items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-bold", tone.chipCls)} data-testid="source-chip">
+          <Icon className="h-3.5 w-3.5" aria-hidden />
+          {tone.chip}
+        </span>
         <span>
           {bannerMessage(data)}
           {problems.length > 0 && (
@@ -58,7 +61,7 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
         {!data.demoMode && data.source !== "fallback" && stores.length > 0 && (
           <ul className="flex flex-wrap gap-2" aria-label="Store status">
             {stores.map(([platform, s]) => (
-              <li key={platform} className="inline-flex items-center gap-1.5 rounded-full bg-surface/80 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-black/5">
+              <li key={platform} className="inline-flex items-center gap-1.5 rounded-full bg-surface/80 px-2.5 py-1 text-xs font-medium text-slate-700 shadow-sm">
                 <PlatformDot platform={platform} />
                 {PLATFORM_LABEL[platform]}
                 <span className={s.status === "success" ? "text-emerald-700" : "text-rose-700"}>{s.status === "success" ? (s.total ? `${s.loaded ?? s.relevant ?? 0} of ${s.approximate ? "about " : ""}${s.total.toLocaleString("en-PK")}` : `${s.relevant ?? 0} found`) : "unavailable"}</span>

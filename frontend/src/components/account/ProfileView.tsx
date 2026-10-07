@@ -18,7 +18,7 @@ function Section({ icon: Icon, title, description, children, tone }: { icon: typ
   return (
     <section className={clsx("card card-pad", tone === "danger" && "border-rose-200")} aria-labelledby={`sec-${title}`}>
       <div className="flex items-start gap-4">
-        <span className={clsx("flex h-10 w-10 shrink-0 items-center justify-center rounded-xl", tone === "danger" ? "bg-rose-50 text-rose-600" : "bg-brand-50 text-brand-600")}>
+        <span className={clsx("flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl", tone === "danger" ? "bg-rose-50 text-rose-600" : "bg-brand-50 text-brand-600")}>
           <Icon className="h-5 w-5" aria-hidden />
         </span>
         <div className="min-w-0 flex-1">
@@ -63,7 +63,7 @@ function ProfileForm({ user }: { user: User }) {
     <form onSubmit={submit} noValidate className="space-y-5">
       <Field label="Full name" name="name" value={name} onChange={(e) => setName(e.target.value)} error={error} autoComplete="name" />
       <Field label="Email" name="email" value={user.email} readOnly disabled hint="Your email is your login and cannot be changed." />
-      <label className="flex cursor-pointer items-start gap-3 rounded-xl border border-slate-200 p-4 transition hover:border-slate-300">
+      <label className="flex cursor-pointer items-start gap-3 rounded-2xl border border-slate-200 p-4 transition hover:border-slate-300">
         <input type="checkbox" checked={emailAlerts} onChange={(e) => setEmailAlerts(e.target.checked)} className="mt-0.5 h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
         <span>
           <span className="flex items-center gap-2 text-sm font-medium text-ink">

@@ -31,7 +31,7 @@ function WishlistRow({ item, onRemove }: { item: WishlistItem; onRemove: () => v
   const diff = saved ? p.minPrice - saved : 0;
   return (
     <li className="card flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:p-5" data-testid="wishlist-item">
-      <Link href={`/products/${p.id}`} className="block shrink-0 overflow-hidden rounded-xl border border-slate-100">
+      <Link href={`/products/${p.id}`} className="block shrink-0 overflow-hidden rounded-2xl border border-slate-100">
         <ProductImage src={p.image} alt="" category={p.category} className="h-28 w-full p-3 sm:w-32" />
       </Link>
       <div className="min-w-0 flex-1">

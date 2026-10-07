@@ -107,7 +107,7 @@ export function Filters({ state, categories, onChange, onReset }: Props) {
                 role="radio"
                 aria-checked={active}
                 onClick={() => onChange({ category: c.slug })}
-                className={clsx("flex w-full items-center justify-between rounded-lg px-3 py-2 text-left text-sm transition", active ? "bg-brand-50 font-semibold text-brand-700" : "text-slate-600 hover:bg-slate-100")}
+                className={clsx("flex w-full items-center justify-between rounded-2xl px-3 py-2 text-left text-sm transition", active ? "bg-brand-50 font-semibold text-brand-700" : "text-slate-600 hover:bg-slate-100")}
               >
                 {c.name}
               </button>

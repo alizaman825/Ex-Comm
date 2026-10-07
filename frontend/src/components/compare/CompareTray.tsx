@@ -18,7 +18,7 @@ export function CompareTray() {
         <Link href={`/compare?ids=${ids.join(",")}`} className="btn-primary btn-sm">
           Compare{ids.length > 1 ? ` ${ids.length}` : ""}
         </Link>
-        <button type="button" onClick={clear} className="rounded-lg p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Clear comparison selection">
+        <button type="button" onClick={clear} className="rounded-2xl p-2 text-slate-400 transition hover:bg-slate-100 hover:text-slate-700" aria-label="Clear comparison selection">
           <X className="h-4 w-4" />
         </button>
       </div>
