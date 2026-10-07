@@ -43,6 +43,10 @@ async function checkListing(listing, mode, now, summary) {
     summary.skipped += 1;
     return;
   }
+  if (r.status === 'unlinked') {
+    summary.unlinked += 1;
+    return;
+  }
   if (r.status !== 'success') {
     summary.failures += 1;
     return;
@@ -73,7 +77,7 @@ async function runPriceCheck({ mode = 'live', trigger = 'schedule' } = {}) {
   if (running) return { status: 'skipped', reason: 'A price check is already running' };
   running = true;
   const startedAt = new Date();
-  const summary = { products: 0, listingsChecked: 0, pricesChanged: 0, alertsTriggered: 0, failures: 0, skipped: 0, notFound: 0, truncated: false };
+  const summary = { products: 0, listingsChecked: 0, pricesChanged: 0, alertsTriggered: 0, failures: 0, skipped: 0, notFound: 0, unlinked: 0, truncated: false };
   let status = 'success';
   let error;
 
@@ -88,6 +92,12 @@ async function runPriceCheck({ mode = 'live', trigger = 'schedule' } = {}) {
       const platforms = mode === 'simulate' ? undefined : scrapers.livePlatforms();
       const filter = { productId: { $in: productIds }, role: { $ne: 'supplier' }, ...(platforms ? { platform: { $in: platforms } } : {}) };
       let listings = await Listing.find(filter).sort({ lastScrapedAt: 1 }); // stalest first
+      if (mode === 'live') {
+        // Only listings linked to a real store item can be re-fetched; sample data stays as it is.
+        const linked = listings.filter((l) => scrapers.canRefetch(l));
+        summary.unlinked = listings.length - linked.length;
+        listings = linked;
+      }
       if (listings.length > config.jobs.maxListingsPerRun) {
         listings = listings.slice(0, config.jobs.maxListingsPerRun);
         summary.truncated = true;
@@ -114,7 +124,10 @@ async function runPriceCheck({ mode = 'live', trigger = 'schedule' } = {}) {
         summary.alertsTriggered += (await evaluateProductAlerts(id)).length;
       }
       const attempted = summary.listingsChecked - summary.skipped;
-      if (summary.skipped && summary.skipped === summary.listingsChecked) status = 'skipped';
+      if (!summary.listingsChecked && summary.unlinked) {
+        status = 'skipped';
+        summary.note = 'Tracked listings are sample data without a store link; use simulate mode for demos';
+      } else if (summary.skipped && summary.skipped === summary.listingsChecked) status = 'skipped';
       else if (summary.failures && summary.failures >= attempted) status = 'failed';
       else if (summary.failures) status = 'partial';
     }

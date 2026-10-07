@@ -340,7 +340,7 @@ _Version 1.0 — 2026-10-07. Requirement IDs refer to `docs/requirements.md`._
 |---|---|
 | 1. Scheduler starts the price-check job (every 6 hours, or manually for the demo). | 1a. A previous run is still in progress: the new run is skipped. |
 | 2. System collects products that are wishlisted or have active alerts. | 2a. No tracked products: the job ends and is logged. |
-| 3. For each listing, system fetches the current price from its platform, one at a time with polite delays. | 3a. The platform fails or the circuit breaker is open: the listing keeps its last price and the failure is logged. |
+| 3. For each listing, system re-fetches the current price from its stored store link / item id, one at a time with polite delays. | 3a. The platform fails or the circuit breaker is open: the listing keeps its last price and the failure is logged. |
 | | 3b. Demo mode is on: the system skips live scraping. |
 | 4. System saves the new price to the listing and to the price history. | |
 | 5. For each active alert, system compares the lowest matching price with the target. | |

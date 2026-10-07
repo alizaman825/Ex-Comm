@@ -25,10 +25,10 @@ const liveListing = (platform, price) => ({
   platform, externalId: `live-${platform}`, title: 'Samsung Galaxy A55 5G 8GB 256GB', price,
   url: 'https://example.com/a55', currency: 'PKR', rating: 4.5, reviewCount: 10, inStock: true,
 });
-// Returns the fresh A55 listing for A55 queries only, nothing for other products.
+// Every adapter returns the fresh listing for the stored item (re-fetched by id / product URL).
 const mockStores = (priceFor) => {
   for (const platform of ['daraz', 'priceoye']) {
-    jest.spyOn(scrapers.adapters[platform], 'search').mockImplementation(async (q) => (/A55/i.test(q) ? [liveListing(platform, priceFor(platform))] : []));
+    jest.spyOn(scrapers.adapters[platform], 'fetchListing').mockImplementation(async () => liveListing(platform, priceFor(platform)));
   }
 };
 
@@ -91,11 +91,41 @@ describe('with nothing tracked', () => {
   });
 });
 
+const linkListings = async () => {
+  await Listing.updateOne({ productId: a55, platform: 'daraz' }, { externalId: '550702491', url: 'https://www.daraz.pk/products/a55-i550702491.html', seeded: false });
+  await Listing.updateOne({ productId: a55, platform: 'priceoye' }, { externalId: '9001', url: 'https://priceoye.pk/mobiles/samsung/samsung-galaxy-a55', seeded: false });
+};
+
+describe('sample listings (no store link)', () => {
+  test('are not re-fetched: the run is skipped and reports them as unlinked', async () => {
+    await Wishlist.deleteMany({});
+    await Alert.deleteMany({});
+    await Wishlist.create({ userId: user._id, productId: a55 });
+    const spies = ['daraz', 'priceoye'].map((p) => jest.spyOn(scrapers.adapters[p], 'fetchListing'));
+    const r = await runPriceCheck({ trigger: 'manual' });
+    expect(r.status).toBe('skipped');
+    expect(r.summary).toMatchObject({ listingsChecked: 0, unlinked: 2 });
+    expect(r.summary.note).toMatch(/sample data/);
+    spies.forEach((s) => expect(s).not.toHaveBeenCalled());
+  });
+});
+
 describe('live mode', () => {
   beforeEach(async () => {
     await Wishlist.deleteMany({});
     await Alert.deleteMany({});
     await Wishlist.create({ userId: user._id, productId: a55 });
+    await linkListings();
+  });
+
+  test('re-fetches each listing by its stored id/url, never by searching', async () => {
+    mockStores((p) => (p === 'daraz' ? 11111 : 22222));
+    const search = jest.spyOn(scrapers.adapters.daraz, 'search');
+    const r = await runPriceCheck({ trigger: 'manual' });
+    expect(search).not.toHaveBeenCalled();
+    expect(scrapers.adapters.daraz.fetchListing).toHaveBeenCalledWith(expect.objectContaining({ externalId: '550702491' }));
+    expect(scrapers.adapters.priceoye.fetchListing).toHaveBeenCalledWith(expect.objectContaining({ url: 'https://priceoye.pk/mobiles/samsung/samsung-galaxy-a55' }));
+    expect(r.summary).toMatchObject({ listingsChecked: 2, pricesChanged: 2, unlinked: 0 });
   });
 
   test('updates prices, extends history and fires alerts + email', async () => {
@@ -147,7 +177,7 @@ describe('live mode', () => {
   test('all platforms failing is recorded as failed and never throws', async () => {
     await Alert.create({ userId: user._id, productId: a55, targetPrice: 1000 });
     for (const p of ['daraz', 'priceoye']) {
-      jest.spyOn(scrapers.adapters[p], 'search').mockRejectedValue(Object.assign(new Error('boom'), { code: 'TIMEOUT' }));
+      jest.spyOn(scrapers.adapters[p], 'fetchListing').mockRejectedValue(Object.assign(new Error('boom'), { code: 'TIMEOUT' }));
     }
     const r = await runPriceCheck({ trigger: 'manual' });
     expect(r.status).toBe('failed');
@@ -157,15 +187,15 @@ describe('live mode', () => {
   });
 
   test('one platform failing is a partial run', async () => {
-    jest.spyOn(scrapers.adapters.daraz, 'search').mockRejectedValue(Object.assign(new Error('boom'), { code: 'BLOCKED' }));
-    jest.spyOn(scrapers.adapters.priceoye, 'search').mockResolvedValue([liveListing('priceoye', 12345)]);
+    jest.spyOn(scrapers.adapters.daraz, 'fetchListing').mockRejectedValue(Object.assign(new Error('boom'), { code: 'BLOCKED' }));
+    jest.spyOn(scrapers.adapters.priceoye, 'fetchListing').mockResolvedValue(liveListing('priceoye', 12345));
     const r = await runPriceCheck({ trigger: 'manual' });
     expect(r.status).toBe('partial');
     expect(r.summary).toMatchObject({ failures: 1, pricesChanged: 1 });
   });
 
   test('a listing that no longer appears is counted, not treated as an error', async () => {
-    for (const p of ['daraz', 'priceoye']) jest.spyOn(scrapers.adapters[p], 'search').mockResolvedValue([]);
+    for (const p of ['daraz', 'priceoye']) jest.spyOn(scrapers.adapters[p], 'fetchListing').mockResolvedValue(null);
     const r = await runPriceCheck({ trigger: 'manual' });
     expect(r.status).toBe('success');
     expect(r.summary.notFound).toBe(2);
@@ -173,7 +203,7 @@ describe('live mode', () => {
 
   test('demo mode skips live scraping', async () => {
     config.demoMode = true;
-    const spy = jest.spyOn(scrapers.adapters.daraz, 'search');
+    const spy = jest.spyOn(scrapers.adapters.daraz, 'fetchListing');
     const r = await runPriceCheck({ trigger: 'manual' });
     expect(r.status).toBe('skipped');
     expect(spy).not.toHaveBeenCalled();
@@ -202,7 +232,7 @@ describe('simulate mode (offline demo)', () => {
     await Alert.deleteMany({});
     await Alert.create({ userId: user._id, productId: a55, targetPrice: a55Retail * 10 }); // already reached
     config.demoMode = true;
-    const spy = jest.spyOn(scrapers.adapters.daraz, 'search');
+    const spy = jest.spyOn(scrapers.adapters.daraz, 'fetchListing');
     const supplierBefore = await Listing.findOne({ productId: a55, role: 'supplier' }).lean();
     const histBefore = await PriceHistory.countDocuments({ productId: a55 });
 

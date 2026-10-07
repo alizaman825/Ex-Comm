@@ -3,8 +3,6 @@ const mongoose = require('mongoose');
 const { config } = require('../config/env');
 const { PoliteQueue } = require('./politeQueue');
 const { ScrapeLog } = require('../models');
-const { analyzeTitle, findBestMatch } = require('../services/matching');
-const { cleanTitle } = require('../services/ingest');
 
 const adapters = {
   daraz: require('./daraz'),
@@ -54,18 +52,39 @@ async function scrapeAll(query, platforms = livePlatforms(), opts) {
   return Object.fromEntries(results.map((r) => [r.platform, r]));
 }
 
-// Price check: find the current offer for a stored listing by searching its title.
+// Price check: re-fetch one stored listing by its own store id / product URL (no searching, no fuzzy
+// matching). Never throws: { platform, status, listing, error, ms } where status is
+// success (listing is null when the store no longer shows the item), skipped, failed or unlinked.
 async function fetchCurrentListing(listing) {
-  const result = await scrapePlatform(listing.platform, cleanTitle(listing.title), { kind: 'price-check' });
-  if (result.status !== 'success') return { ...result, listing: null };
-  const exact = result.listings.find((l) => l.externalId === listing.externalId);
-  if (exact) return { ...result, listing: exact };
-  const best = findBestMatch(analyzeTitle(listing.title), result.listings);
-  return { ...result, listing: best ? best.candidate : null };
+  const platform = listing.platform;
+  const adapter = adapters[platform];
+  const started = Date.now();
+  if (config.demoMode) return { platform, status: 'skipped', listing: null, error: 'Demo mode: live scraping disabled', ms: 0 };
+  if (!adapter || !adapter.canRefetch(listing)) {
+    return { platform, status: 'unlinked', listing: null, error: 'Listing has no store link (sample data)', ms: 0 };
+  }
+  const query = listing.url || listing.externalId;
+  try {
+    const fresh = await queues[platform].run(() => adapter.fetchListing(listing));
+    const ms = Date.now() - started;
+    await log({ platform, query, kind: 'price-check', status: 'success', itemCount: fresh ? 1 : 0, durationMs: ms });
+    return { platform, status: 'success', listing: fresh, ms };
+  } catch (err) {
+    const ms = Date.now() - started;
+    const status = err.code === 'CIRCUIT_OPEN' ? 'skipped' : 'failed';
+    await log({ platform, query, kind: 'price-check', status, itemCount: 0, durationMs: ms, error: `${err.code || 'ERROR'}: ${err.message}` });
+    return { platform, status, listing: null, error: err.message, code: err.code, ms };
+  }
+}
+
+// True when the stored listing points at a real store item that can be re-fetched.
+function canRefetch(listing) {
+  const adapter = adapters[listing.platform];
+  return Boolean(adapter && adapter.canRefetch && adapter.canRefetch(listing));
 }
 
 function platformStatus() {
   return Object.values(queues).map((q) => q.status());
 }
 
-module.exports = { adapters, queues, livePlatforms, scrapePlatform, scrapeAll, fetchCurrentListing, platformStatus };
+module.exports = { adapters, queues, livePlatforms, scrapePlatform, scrapeAll, fetchCurrentListing, canRefetch, platformStatus };

@@ -119,3 +119,57 @@ describe('PoliteQueue', () => {
     expect(err.code).toBe('CIRCUIT_OPEN');
   });
 });
+
+describe('re-fetch by stored id / URL', () => {
+  const http = require('../src/scrapers/http');
+  afterEach(() => jest.restoreAllMocks());
+
+  test('Daraz item id comes from the numeric externalId or the product URL', () => {
+    expect(daraz.itemIdOf({ externalId: '550702491' })).toBe('550702491');
+    expect(daraz.itemIdOf({ externalId: 'x', url: 'https://www.daraz.pk/products/a55-5g-pta-i550702491.html' })).toBe('550702491');
+    expect(daraz.itemIdOf({ externalId: 'seed-a55-daraz', url: 'https://www.daraz.pk/catalog/?q=a55' })).toBeNull();
+  });
+
+  test('Daraz: returns the exact item looked up by id', async () => {
+    const get = jest.spyOn(http, 'get').mockResolvedValue({ data: JSON.parse(fixture('daraz-by-id.json')) });
+    const fresh = await daraz.fetchListing({ externalId: '550702491' });
+    expect(get.mock.calls[0][0]).toContain('q=550702491');
+    expect(fresh).toMatchObject({ platform: 'daraz', externalId: '550702491' });
+    expect(fresh.price).toBeGreaterThan(0);
+  });
+
+  test('Daraz: null when the item is no longer listed; UNLINKED without an id', async () => {
+    jest.spyOn(http, 'get').mockResolvedValue({ data: JSON.parse(fixture('daraz-by-id-missing.json')) });
+    expect(await daraz.fetchListing({ externalId: '999999999999' })).toBeNull();
+    await expect(daraz.fetchListing({ externalId: 'seed-x', url: 'https://www.daraz.pk/catalog/?q=x' })).rejects.toMatchObject({ code: 'UNLINKED' });
+  });
+
+  test('PriceOye: product URLs are re-fetchable, search URLs are not', () => {
+    expect(priceoye.isProductUrl('https://priceoye.pk/mobiles/infinix/infinix-smart-20')).toBe(true);
+    expect(priceoye.isProductUrl('https://priceoye.pk/search?q=infinix')).toBe(false);
+    expect(priceoye.isProductUrl('https://example.com/mobiles/a/b')).toBe(false);
+    expect(priceoye.isProductUrl('not a url')).toBe(false);
+  });
+
+  test('PriceOye: parses price, retail price, rating and stock from a product page', () => {
+    const fresh = priceoye.parseProduct(fixture('priceoye-product-infinix-smart-20.html'), 'https://priceoye.pk/mobiles/infinix/infinix-smart-20');
+    expect(fresh).toMatchObject({
+      platform: 'priceoye', externalId: '15610', title: 'Infinix Smart 20', price: 40499, originalPrice: 41999,
+      rating: 5, reviewCount: 35, inStock: true, currency: 'PKR',
+    });
+  });
+
+  test('PriceOye: fetchListing reads the stored URL; 404 means the product is gone', async () => {
+    const url = 'https://priceoye.pk/mobiles/infinix/infinix-smart-20';
+    const get = jest.spyOn(http, 'get').mockResolvedValue({ data: fixture('priceoye-product-infinix-smart-20.html') });
+    expect((await priceoye.fetchListing({ url })).price).toBe(40499);
+    expect(get).toHaveBeenCalledWith(url, expect.anything());
+    get.mockRejectedValue(new http.ScrapeError('HTTP 404', { code: 'HTTP', status: 404 }));
+    expect(await priceoye.fetchListing({ url })).toBeNull();
+    await expect(priceoye.fetchListing({ url: 'https://priceoye.pk/search?q=x' })).rejects.toMatchObject({ code: 'UNLINKED' });
+  });
+
+  test('PriceOye: a page without product data is a PARSE error', () => {
+    expect(() => priceoye.parseProduct('<html><body>Not found</body></html>', 'u')).toThrow(expect.objectContaining({ code: 'PARSE' }));
+  });
+});

@@ -47,8 +47,8 @@ Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep
 - **Fixes made from the sweep:** spacing/gluing tolerance in relevance, brand terms for the watches category (Amazfit, Garmin, Fitbit), warranty/decimal noise removal in matching.
 
 ### Price check job
-- The job re-scrapes only tracked listings (wishlisted or with an active alert), at most 60 per run, one request at a time per store. A listing is found again by exact store id, otherwise by fuzzy title match; if the store no longer shows a matching offer it is counted as "not found" and keeps its last price.
-- Real-store titles are noisy (warranty text, screen sizes, marketing words). Normalization removes the common noise, but some products are still not re-found. In a live run on the sample wishlist (12 listings) 6 prices were updated and 6 listings were not found.
+- The job re-fetches only tracked listings (wishlisted or with an active alert), at most 60 per run, one request at a time per store. Each listing is re-fetched **by its own store link**, not by searching again: Daraz by item id (the catalog endpoint returns exactly that item), PriceOye by its product page (price, stock and rating from the page's structured data). Fuzzy title matching is used only when a search discovers listings, to group the same product across stores; it plays no part in price updates, so a price can never be taken from a similar-looking product.
+- A listing the store no longer shows (item removed, page gone) is counted as "not found" and keeps its last price. **Sample (seeded) listings have no real store link, so the job does not re-fetch them**: they are reported as "unlinked" and stay as sample data until a live search finds the real item and adopts the listing. Real-store titles are noisy (warranty text, screen sizes, marketing words); normalization removes the common noise when grouping search results.
 - Demo "simulate" mode changes stored prices randomly; it exists only so alerts and notifications can be demonstrated offline, and its results are not real prices.
 
 ### Other

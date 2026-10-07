@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T8 done: CHECKPOINT 1 (backend API)_
+_Last updated: 2026-10-07 — T8b (price job re-fetch by store link) done; plan reordered_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -19,7 +19,8 @@ _Last updated: 2026-10-07 — T8 done: CHECKPOINT 1 (backend API)_
 - T7: `backend/src/jobs`: node-cron scheduler (`PRICE_CHECK_CRON`, default every 6 h, `JOBS_ENABLED`), `priceCheck.js` (tracked = wishlisted or active-alert products; stalest first, max 60 listings/run; live re-scrape → listing update → history → stats → alerts; modes `live` and demo `simulate`; run guard; JobRun records). `POST /api/jobs/price-check {mode}` and `GET /api/jobs/status` protected by `x-job-key` (`JOB_KEY`; endpoint disabled when unset). Optional email alerts via nodemailer (`SMTP_*`, user must enable `emailAlerts`). Matching hardened for noisy store titles (warranty/decimal noise removed, containment-weighted score). Live run on demo wishlist: 12 listings in 14 s, 6 prices updated.
 - T8: `scripts/search-sweep.js` live sweep of 23 terms → `docs/search_sweep.md`; relevance now tolerates spacing/glued words; watch brand terms. All 46 requests succeeded; Daraz relevant for 20/23, PriceOye 10/23 (electronics only).
 - Seed images: `src/seed/images.json` (harvested from live stores via `scripts/calibrate-catalog.js` + `scripts/fill-images.js`): 64 of 90 products have a real image URL (hotlinked from store CDNs); the rest need a placeholder in the UI.
-- Tests: 178 passing. `npm audit --omit=dev`: 0 vulnerabilities (nodemailer 10, node-cron 4).
+- T8b: price-check job re-fetches each tracked listing by its stored link (Daraz: item id via the catalog endpoint; PriceOye: product page JSON-LD). Fuzzy matching is now used only to group search results. Sample listings (no store link) are reported as `unlinked` and skipped; `canRefetch` filter keeps them out of the per-run budget. Live check: 2 linked listings re-fetched in 1.2 s, 0 not found.
+- Tests: 191 passing.
 
 ## Working
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
@@ -30,4 +31,5 @@ _Last updated: 2026-10-07 — T8 done: CHECKPOINT 1 (backend API)_
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
-- Checkpoint 1 reached (backend API). Continuing to T9 (Next.js scaffold + design system) unless told otherwise.
+- Plan reordered after Checkpoint 1: (a) frontend T9–T12 (10+ screens, Checkpoint 2), (b) seller module T14/T16 using saved supplier data, closing T17–T19, (c) NICE last. Live AliExpress adapter dropped. Remaining ~34.5 h + 7 h NICE.
+- Next: T9 Next.js scaffold + design system + auth pages.
