@@ -1,0 +1,30 @@
+# Render Blueprint for the Ex-Comm API (frontend deploys to Vercel; see docs/DEPLOY.md).
+services:
+  - type: web
+    name: ex-comm-api
+    runtime: node
+    plan: free
+    region: singapore
+    rootDir: backend
+    buildCommand: npm ci --omit=dev
+    startCommand: npm start
+    healthCheckPath: /api/health
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      - key: NODE_ENV
+        value: production
+      - key: MONGO_URI
+        sync: false # set in the Render dashboard; never commit it
+      - key: JWT_SECRET
+        generateValue: true
+      - key: JOB_KEY
+        generateValue: true
+      - key: CORS_ORIGIN
+        sync: false # the Vercel URL, e.g. https://ex-comm.vercel.app
+      - key: TRUST_PROXY
+        value: "2" # Vercel rewrite + Render proxy
+      - key: AUTO_SEED
+        value: "true"
+      - key: LIVE_PLATFORMS
+        value: daraz,priceoye

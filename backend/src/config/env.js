@@ -7,6 +7,8 @@ const config = {
   isProd: env === 'production',
   isTest: env === 'test',
   port: Number(process.env.PORT) || 5000,
+  // Proxy hops in front of the API (1 locally/behind one proxy; 2 on Render behind the Vercel frontend) so rate limits see the real client IP.
+  trustProxy: Number(process.env.TRUST_PROXY) || 1,
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
