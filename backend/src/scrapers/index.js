@@ -25,7 +25,7 @@ async function log(entry) {
 }
 
 // Scrape one platform. Never throws: returns { platform, status, listings, error, ms }.
-async function scrapePlatform(platform, query, { kind = 'search' } = {}) {
+async function scrapePlatform(platform, query, { kind = 'search', page = 1 } = {}) {
   const started = Date.now();
   if (config.demoMode) {
     return { platform, status: 'skipped', listings: [], error: 'Demo mode: live scraping disabled', ms: 0 };
@@ -34,7 +34,7 @@ async function scrapePlatform(platform, query, { kind = 'search' } = {}) {
   if (!adapter) return { platform, status: 'skipped', listings: [], error: 'No live adapter', ms: 0 };
 
   try {
-    const listings = await queues[platform].run(() => adapter.search(query));
+    const listings = await queues[platform].run(() => adapter.search(query, { page }));
     const ms = Date.now() - started;
     await log({ platform, query, kind, status: 'success', itemCount: listings.length, durationMs: ms });
     return { platform, status: 'success', listings, ms };

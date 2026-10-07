@@ -90,9 +90,11 @@ describe('fallback and cache', () => {
     mockScrapers({ daraz: spy, priceoye: async () => [] });
     const first = await get('q=galaxy a55');
     expect(first.body.source).toBe('live');
+    const callsAfterFirst = spy.mock.calls.length; // an empty first attempt also tries alternative phrasings
+    expect(callsAfterFirst).toBeGreaterThanOrEqual(1);
     const second = await get('q=a55 galaxy'); // same normalized query
     expect(second.body.source).toBe('cache');
-    expect(spy).toHaveBeenCalledTimes(1);
+    expect(spy).toHaveBeenCalledTimes(callsAfterFirst); // the cached repeat scrapes nothing
     expect((await SearchCache.findOne({})).hits).toBe(2);
   });
 
@@ -224,7 +226,7 @@ describe('model codes with hyphens', () => {
 
   test('backfill adds search keys to products stored without one', async () => {
     const { backfillSearchKeys } = require('../src/services/productStats');
-    await Product.updateMany({}, { $unset: { searchKey: 1 } });
+    await Product.updateMany({}, { $unset: { searchKey: 1, altTitles: 1 } });
     expect(await backfillSearchKeys()).toBeGreaterThan(80);
     expect(await backfillSearchKeys()).toBe(0);
     const res = await get('q=sony wh-1000xm5&live=false');

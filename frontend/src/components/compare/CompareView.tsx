@@ -59,13 +59,36 @@ function LoadingState({ columns }: { columns: number }) {
   );
 }
 
-/** One product: its stores become the columns. */
+/** One product: its stores become the columns. Stores that do not carry it are still shown, as "not available". */
 function StoresTable({ data }: { data: CompareResponse }) {
   const product = data.products[0];
-  const listings = [...product.listings].sort((a, b) => Number(a.role === "supplier") - Number(b.role === "supplier") || a.price - b.price);
-  const retailPrices = listings.map((l) => (l.role === "supplier" ? null : l.price));
-  const lowest = bestIndexes(retailPrices, "min");
-  const ratings = bestIndexes(listings.map((l) => l.rating), "max");
+  // One column per store: the cheapest in-stock listing there (or null when the store does not have the product).
+  const cols = PLATFORMS.map((platform) => {
+    const own = product.listings.filter((l) => l.platform === platform);
+    const pool = own.some((l) => l.inStock) ? own.filter((l) => l.inStock) : own;
+    return { platform, l: pool.length ? pool.reduce((x, y) => (y.price < x.price ? y : x)) : null };
+  }).sort((x, y) => Number(x.l === null) - Number(y.l === null) || Number(x.l?.role === "supplier") - Number(y.l?.role === "supplier") || (x.l?.price ?? 0) - (y.l?.price ?? 0));
+
+  const lowest = bestIndexes(cols.map((c) => (c.l && c.l.role !== "supplier" ? c.l.price : null)), "min");
+  const ratings = bestIndexes(cols.map((c) => c.l?.rating ?? null), "max");
+
+  // A row whose cell shows "not available" for stores without the product.
+  const row = (label: React.ReactNode, render: (l: Listing, i: number) => React.ReactNode, sub?: string) => (
+    <tr>
+      <RowLabel sub={sub}>{label}</RowLabel>
+      {cols.map((c, i) =>
+        c.l ? (
+          <Cell key={c.platform} best={lowest.has(i)}>
+            {render(c.l, i)}
+          </Cell>
+        ) : (
+          <Cell key={c.platform} className="text-slate-400">
+            {label === "Price" ? <span className="text-sm italic">Not available on {PLATFORM_LABEL[c.platform]}</span> : "–"}
+          </Cell>
+        )
+      )}
+    </tr>
+  );
 
   return (
     <div className="card overflow-x-auto" data-testid="compare-table" data-mode="platforms">
@@ -73,94 +96,50 @@ function StoresTable({ data }: { data: CompareResponse }) {
         <thead>
           <tr className="border-b border-slate-100">
             <th className="sticky left-0 z-10 bg-white" />
-            {listings.map((l, i) => (
-              <th key={l.id} scope="col" className={clsx("px-4 py-5 text-left align-top", lowest.has(i) && "bg-emerald-50/70")}>
-                <span className="flex items-center gap-2 text-base font-semibold text-ink">
-                  <PlatformDot platform={l.platform} className="h-3 w-3" />
-                  {PLATFORM_LABEL[l.platform]}
+            {cols.map((c, i) => (
+              <th key={c.platform} scope="col" className={clsx("px-4 py-5 text-left align-top", lowest.has(i) && "bg-emerald-50/70", !c.l && "bg-slate-50/60")} data-missing={!c.l || undefined}>
+                <span className={clsx("flex items-center gap-2 text-base font-semibold", c.l ? "text-ink" : "text-slate-400")}>
+                  <PlatformDot platform={c.platform} className={clsx("h-3 w-3", !c.l && "opacity-40")} />
+                  {PLATFORM_LABEL[c.platform]}
                 </span>
                 {lowest.has(i) && (
                   <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">
                     <Crown className="h-3 w-3" aria-hidden /> Lowest price
                   </span>
                 )}
-                {l.role === "supplier" && <span className="badge-neutral mt-1.5">Supplier</span>}
+                {c.l?.role === "supplier" && <span className="badge-neutral mt-1.5">Supplier</span>}
               </th>
             ))}
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
-          <tr>
-            <RowLabel>Price</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)}>
-                <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-700" : "text-ink")}>{formatPrice(l.price)}</span>
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel>Original price</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)} className="tabular-nums text-slate-600">
-                {l.originalPrice && l.originalPrice > l.price ? <span className="line-through">{formatPrice(l.originalPrice)}</span> : "–"}
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel>Discount</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)}>
-                {l.discountPct > 0 ? <span className="badge-success">{l.discountPct}% off</span> : <span className="text-slate-400">–</span>}
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel>Rating</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)}>
-                <span className="inline-flex items-center gap-1.5">
-                  <Rating value={l.rating} />
-                  {ratings.has(i) && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">Best</span>}
-                </span>
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel>Reviews</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)} className="tabular-nums">
-                {l.reviewCount ? l.reviewCount.toLocaleString("en-PK") : "–"}
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel>Availability</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)}>
-                {l.inStock ? <span className="badge-success">In stock</span> : <span className="badge-neutral">Out of stock</span>}
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel sub="how recent">Data</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)}>
+          {row("Price", (l, i) => <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-700" : "text-ink")}>{formatPrice(l.price)}</span>)}
+          {row("Original price", (l) => <span className="tabular-nums text-slate-600">{l.originalPrice && l.originalPrice > l.price ? <span className="line-through">{formatPrice(l.originalPrice)}</span> : "–"}</span>)}
+          {row("Discount", (l) => (l.discountPct > 0 ? <span className="badge-success">{l.discountPct}% off</span> : <span className="text-slate-400">–</span>))}
+          {row("Rating", (l, i) => (
+            <span className="inline-flex items-center gap-1.5">
+              <Rating value={l.rating} />
+              {ratings.has(i) && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">Best</span>}
+            </span>
+          ))}
+          {row("Reviews", (l) => <span className="tabular-nums">{l.reviewCount ? l.reviewCount.toLocaleString("en-PK") : "–"}</span>)}
+          {row("Availability", (l) => (l.inStock ? <span className="badge-success">In stock</span> : <span className="badge-neutral">Out of stock</span>))}
+          {row(
+            "Data",
+            (l) => (
+              <>
                 <DataSourceBadge source={l.dataSource} />
                 <span className="mt-1 block text-xs text-slate-400">{timeAgo(l.lastScrapedAt)}</span>
-              </Cell>
-            ))}
-          </tr>
-          <tr>
-            <RowLabel>Buy</RowLabel>
-            {listings.map((l, i) => (
-              <Cell key={l.id} best={lowest.has(i)}>
-                <a href={l.url} target="_blank" rel="noopener noreferrer" className={clsx(lowest.has(i) ? "btn-primary" : "btn-secondary", "btn-sm")}>
-                  {l.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[l.platform]} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
-                  <span className="sr-only">(opens in a new tab)</span>
-                </a>
-              </Cell>
-            ))}
-          </tr>
+              </>
+            ),
+            "how recent"
+          )}
+          {row("Buy", (l, i) => (
+            <a href={l.url} target="_blank" rel="noopener noreferrer" className={clsx(lowest.has(i) ? "btn-primary" : "btn-secondary", "btn-sm")}>
+              {l.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[l.platform]} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+              <span className="sr-only">(opens in a new tab)</span>
+            </a>
+          ))}
         </tbody>
       </table>
     </div>
@@ -230,7 +209,7 @@ function ProductsTable({ data, onRemove }: { data: CompareResponse; onRemove: (i
                 </RowLabel>
                 {prices.map((price, i) => (
                   <Cell key={products[i].id} best={best.has(i)} className="tabular-nums">
-                    {price === null ? <span className="text-slate-400">Not listed</span> : <span className={clsx(best.has(i) && "font-semibold text-emerald-700")}>{formatPrice(price)}</span>}
+                    {price === null ? <span className="text-sm italic text-slate-400">Not available on this store</span> : <span className={clsx(best.has(i) && "font-semibold text-emerald-700")}>{formatPrice(price)}</span>}
                   </Cell>
                 ))}
               </tr>

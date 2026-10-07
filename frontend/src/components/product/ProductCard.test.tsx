@@ -91,3 +91,17 @@ describe("ProductCard", () => {
     expect(screen.getByRole("img", { name: product.title })).toBeInTheDocument();
   });
 });
+
+describe("ProductCard: single-store products", () => {
+  it("says which store when only one carries the product", () => {
+    render(<ProductCard product={{ ...product, minPrice: 8999, maxPrice: 8999, platforms: ["daraz"], priceChange7d: 0, offers: [product.offers[1]] }} />);
+    expect(screen.getByText("Only on Daraz")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: product.title })).toBeInTheDocument(); // still a full result card
+    expect(screen.queryByText(/Cheapest on/)).not.toBeInTheDocument();
+  });
+
+  it("does not claim 'only on' when several stores carry it", () => {
+    render(<ProductCard product={product} />);
+    expect(screen.queryByText(/^Only on/)).not.toBeInTheDocument();
+  });
+});

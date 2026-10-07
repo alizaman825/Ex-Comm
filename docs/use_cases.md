@@ -134,6 +134,7 @@ _Version 1.0 — 2026-10-07. Requirement IDs refer to `docs/requirements.md`._
 | 2. System checks the cache for recent results (less than 6 hours old). | 2a. Fresh cache found: skip to step 5 with source "cache". |
 | 3. System requests results from each platform (Daraz, PriceOye) in parallel, with a time limit. | 3a. One platform fails or times out: results from the others are still shown and the failed platform is marked. |
 | | 3b. All platforms fail: the system shows the latest cached results, or sample data, labelled as such. |
+| | 3c. Only one platform has the product: it is shown as its own result; no match on another platform is required. |
 | 4. System saves listings, groups the same product across platforms, records prices, and updates the cache. | |
 | 5. System shows result cards with image, title, lowest price, platform badges, and rating, plus where the data came from and when. | 5a. No results: the system shows an empty state with search suggestions. |
 | 6. Visitor moves between result pages. | |

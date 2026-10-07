@@ -2,10 +2,10 @@
 // Result `source`: 'live' (scraped now), 'cache' (fresh cache), 'fallback' (live failed/skipped, stored data shown).
 const { config } = require('../config/env');
 const { Product, Listing, SearchCache } = require('../models');
-const scrapers = require('../scrapers');
+const { gatherAll } = require('./gather');
 const { normalizeText, searchKeyOf } = require('./matching');
 const { resolveCategory } = require('./categories');
-const { parseQuery, isRelevant, relevanceScore } = require('./relevance');
+const { parseQuery, isRelevantAny, bestScore, TOKEN_SYNONYMS } = require('./relevance');
 const { ingestListings } = require('./ingest');
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -13,73 +13,75 @@ const inflight = new Map();
 
 const queryKeyOf = (q) => normalizeText(q).split(' ').filter(Boolean).sort().join(' ');
 
-function withTimeout(promise, ms, fallback) {
-  let timer;
-  return Promise.race([promise, new Promise((resolve) => { timer = setTimeout(() => resolve(fallback), ms); })]).finally(() =>
-    clearTimeout(timer)
-  );
+// Database pre-filter pattern for one query token. It must accept everything isRelevant() could accept
+// (that function does the precise check), so it mirrors its tolerances:
+//  - spacing/hyphens/dots are ignored (compact key),
+//  - a plural query word also matches the singular ("headphones" ~ "headphone"),
+//  - "15 inch" also matches "15.6 inch" (compact key "156in"),
+//  - equivalent words ("laptop" ~ "macbook") match each other.
+// A brand named only through its product line ("Galaxy" for Samsung) is handled by the precise check; the
+// pre-filter requires only ONE of the non-model words, so it cannot exclude those.
+function tokenPattern(t) {
+  const alternatives = [escapeRegex(searchKeyOf(t))];
+  if (/^[0-9]+in$/.test(t)) alternatives.push(`${t.slice(0, -2)}[0-9]*in`);
+  if (t.length > 3 && t.endsWith('s')) alternatives.push(escapeRegex(searchKeyOf(t.slice(0, -1))));
+  for (const alt of TOKEN_SYNONYMS[t] || []) alternatives.push(escapeRegex(searchKeyOf(alt)));
+  return new RegExp(alternatives.join('|'), 'i');
 }
 
 // Products already stored that answer the query, ordered by relevance (or popularity when no query).
+// A product matches when ANY of its names does (its title or the title of any store listing), so a
+// product is never lost because its shortened display title dropped a word. Nothing here depends on
+// how many stores carry the product.
 async function localSearch(parsed, { category } = {}) {
   const filter = {};
   if (category) filter.category = resolveCategory(category) || '__none__';
-  if (parsed.tokens.length) {
-    // Compare against the compact key so "wh-1000xm5" and "wh1000xm5" both find "Sony WH-1000XM5".
-    // isRelevant() below does the precise check.
-    filter.$and = parsed.tokens.map((t) => ({ searchKey: new RegExp(escapeRegex(searchKeyOf(t)), 'i') }));
+  const browsing = parsed.tokens.length === 0;
+  if (!browsing) {
+    // Cheap pre-filter on the compact key (so "wh-1000xm5" and "wh1000xm5" both find "Sony WH-1000XM5"):
+    // all model tokens, and at least one of the other words. Accessory words are only a preference, so
+    // they are not required here. isRelevantAny() below does the precise check.
+    const key = tokenPattern;
+    const must = parsed.model.map((t) => ({ searchKey: key(t) }));
+    const some = parsed.words.length ? [{ $or: parsed.words.map((t) => ({ searchKey: key(t) })) }] : [];
+    const only = !must.length && !some.length ? parsed.tokens.map((t) => ({ searchKey: key(t) })) : [];
+    filter.$and = [...must, ...some, ...only];
   }
-  let docs = await Product.find(filter).limit(300).lean();
-  if (parsed.tokens.length) {
-    docs = docs
-      .filter((p) => isRelevant(parsed, `${p.brand || ''} ${p.title}`))
-      .map((p) => ({ p, score: relevanceScore(parsed, `${p.brand || ''} ${p.title}`) }))
-      .sort((a, b) => b.score - a.score || (b.p.popularity || 0) - (a.p.popularity || 0))
-      .map((x) => x.p);
-  } else {
-    docs.sort((a, b) => (b.popularity || 0) - (a.popularity || 0));
-  }
-  return docs;
+  // Browsing sorts in the database before limiting, so the most popular products are never cut off.
+  const docs = await Product.find(filter)
+    .sort(browsing ? { popularity: -1 } : undefined)
+    .limit(browsing ? 2000 : 1500)
+    .lean();
+  if (browsing) return docs;
+
+  const names = (p) => [`${p.brand || ''} ${p.title}`, ...(p.altTitles || [])];
+  return docs
+    .filter((p) => isRelevantAny(parsed, names(p)))
+    .map((p) => ({ p, score: bestScore(parsed, names(p)) }))
+    .sort((x, y) => y.score - x.score || (y.p.popularity || 0) - (x.p.popularity || 0))
+    .map((x) => x.p);
 }
 
-async function liveScrapeAndIngest(query, parsed) {
-  const platforms = scrapers.livePlatforms();
-  const pending = scrapers.scrapeAll(query, platforms);
-  const timedOut = Object.fromEntries(
-    platforms.map((p) => [p, { platform: p, status: 'failed', listings: [], error: 'Search time budget exceeded', ms: config.search.liveBudgetMs }])
-  );
-  const results = await withTimeout(pending, config.search.liveBudgetMs, timedOut);
-
-  const platformStatus = {};
-  const toIngest = [];
-  for (const [platform, r] of Object.entries(results)) {
-    const relevant = r.listings.filter((l) => isRelevant(parsed, l.title)).slice(0, config.search.maxIngestPerPlatform);
-    platformStatus[platform] = {
-      status: r.status,
-      scraped: r.listings.length,
-      relevant: relevant.length,
-      ms: r.ms,
-      ...(r.error ? { error: r.error } : {}),
-    };
-    toIngest.push(...relevant);
-  }
-  if (toIngest.length) await ingestListings(toIngest);
-  const anySuccess = Object.values(platformStatus).some((s) => s.status === 'success');
-  return { platformStatus, anySuccess };
+async function liveScrapeAndIngest(query) {
+  const { platformStatus, listings, anySuccess } = await gatherAll(query);
+  if (listings.length) await ingestListings(listings);
+  return { platformStatus, anySuccess, found: listings.length };
 }
 
 // Decide where data comes from and refresh the DB if needed. Returns { source, platformStatus, fetchedAt }.
 async function prepareData(query, parsed, { live = true } = {}) {
   const queryKey = queryKeyOf(query);
   const cached = await SearchCache.findOne({ queryKey });
-  const fresh = cached && Date.now() - cached.fetchedAt.getTime() < config.search.cacheTtlMs;
+  // A search that found nothing is only remembered briefly: stores change, and a miss must not hide a product for hours.
+  const ttl = cached && cached.productIds && cached.productIds.length ? config.search.cacheTtlMs : config.search.emptyCacheTtlMs;
+  const fresh = cached && Date.now() - cached.fetchedAt.getTime() < ttl;
   if (fresh) return { source: 'cache', platformStatus: cached.platformStatus, fetchedAt: cached.fetchedAt, cached };
   if (!live || config.demoMode) {
     return { source: 'fallback', platformStatus: cached?.platformStatus || {}, fetchedAt: cached?.fetchedAt || null, cached };
   }
 
   if (!inflight.has(queryKey)) {
-    inflight.set(queryKey, liveScrapeAndIngest(query, parsed).finally(() => inflight.delete(queryKey)));
+    inflight.set(queryKey, liveScrapeAndIngest(query).finally(() => inflight.delete(queryKey)));
   }
   const { platformStatus, anySuccess } = await inflight.get(queryKey);
   if (anySuccess) return { source: 'live', platformStatus, fetchedAt: new Date(), cached, store: true };

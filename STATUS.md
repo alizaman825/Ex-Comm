@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T12 done: CHECKPOINT 2 (frontend end to end)_
+_Last updated: 2026-10-07 — search fix: every matching product is shown (accessory queries, single-store results)_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -27,7 +27,8 @@ _Last updated: 2026-10-07 — T12 done: CHECKPOINT 2 (frontend end to end)_
 - Bugs found by the new tests and fixed: modal/drawer stole focus on every keystroke (only one character could be typed in the alert dialog); target price "-5" was parsed as 5; "sony wh-1000xm5" found nothing in stored data (added a compact `searchKey` with startup backfill); compare "best rated" ranked by review count instead of rating; chart showed the previous range's data after a failed range change.
 - T12: `/wishlist` (sort, remove, price vs when saved), `/alerts` (tabs, create via product search, edit, pause/resume, delete with confirmation; bell refreshes), `/notifications` (unread filter, open, mark all read, pagination), `/profile` (name, email-alert preference, change password, delete account). All guarded by `AuthGate` (redirect to login and back). Loading, empty and error-with-retry states on all four pages.
 - Consistency fix found while reviewing screenshots: the headline price everywhere is now the retail price; the AliExpress supplier price is listed and labelled but never "cheapest" (backend `productStats`, search filters; cards and wishlist). Seeded notification wording fixed.
-- Tests: backend 199 (Jest), frontend 60 (Vitest + Testing Library) and 118 end-to-end (Playwright on Edge, desktop + Pixel 7), all passing; lint and typecheck clean; `npm audit --omit=dev` 0 vulnerabilities in both apps.
+- Search fix ("iphone 15 pro max cover" returned nothing): accessory words are a ranking preference; glued/spaced model names match; stores are queried with alternative phrasings and further pages when results are thin (`services/gather.js`); product relevance uses all listing titles (`altTitles`); DB pre-filter mirrors every relevance tolerance; no silent caps; short cache for empty results; brand is binding against other known brands. Single-store products are labelled "Only on X"; the compare view shows "Not available" for missing stores. Audit table in `docs/report_notes.md`; trace tool `scripts/trace-search.js`.
+- Tests: backend 235 (Jest), frontend 62 (Vitest), end-to-end 122 (Playwright); lint and typecheck clean.
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 ## Working

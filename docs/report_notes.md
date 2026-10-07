@@ -36,15 +36,39 @@ Limitations to state in the report:
 - Prices are scraped at most every few hours, so a shown price can be slightly out of date. The UI shows "last updated" times.
 - Only public search pages are read, with polite random delays, one request at a time per store, and a circuit breaker. No login-protected or personal data is collected.
 
-### Search sweep (live test of 23 terms)
-Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep.js ../docs/search_sweep.md` from `backend/`). Terms covered mobiles, laptops, audio, watches, home appliances, fashion, and three non-electronics (kurta, bed sheet, protein powder).
-- **Reliability:** all 46 platform requests succeeded (no blocks or timeouts), about 0.7–2.4 s each.
-- **Daraz** returned relevant products for 20 of 23 terms, with images on 100% and ratings on 20–100% (new listings have no reviews yet). It is the only store with results for fashion and other non-electronics.
-- **PriceOye** returned relevant products for 10 of 23 terms, all electronics. For non-electronics it returns unrelated phones, which the relevance filter removes. Ratings are often missing for laptops and air conditioners (the site shows none).
-- **Loose store search:** both stores pad results with accessories and neighbouring models (Daraz: cases, straps, sleeves; PriceOye: other phones). The relevance filter requires model numbers to match, drops accessories unless asked for, and tolerates spacing variants ("g-shock" ~ "G Shock", "air fryer" ~ "airfryer").
-- **Zero results are sometimes correct:** "macbook air m3" and "apple watch series 10" return only cases and straps on Daraz; "ray-ban sunglasses" returns only unbranded "RB" listings with no brand name. These are shown as "no results on this store" rather than wrong matches.
-- **Categories:** products are classified from title keywords. Items outside the six categories (bed sheet, protein powder) get no category and are found by search but not by category browsing.
-- **Fixes made from the sweep:** spacing/gluing tolerance in relevance, brand terms for the watches category (Amazfit, Garmin, Fitbit), warranty/decimal noise removal in matching.
+### Search relevance and the "show every match" rule
+Stores return loose results, so each scraped title is checked against the query before it is stored. The rules:
+- **A product from any one store is a result.** Nothing in search, grouping, caching or browsing requires a second store to carry a product. Products on one store are shown as their own result ("Only on Daraz"), and the compare view lists all three stores with "Not available on this store" for the ones that do not have it.
+- **Model numbers must match, in any spelling:** case, spacing, hyphens and word order are ignored and glued forms are split ("15promax" = "15 pro max", "iphone15" = "iphone 15", "s24ultra" = "s24 ultra"). "15 inch" also matches "15.6 inch".
+- **Other words** need at least two thirds present; a recognised brand in the query is binding against titles that name a different brand (a Tefal search does not return a Philips), but titles with no recognisable brand (common on Daraz) stay eligible. Equivalent words match ("laptop" ~ "MacBook", "headphones" ~ "headset").
+- **Accessory words in the query (cover, case, charger, cable, strap, sleeve, protector, stand, skin ...) are a preference, never a requirement.** The accessory filter is not applied, and titles containing those words rank first. Without an accessory word in the query, accessories are dropped so that "iphone 15" does not return cases.
+
+Pipeline audit for the bug "iphone 15 pro max cover returns nothing" (traced with `scripts/trace-search.js`). Places where a matching product could be lost, and the fix:
+
+| Stage | How a match was lost | Fix |
+|---|---|---|
+| Store search | Daraz ranks generic covers first for "cover" (0 of 120 results named the phone) but answers "case" with dozens of matches; the query was sent once | Up to 3 phrasings per store (synonyms such as cover/case, strap/band; the family word dropped), tried while fewer than 5 relevant items were found |
+| Store search | The matching product sits below the first page (amazfit gts: 0 on page 1, 5 on pages 2-3) | Pages 2 and 3 are read when the previous page was full and results are still thin (at most 4 requests per store) |
+| Relevance | Glued model names (15PROMAX, iphone15) did not match "15", "pro", "max" | Normalisation splits glued forms |
+| Relevance | Accessory words were treated as required, and accessory titles were filtered out of accessory searches | Accessory words are a ranking preference; the accessory filter only applies to non-accessory queries |
+| Relevance | "Levi's" (normalised "levi") did not equal the query "levis" once brand became binding (27 results dropped to 1) | Brand spellings are canonicalised; found by the sweep before release |
+| Ingest | Only the first 25 relevant items per store were stored | One full store page (40) is stored |
+| Grouping | none: single-store products already become their own product; identical items from different sellers are grouped, and every listing stays visible on the product page | unchanged, covered by tests |
+| Local search | The final relevance check ran on the shortened product title, so a product vanished although its store listing matched | A product matches if any of its listing titles does (`altTitles`) |
+| Local search | The database pre-filter was stricter than the relevance check ("15 inch" vs "15.6 inch", plural vs singular, equivalent words) | The pre-filter mirrors every tolerance; a property-style test checks it never excludes what the relevance check accepts |
+| Local search | Candidate lists were capped at 300 and category browsing sorted after the cap | Cap raised, and browsing sorts in the database before limiting |
+| Cache | A search that found nothing was cached as "fresh" for 6 hours, hiding a product that appears later | Empty results are cached for 10 minutes only |
+| Time budget | Results already found were discarded when the 10 s budget ran out | Partial results are returned and the store is marked "time budget reached" |
+
+Honest limits: a store that genuinely has no matching product contributes nothing (for "iphone 15 pro max cover" no matching PriceOye product could be found with 3 phrasings, 2 pages and its suggest endpoint, so only Daraz results are shown). Stores that sell only unbranded copies (Ray-Ban) cannot be matched by brand.
+
+### Search sweep (live test of 29 terms)
+Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep.js ../docs/search_sweep.md` from `backend/`). The sweep uses the same gather stage as the app. Terms cover the six categories, three non-electronics and six accessory queries (cover, case, charger, sleeve, strap).
+- **Reliability:** all 58 term-and-store searches succeeded (no blocks or timeouts).
+- **Daraz** returned relevant products for 26 of 29 terms and **PriceOye** for 16 of 29 (PriceOye sells electronics only). 28 of 29 terms returned at least one result from at least one store; the exception, "ray-ban sunglasses", is only sold on Daraz as unbranded copies.
+- **Accessory queries:** "iphone 15 pro max cover" 36 Daraz results (found through the "case" phrasing; 0 before the fix), "samsung a15 case" 38 + 1, "airpods pro case" 25 + 9, "iphone 15 charger" 15, "laptop sleeve 15 inch" 26 + 3, "apple watch strap" 9 + 24.
+- **Zero results are sometimes correct:** "macbook air m3" and "apple watch series 10" return only cases and straps on Daraz (shown as "no results on this store" rather than wrong matches).
+- **Categories:** products are classified from title keywords; items outside the six categories (bed sheet, protein powder) get no category and are found by search but not by category browsing.
 
 ### Price check job
 - The job re-fetches only tracked listings (wishlisted or with an active alert), at most 60 per run, one request at a time per store. Each listing is re-fetched **by its own store link**, not by searching again: Daraz by item id (the catalog endpoint returns exactly that item), PriceOye by its product page (price, stock and rating from the page's structured data). Fuzzy title matching is used only when a search discovers listings, to group the same product across stores; it plays no part in price updates, so a price can never be taken from a similar-looking product.

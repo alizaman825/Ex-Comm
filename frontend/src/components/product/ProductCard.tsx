@@ -40,6 +40,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
           </Link>
         </h3>
         <Rating value={product.rating} count={product.reviewCount} className="mt-2" />
+        {retail.length === 1 && product.offers.length === 1 && <p className="mt-1.5 text-xs font-medium text-slate-500">Only on {PLATFORM_LABEL[retail[0].platform]}</p>}
 
         <div className="mt-3 flex items-baseline gap-2">
           <span className="t-price text-xl">{formatPrice(product.minPrice)}</span>

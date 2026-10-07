@@ -41,6 +41,8 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | FR-11 | The system shall let the user sort results by relevance, lowest price, highest price, or rating. |
 | FR-12 | The system shall paginate search results. |
 | FR-13 | The system shall show where results came from (live, cached, or sample data) and when they were last updated. |
+| FR-36 | A product that is available on only one platform shall still appear in search results and category browsing (labelled with the store); the system shall never require a product to exist on several platforms to be shown. The compare view shall show every platform and mark those without the product as "not available". |
+| FR-37 | When a search contains an accessory word (cover, case, charger, strap ...), accessories shall be included and ranked first; model numbers shall match regardless of spelling, spacing, case or word order. |
 
 | FR-34 | The system shall organise products into six categories (Mobiles, Laptops, Audio, Watches, Home Appliances, Fashion), let the user browse a category and filter search results by category, and show preset searches per category. |
 | FR-35 | The system shall show popular (trending) searches on the home page, based on how often queries were searched. |

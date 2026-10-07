@@ -7,6 +7,7 @@ const productSchema = new mongoose.Schema(
     title: { type: String, required: true, trim: true },
     matchKey: { type: String, required: true, unique: true },
     brand: { type: String, trim: true },
+    altTitles: [String], // titles of its store listings (a product matches a search if any of them does)
     searchKey: { type: String }, // compact normalized brand + title + category (see matching.searchKeyOf)
     category: { type: String, trim: true, index: true },
     image: String,

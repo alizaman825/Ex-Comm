@@ -21,7 +21,7 @@ const VARIANT_WORDS = new Set(
 );
 
 const ACCESSORY_WORDS = new Set(
-  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film'.split(' ')
+  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard'.split(' ')
 );
 
 const BRAND_ALIASES = {
@@ -64,6 +64,10 @@ function normalizeText(title) {
     // noise numbers that are not part of the model: warranty length ("1 year") and bare decimals (screen size "6.6")
     .replace(/(^| )[0-9]+ ?(year|years|yr|yrs|month|months)(?= |$)/g, ' ')
     .replace(/(^| )[0-9]+[.][0-9]+(?= |$)/g, ' ')
+    // glued model words (no backslashes: the text is single-space separated here)
+    .replace(/(^| )(iphone|ipad|pixel|redmi|galaxy|poco|note)([0-9]{1,3})(?=[a-z]| |$)/g, '$1$2 $3')
+    .replace(/(^| )([a-z]{0,2}[0-9]{1,3})(promax|proplus|pro|plus|max|ultra|mini|lite|fe)(?= |$)/g, '$1$2 $3')
+    .replace(/(^| )(pro|ultra)(max|plus)(?= |$)/g, '$1$2 $3')
     .replace(/ +/g, ' ')
     .trim();
 }
@@ -103,6 +107,7 @@ function significantTokens(text) {
 }
 
 const hasAccessoryWord = (tokens) => tokens.some((t) => ACCESSORY_WORDS.has(t));
+const accessoryWordsIn = (tokens) => tokens.filter((t) => ACCESSORY_WORDS.has(t));
 
 const isStorage = (t) => /^\d+(gb|tb)$/.test(t);
 const isUnit = (t) => /^\d+(\.\d+)?(mah|w|hz|mp|mm|cm|in|ml|l|kg)$/.test(t);
@@ -179,4 +184,12 @@ function searchKeyOf(...parts) {
   return normalizeText(parts.filter(Boolean).join(' ')).split(' ').join('').split('-').join('').split('.').join('');
 }
 
-module.exports = { searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
+// Recognised brand named in a text (null when none, e.g. unbranded store titles).
+// Spelling variants of the same brand compare equal ("Levi's" is normalised to "levi", people type "levis").
+const BRAND_CANON = { levis: 'levi', 'tp-link': 'tplink', 'ray-ban': 'rayban' };
+const brandOf = (text) => {
+  const b = analyzeTitle(text).brand;
+  return b ? BRAND_CANON[b] || b : b;
+};
+
+module.exports = { brandOf, accessoryWordsIn, ACCESSORY_WORDS, searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
