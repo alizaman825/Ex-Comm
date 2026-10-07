@@ -112,3 +112,14 @@ describe('product lists', () => {
     expect(res.body.products.map((p) => p.id)).not.toContain(a55);
   });
 });
+
+describe('compare: best rated', () => {
+  test('is the listing with the highest rating (review count only breaks ties)', async () => {
+    const { Listing } = require('../src/models');
+    const ids = [iphone, a55];
+    const res = await request(app).get(`/api/compare?ids=${ids.join(',')}`);
+    const all = await Listing.find({ productId: { $in: ids }, rating: { $gt: 0 } }).lean();
+    const top = Math.max(...all.map((l) => l.rating));
+    expect(res.body.bestRated.rating).toBe(top);
+  });
+});

@@ -56,4 +56,13 @@ async function refreshProductStats(productId) {
   await product.save();
 }
 
-module.exports = { refreshProductStats };
+// Adds the compact search key to products stored before it existed (cheap, runs at startup).
+async function backfillSearchKeys() {
+  const { searchKeyOf } = require('./matching');
+  const missing = await Product.find({ searchKey: { $exists: false } }).select('title brand category').lean();
+  if (!missing.length) return 0;
+  await Product.bulkWrite(missing.map((p) => ({ updateOne: { filter: { _id: p._id }, update: { $set: { searchKey: searchKeyOf(p.brand, p.title) } } } })));
+  return missing.length;
+}
+
+module.exports = { refreshProductStats, backfillSearchKeys };

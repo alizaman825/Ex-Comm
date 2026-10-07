@@ -3,7 +3,7 @@
 
 const mongoose = require('mongoose');
 const catalog = require('./catalog');
-const { analyzeTitle } = require('../services/matching');
+const { analyzeTitle, searchKeyOf } = require('../services/matching');
 const { refreshProductStats } = require('../services/productStats');
 const { ensureCategories, resolveCategory } = require('../services/categories');
 const { queryKeyOf, localSearch } = require('../services/search');
@@ -153,6 +153,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
       matchKey: analyzeTitle(item.t).key,
       brand: item.b,
       category: resolveCategory(item.c),
+      searchKey: searchKeyOf(item.b, item.t),
       image: IMAGES[item.t],
       popularity: Math.round(rand() * 60 + (item.c === 'Mobiles' ? 40 : 0)),
     });

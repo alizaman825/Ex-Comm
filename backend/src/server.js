@@ -2,6 +2,7 @@ const { config, assertConfig } = require('./config/env');
 const { connectDB } = require('./config/db');
 const { createApp } = require('./app');
 const { Product } = require('./models');
+const { backfillSearchKeys } = require('./services/productStats');
 const { seedDatabase } = require('./seed/seed');
 const { startScheduler, stopScheduler } = require('./jobs/scheduler');
 
@@ -12,6 +13,7 @@ async function start() {
     console.log('Database is empty: loading sample data (AUTO_SEED=true)');
     await seedDatabase({ reset: false });
   }
+  await backfillSearchKeys();
   const app = createApp();
   startScheduler();
   const server = app.listen(config.port, () => {

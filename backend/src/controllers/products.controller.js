@@ -174,7 +174,7 @@ async function compare(req, res) {
   const retail = listings.filter((l) => l.inStock && l.role !== 'supplier');
   const cheapest = retail.length ? retail.reduce((a, b) => (b.price < a.price ? b : a)) : null;
   const rated = listings.filter((l) => l.rating);
-  const best = rated.length ? rated.reduce((a, b) => ((b.rating * 1000 + b.reviewCount) > (a.rating * 1000 + a.reviewCount) ? b : a)) : null;
+  const best = rated.length ? rated.reduce((a, b) => ((b.rating * 1e6 + b.reviewCount) > (a.rating * 1e6 + a.reviewCount) ? b : a)) : null;
 
   res.json({
     mode: ids.length === 1 ? 'platforms' : 'products',

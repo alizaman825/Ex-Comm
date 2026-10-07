@@ -3,7 +3,7 @@
 const { config } = require('../config/env');
 const { Product, Listing, SearchCache } = require('../models');
 const scrapers = require('../scrapers');
-const { normalizeText } = require('./matching');
+const { normalizeText, searchKeyOf } = require('./matching');
 const { resolveCategory } = require('./categories');
 const { parseQuery, isRelevant, relevanceScore } = require('./relevance');
 const { ingestListings } = require('./ingest');
@@ -25,13 +25,9 @@ async function localSearch(parsed, { category } = {}) {
   const filter = {};
   if (category) filter.category = resolveCategory(category) || '__none__';
   if (parsed.tokens.length) {
-    filter.$and = parsed.tokens.map((t) => ({
-      $or: [
-        { title: new RegExp(escapeRegex(t), 'i') },
-        { brand: new RegExp(escapeRegex(t), 'i') },
-        { category: new RegExp(escapeRegex(t), 'i') },
-      ],
-    }));
+    // Compare against the compact key so "wh-1000xm5" and "wh1000xm5" both find "Sony WH-1000XM5".
+    // isRelevant() below does the precise check.
+    filter.$and = parsed.tokens.map((t) => ({ searchKey: new RegExp(escapeRegex(searchKeyOf(t)), 'i') }));
   }
   let docs = await Product.find(filter).limit(300).lean();
   if (parsed.tokens.length) {

@@ -215,3 +215,19 @@ describe('relevance tolerance for spacing variants', () => {
     ['air fryer', 'Air Purifier HEPA', false],
   ])('%s vs %s -> %s', (q, title, expected) => expect(isRelevant(parseQuery(q), title)).toBe(expected));
 });
+
+describe('model codes with hyphens', () => {
+  test.each(['sony wh-1000xm5', 'sony wh1000xm5', 'wh-1000xm5 headphones', 'WH 1000XM5'.replace(' 1000', '-1000')])('"%s" finds the stored product', async (q) => {
+    const res = await get(`q=${encodeURIComponent(q)}&live=false`);
+    expect(res.body.results[0].title).toBe('Sony WH-1000XM5 Wireless Headphones');
+  });
+
+  test('backfill adds search keys to products stored without one', async () => {
+    const { backfillSearchKeys } = require('../src/services/productStats');
+    await Product.updateMany({}, { $unset: { searchKey: 1 } });
+    expect(await backfillSearchKeys()).toBeGreaterThan(80);
+    expect(await backfillSearchKeys()).toBe(0);
+    const res = await get('q=sony wh-1000xm5&live=false');
+    expect(res.body.total).toBeGreaterThan(0);
+  });
+});

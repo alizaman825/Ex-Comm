@@ -173,4 +173,10 @@ function findBestMatch(analyzed, candidates) {
   return bestScore >= MATCH_THRESHOLD ? { candidate: best, score: bestScore } : null;
 }
 
-module.exports = { significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
+// Spaces, hyphens and dots removed: "Sony WH-1000XM5" -> "sonywh1000xm5". Used to find stored products
+// whose title spells a model code differently from the query ("wh-1000xm5", "wh1000xm5").
+function searchKeyOf(...parts) {
+  return normalizeText(parts.filter(Boolean).join(' ')).split(' ').join('').split('-').join('').split('.').join('');
+}
+
+module.exports = { searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };

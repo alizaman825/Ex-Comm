@@ -1,7 +1,7 @@
 // Turns scraped listings into stored data: group into products (title normalization + fuzzy match),
 // upsert listings, append price-history points, refresh product stats.
 const { Product, Listing, PriceHistory } = require('../models');
-const { analyzeTitle, findBestMatch } = require('./matching');
+const { analyzeTitle, findBestMatch, searchKeyOf } = require('./matching');
 const { refreshProductStats } = require('./productStats');
 const { classify } = require('./categories');
 
@@ -51,6 +51,7 @@ async function createProduct(listing, analyzed) {
           matchKey: analyzed.key,
           brand: capitalize(analyzed.brand || listing.brand || '') || undefined,
           category: classify(listing.title, listing.category) || undefined,
+          searchKey: searchKeyOf(capitalize(analyzed.brand || listing.brand || ''), cleanTitle(listing.title)),
           image: listing.image || undefined,
         },
       },

@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 import { settle } from "./helpers";
 
 // Runs on a phone-sized viewport (Pixel 7).
-const PAGES = ["/", "/login", "/register", "/categories", "/search?q=samsung", "/search?category=mobiles", "/about", "/not-a-page"];
+const PAGES = ["/", "/compare", "/login", "/register", "/categories", "/search?q=samsung", "/search?category=mobiles", "/about", "/not-a-page"];
 
 for (const path of PAGES) {
   test(`${path} has no horizontal scroll on mobile`, async ({ page }) => {
@@ -50,4 +50,16 @@ test("product cards stack in one column and stay readable", async ({ page }) => 
   await expect(first).toBeVisible();
   const box = await first.boundingBox();
   expect(box!.width).toBeGreaterThan(280);
+});
+
+test("product page and compare table fit a phone screen (tables scroll inside their card)", async ({ page, request }) => {
+  const res = await request.get("/api/search?q=galaxy%20a55&live=false");
+  const id = ((await res.json()) as { results: { id: string }[] }).results[0].id;
+  for (const url of [`/products/${id}`, `/compare?ids=${id}`]) {
+    await page.goto(url);
+    await expect(page.getByRole("heading").first()).toBeVisible();
+    await settle(page);
+    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - window.innerWidth);
+    expect(overflow, url).toBeLessThanOrEqual(0);
+  }
 });
