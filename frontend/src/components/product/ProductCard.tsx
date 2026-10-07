@@ -3,7 +3,7 @@
 import Link from "next/link";
 import clsx from "clsx";
 import { ArrowDownRight, Check, Crown, Plus } from "lucide-react";
-import { PLATFORM_LABEL, formatPrice } from "@/lib/format";
+import { PLATFORM_LABEL, formatPrice, timeAgo } from "@/lib/format";
 import type { ProductCard as ProductCardData } from "@/lib/types";
 import { useCompare } from "@/components/compare/CompareProvider";
 import { PlatformDot, Rating } from "./badges";
@@ -71,7 +71,9 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
                 <span className="truncate">{PLATFORM_LABEL[o.platform]}</span>
                 {o.role === "supplier" && <span className="shrink-0 rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-600">supplier</span>}
                 {o.dataSource === "saved" && <span className="shrink-0 rounded bg-amber-100 px-1 py-px text-[10px] font-medium text-amber-700">saved</span>}
-                {!o.inStock && <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500">out of stock</span>}
+                {!o.inStock && (
+                  <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
+                )}
               </span>
               <span className={clsx("shrink-0 whitespace-nowrap tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-700" : "text-slate-600")}>{formatPrice(o.price)}</span>
             </li>
