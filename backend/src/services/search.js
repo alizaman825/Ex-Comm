@@ -1,18 +1,20 @@
-// Search: cache-first, then live scrape (Daraz + PriceOye), falling back to stored/sample data.
-// Result `source`: 'live' (scraped now), 'cache' (fresh cache), 'fallback' (live failed/skipped, stored data shown).
+// Search.
+//  - Live search (default): mirrors what the stores return for the query, nothing filtered (services/liveSearch.js).
+//  - Stored data: used for demo mode, category browsing, `live=false`, and when no store answers.
+// Result `source`: 'live' (stores were just checked), 'cache' (an earlier live check, reused for a few
+// minutes), 'fallback' (stored data, because live search is off or no store answered).
 const { config } = require('../config/env');
 const { Product, Listing, SearchCache } = require('../models');
-const { gatherAll } = require('./gather');
-const scrapers = require('../scrapers');
 const { normalizeText, searchKeyOf } = require('./matching');
 const { resolveCategory } = require('./categories');
 const { parseQuery, isRelevantAny, bestScore, TOKEN_SYNONYMS } = require('./relevance');
-const { ingestListings } = require('./ingest');
+const liveSearch = require('./liveSearch');
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-const inflight = new Map();
 
 const queryKeyOf = (q) => normalizeText(q).split(' ').filter(Boolean).sort().join(' ');
+// Live results depend on the order of the words (the stores rank by it), so the live key keeps it.
+const liveKeyOf = (q) => `live:${normalizeText(q)}`;
 
 // Database pre-filter pattern for one query token. It must accept everything isRelevant() could accept
 // (that function does the precise check), so it mirrors its tolerances:
@@ -30,18 +32,16 @@ function tokenPattern(t) {
   return new RegExp(alternatives.join('|'), 'i');
 }
 
-// Products already stored that answer the query, ordered by relevance (or popularity when no query).
-// A product matches when ANY of its names does (its title or the title of any store listing), so a
-// product is never lost because its shortened display title dropped a word. Nothing here depends on
-// how many stores carry the product.
+// Stored products that answer the query, ordered by relevance (or popularity when no query). Used for
+// category browsing, demo mode and as the fallback when no store answers; live search does not use it.
+// A product matches when ANY of its names does (its title or the title of any store listing).
 async function localSearch(parsed, { category } = {}) {
   const filter = {};
   if (category) filter.category = resolveCategory(category) || '__none__';
   const browsing = parsed.tokens.length === 0;
   if (!browsing) {
-    // Cheap pre-filter on the compact key (so "wh-1000xm5" and "wh1000xm5" both find "Sony WH-1000XM5"):
-    // all model tokens, and at least one of the other words. Accessory words are only a preference, so
-    // they are not required here. isRelevantAny() below does the precise check.
+    // Cheap pre-filter on the compact key: all model tokens, and at least one of the other words.
+    // Accessory words are only a preference, so they are not required here.
     const key = tokenPattern;
     const must = parsed.model.map((t) => ({ searchKey: key(t) }));
     const some = parsed.words.length ? [{ $or: parsed.words.map((t) => ({ searchKey: key(t) })) }] : [];
@@ -61,35 +61,6 @@ async function localSearch(parsed, { category } = {}) {
     .map((p) => ({ p, score: bestScore(parsed, names(p)) }))
     .sort((x, y) => y.score - x.score || (y.p.popularity || 0) - (x.p.popularity || 0))
     .map((x) => x.p);
-}
-
-async function liveScrapeAndIngest(query) {
-  const { platformStatus, listings, anySuccess } = await gatherAll(query);
-  if (listings.length) await ingestListings(listings);
-  return { platformStatus, anySuccess, found: listings.length };
-}
-
-// Decide where data comes from and refresh the DB if needed. Returns { source, platformStatus, fetchedAt }.
-async function prepareData(query, parsed, { live = true, refresh = false } = {}) {
-  const queryKey = queryKeyOf(query);
-  const cached = await SearchCache.findOne({ queryKey });
-  // A search that found nothing is only remembered briefly: stores change, and a miss must not hide a product for hours.
-  const ttl = cached && cached.productIds && cached.productIds.length ? config.search.cacheTtlMs : config.search.emptyCacheTtlMs;
-  // refresh = the user asked to check the stores again, so an earlier result is never reused
-  const fresh = !refresh && cached && Date.now() - cached.fetchedAt.getTime() < ttl;
-  if (fresh) return { source: 'cache', platformStatus: cached.platformStatus, fetchedAt: cached.fetchedAt, cached };
-  if (!live || config.demoMode) {
-    return { source: 'fallback', platformStatus: cached?.platformStatus || {}, fetchedAt: cached?.fetchedAt || null, cached };
-  }
-
-  // An explicit refresh also lets a paused store through again: the user is asking us to try now.
-  if (refresh) scrapers.closeCircuits(scrapers.livePlatforms());
-  if (!inflight.has(queryKey)) {
-    inflight.set(queryKey, liveScrapeAndIngest(query).finally(() => inflight.delete(queryKey)));
-  }
-  const { platformStatus, anySuccess } = await inflight.get(queryKey);
-  if (anySuccess) return { source: 'live', platformStatus, fetchedAt: new Date(), cached, store: true };
-  return { source: 'fallback', platformStatus, fetchedAt: cached?.fetchedAt || null, cached };
 }
 
 // Cheapest in-stock offer per platform, shaped for product cards.
@@ -144,19 +115,34 @@ const SORTS = {
   discount: (a, b) => a.priceChange7d - b.priceChange7d,
 };
 
-// params: { q, category, platform[], minPrice, maxPrice, minRating, sort, page, pageSize, live }
+// The products with these ids, in this order (ids whose product no longer exists are skipped).
+async function productsInOrder(ids) {
+  const docs = await Product.find({ _id: { $in: ids } }).lean();
+  const byId = new Map(docs.map((d) => [String(d._id), d]));
+  return ids.map((id) => byId.get(String(id))).filter(Boolean);
+}
+
+// params: { q, category, platform[], minPrice, maxPrice, minRating, sort, page, pageSize, limit, live, refresh }
+//  - live search returns the first `limit` results (more are loaded from the stores when asked for);
+//  - stored data is paginated with page / pageSize.
 async function search(params) {
-  const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, live = true, refresh = false } = params;
+  const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, limit = 24, live = true, refresh = false } = params;
   const parsed = parseQuery(q);
 
   let meta = { source: 'fallback', platformStatus: {}, fetchedAt: null };
-  let cached = null;
-  if (parsed.tokens.length) {
-    meta = await prepareData(q, parsed, { live, refresh });
-    cached = meta.cached;
+  let liveInfo = null;
+  if (parsed.tokens.length && live && !config.demoMode) {
+    const attempt = await liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKeyOf(q) });
+    if (attempt.anySuccess) {
+      liveInfo = attempt;
+      meta = { source: attempt.fetchedNow ? 'live' : 'cache', platformStatus: attempt.platformStatus, fetchedAt: attempt.fetchedAt };
+    } else {
+      // no store answered: stored data is shown, with the reason for each store
+      meta = { source: 'fallback', platformStatus: attempt.platformStatus, fetchedAt: null };
+    }
   }
 
-  const products = await localSearch(parsed, { category });
+  const products = liveInfo ? await productsInOrder(liveInfo.productIds) : await localSearch(parsed, { category });
   const listingsByProduct = new Map();
   if (products.length) {
     const all = await Listing.find({ productId: { $in: products.map((p) => p._id) } }).lean();
@@ -169,8 +155,10 @@ async function search(params) {
 
   // Filters apply to the offers of the selected platforms.
   const wanted = platform && platform.length ? new Set(platform) : null;
+  const categorySlug = category ? resolveCategory(category) || '__none__' : null;
   let cards = [];
   for (const p of products) {
+    if (liveInfo && categorySlug && p.category !== categorySlug) continue; // (stored search filters by category in the query)
     let listings = listingsByProduct.get(String(p._id)) || [];
     if (wanted) listings = listings.filter((l) => wanted.has(l.platform));
     if (minPrice !== undefined) listings = listings.filter((l) => l.price >= minPrice);
@@ -187,36 +175,44 @@ async function search(params) {
     }
     cards.push(card);
   }
-  if (SORTS[sort]) cards.sort(SORTS[sort]);
+  if (SORTS[sort]) cards.sort(SORTS[sort]); // sorts what is loaded; "best match first" is the stores' order with matches ranked up
 
   const total = cards.length;
-  const pages = Math.max(1, Math.ceil(total / pageSize));
-  cards = cards.slice((page - 1) * pageSize, page * pageSize);
+  let pages = Math.max(1, Math.ceil(total / pageSize));
+  let shownPage = page;
+  let hasMore = false;
+  if (liveInfo) {
+    hasMore = cards.length > limit || liveInfo.storesHaveMore;
+    cards = cards.slice(0, limit);
+    pages = 1;
+    shownPage = 1;
+  } else {
+    cards = cards.slice((page - 1) * pageSize, page * pageSize);
+  }
 
-  // Remember the query (for the cache and the trending list).
+  // Remember the query for the trending list (queries that found something).
   if (parsed.tokens.length) {
-    const queryKey = queryKeyOf(q);
     const update = { $set: { query: q.trim().toLowerCase(), lastSearchedAt: new Date() }, $inc: { hits: 1 } };
-    if (meta.source === 'live') {
-      update.$set = { ...update.$set, source: 'live', platformStatus: meta.platformStatus, fetchedAt: meta.fetchedAt, productIds: products.map((p) => p._id) };
-    } else if (!cached) {
-      update.$set = { ...update.$set, source: meta.source, platformStatus: meta.platformStatus, fetchedAt: new Date(0), productIds: [] };
-    }
-    await SearchCache.updateOne({ queryKey }, update, { upsert: true });
+    if (total > 0) update.$set.productIds = products.slice(0, 50).map((p) => p._id);
+    await SearchCache.updateOne({ queryKey: queryKeyOf(q) }, update, { upsert: true });
   }
 
   return {
     query: q,
     source: meta.source,
+    mode: liveInfo ? 'live' : 'stored',
     demoMode: config.demoMode, // true: live scraping is switched off, only saved data is shown
     fetchedAt: meta.fetchedAt,
     platformStatus: meta.platformStatus,
     total,
-    page,
+    loaded: total,
+    estimatedTotal: liveInfo ? liveInfo.estimatedTotal : total,
+    hasMore,
+    page: shownPage,
     pages,
     pageSize,
     results: cards,
   };
 }
 
-module.exports = { search, localSearch, queryKeyOf, toCard, offersFor };
+module.exports = { search, localSearch, queryKeyOf, liveKeyOf, toCard, offersFor };

@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — search: store failures explained, refresh resets the breaker, model-number junk filtered_
+_Last updated: 2026-10-07 — live search now mirrors the stores (nothing filtered, Show more, store totals)_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -33,6 +33,8 @@ _Last updated: 2026-10-07 — search: store failures explained, refresh resets t
 - Relevance: for model-number searches, items that only say what they fit ("Handbag for iPhone 15 Pro Max") no longer match. Neither store currently lists the iPhone 15 Pro Max phone itself (PriceOye: 17/18 only), so that query legitimately returns only loosely related items.
 - Tests: backend 253 (Jest), frontend 83 (Vitest), end-to-end 128 (Playwright); lint and typecheck clean.
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
+
+- Search redesign ("iphone 16 pro max" showed 1 result while Daraz had ~4,000): live search mirrors the stores. `services/liveSearch.js` loads store pages (Daraz 40, PriceOye 24) into an ordered per-query list, bulk ingest (`services/ingest.js`), ranking only (`relevanceScore`), same-store listings never merged, `limit` + "Show more" in the UI, store totals in the banner, refresh bypasses the 15-min reuse. Stored-data search (relevance filtered) only for demo mode, category browsing and when no store answers. `gather.js` removed. Sweep script rewritten. Tests: backend 254, frontend 85.
 
 ## Working
 - **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).

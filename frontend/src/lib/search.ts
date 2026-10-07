@@ -19,7 +19,12 @@ export interface SearchState {
   minRating?: number;
   sort: SortValue;
   page: number;
+  /** live search: how many results to show (Show more raises it) */
+  show: number;
 }
+
+export const SHOW_STEP = 24;
+export const SHOW_MAX = 400;
 
 const num = (v: string | null): number | undefined => {
   if (v === null || v.trim() === "") return undefined;
@@ -31,6 +36,7 @@ const num = (v: string | null): number | undefined => {
 export function parseSearchParams(params: URLSearchParams): SearchState {
   const sort = params.get("sort") as SortValue | null;
   const page = Math.floor(Number(params.get("page")));
+  const show = Number(params.get("show"));
   const rating = num(params.get("minRating"));
   return {
     q: (params.get("q") ?? "").trim().slice(0, 100),
@@ -44,6 +50,7 @@ export function parseSearchParams(params: URLSearchParams): SearchState {
     minRating: rating !== undefined && rating <= 5 ? rating : undefined,
     sort: SORTS.some((s) => s.value === sort) ? (sort as SortValue) : "relevance",
     page: Number.isFinite(page) && page >= 1 ? page : 1,
+    show: Number.isFinite(show) && show > SHOW_STEP ? Math.min(Math.floor(show), SHOW_MAX) : SHOW_STEP,
   };
 }
 
@@ -58,6 +65,7 @@ export function toSearchParams(state: Partial<SearchState>): URLSearchParams {
   if (state.minRating !== undefined) p.set("minRating", String(state.minRating));
   if (state.sort && state.sort !== "relevance") p.set("sort", state.sort);
   if (state.page && state.page > 1) p.set("page", String(state.page));
+  if (state.show && state.show > SHOW_STEP) p.set("show", String(state.show));
   return p;
 }
 

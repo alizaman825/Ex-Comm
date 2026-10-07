@@ -61,7 +61,7 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
               <li key={platform} className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-black/5">
                 <PlatformDot platform={platform} />
                 {PLATFORM_LABEL[platform]}
-                <span className={s.status === "success" ? "text-emerald-700" : "text-rose-700"}>{s.status === "success" ? `${s.relevant ?? 0} found` : "unavailable"}</span>
+                <span className={s.status === "success" ? "text-emerald-700" : "text-rose-700"}>{s.status === "success" ? (s.total ? `${s.loaded ?? s.relevant ?? 0} of ${s.approximate ? "about " : ""}${s.total.toLocaleString("en-PK")}` : `${s.relevant ?? 0} found`) : "unavailable"}</span>
               </li>
             ))}
           </ul>

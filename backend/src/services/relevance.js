@@ -111,7 +111,7 @@ const isRelevantAny = (parsedQuery, titles) => titles.some((t) => isRelevant(par
 
 // 0..1 score used to order results; accessory words in the query raise titles that contain them.
 function relevanceScore(parsedQuery, title) {
-  const { tokens, accessoryWords } = parsedQuery;
+  const { tokens, accessoryWords, model } = parsedQuery;
   if (!tokens.length) return 0;
   const { tokens: titleTokens, compact } = titleInfo(title);
   const hit = tokens.filter((t) => tokenMatches(t, titleTokens, compact)).length;
@@ -121,6 +121,12 @@ function relevanceScore(parsedQuery, title) {
     score += 0.25 * (wanted / accessoryWords.length);
     // an unrelated accessory (a case when a charger was asked for) ranks below the requested kind
     if (!wanted && accessoryWordsIn([...titleTokens]).length) score -= 0.15;
+  }
+  // Ranking only (nothing is hidden): when the query did not ask for accessories, titles that are clearly
+  // accessories (case, cover, charger ... or "for / compatible with" the phone) rank below real products.
+  if (!accessoryWords.length) {
+    const accessoryLike = accessoryWordsIn([...titleTokens]).length > 0 || (model.length > 0 && normalizeText(title).split(' ').some((t) => FITS_WORDS.has(t)));
+    if (accessoryLike) score -= 0.3;
   }
   // Prefer concise titles with the same hits (closer to the exact product).
   return score - Math.min(titleTokens.size, 30) * 0.002;

@@ -37,7 +37,7 @@ async function scrapePlatform(platform, query, { kind = 'search', page = 1 } = {
     const listings = await queues[platform].run(() => adapter.search(query, { page }));
     const ms = Date.now() - started;
     await log({ platform, query, kind, status: 'success', itemCount: listings.length, durationMs: ms });
-    return { platform, status: 'success', listings, ms };
+    return { platform, status: 'success', listings, meta: listings.meta, ms };
   } catch (err) {
     const ms = Date.now() - started;
     const status = err.code === 'CIRCUIT_OPEN' ? 'skipped' : 'failed';

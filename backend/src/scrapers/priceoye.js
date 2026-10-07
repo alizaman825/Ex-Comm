@@ -45,9 +45,24 @@ function parse(html) {
   return listings;
 }
 
+// Pagination links ("?q=..&page=80") tell how many pages the result set has.
+function lastPageOf(html) {
+  const $ = cheerio.load(html);
+  let last = 1;
+  $('a[href*="page="]').each((_i, el) => {
+    const m = /[?&]page=([0-9]+)/.exec($(el).attr('href') || '');
+    if (m) last = Math.max(last, Number(m[1]));
+  });
+  return last;
+}
+
 async function search(query, { page = 1 } = {}) {
   const res = await http.get(searchUrl(query, page), { headers: { Accept: 'text/html' } });
-  return parse(String(res.data));
+  const html = String(res.data);
+  const out = parse(html);
+  const pageSize = out.length || 24;
+  out.meta = { total: Math.max(lastPageOf(html), page) * pageSize, pageSize, approximate: true };
+  return out;
 }
 
 // A real product page looks like /<category>/<brand>/<slug>; sample listings link to /search?q=...

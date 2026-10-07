@@ -42,7 +42,7 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | FR-12 | The system shall paginate search results. |
 | FR-13 | The system shall show where results came from (live, cached, or sample data) and when they were last updated. |
 | FR-36 | A product that is available on only one platform shall still appear in search results and category browsing (labelled with the store); the system shall never require a product to exist on several platforms to be shown. The compare view shall show every platform and mark those without the product as "not available". |
-| FR-37 | When a search contains an accessory word (cover, case, charger, strap ...), accessories shall be included and ranked first; model numbers shall match regardless of spelling, spacing, case or word order. |
+| FR-37 | Live search shall not filter the stores' results: it shall show what the stores return for the query, ranking likely matches first (model numbers match regardless of spelling, spacing, case or word order; accessory words in the query rank accessories first). |
 
 | FR-34 | The system shall organise products into six categories (Mobiles, Laptops, Audio, Watches, Home Appliances, Fashion), let the user browse a category and filter search results by category, and show preset searches per category. |
 | FR-35 | The system shall show popular (trending) searches on the home page, based on how often queries were searched. |
@@ -80,6 +80,7 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 |---|---|
 | FR-29 | The system shall collect product data (title, price, original price, rating, reviews, image, URL, stock) from Daraz and PriceOye by scraping their public search pages. |
 | FR-30 | Every search shall check the stores live. To avoid repeating identical requests, the result of an earlier live search for the same query shall be reused for at most 15 minutes (searches that found nothing for 10 minutes); the page shall state that the results are live and how long ago they were checked. |
+| FR-30b | Live search shall show the first 24 results and a "Show more" button that loads further results from the stores; the page shall state how many results are shown out of the stores' reported total ("Showing 24 of about 5,983") and how many are loaded from each store. |
 | FR-30a | The user shall be able to re-check the stores at any time with a "Refresh from stores" button, which ignores any earlier result and updates the stored products and prices. In demo mode (live scraping off) the page shall say so and offer no refresh. |
 | FR-31 | If a live scrape fails or times out, the system shall serve the most recent cached results, or sample data if there is no cache, instead of an error. |
 | FR-32 | The system shall provide a seed script that loads realistic sample products, listings on three platforms, and 90 days of price history. |

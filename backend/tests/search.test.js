@@ -92,10 +92,10 @@ describe('fallback and cache', () => {
     expect(first.body.source).toBe('live');
     const callsAfterFirst = spy.mock.calls.length; // an empty first attempt also tries alternative phrasings
     expect(callsAfterFirst).toBeGreaterThanOrEqual(1);
-    const second = await get('q=a55 galaxy'); // same normalized query
+    const second = await get('q=galaxy a55'); // the same search again
     expect(second.body.source).toBe('cache');
     expect(spy).toHaveBeenCalledTimes(callsAfterFirst); // the cached repeat scrapes nothing
-    expect((await SearchCache.findOne({})).hits).toBe(2);
+    expect((await SearchCache.findOne({ hits: { $gt: 0 } })).hits).toBe(2);
   });
 
   test('one platform failing still returns the other platform and marks the failure', async () => {
@@ -117,14 +117,16 @@ describe('live ingestion', () => {
     { platform: 'daraz', externalId: 'dz-3', title: 'Samsung Galaxy A57 5G 12GB 256GB', price: 163999, url: 'https://www.daraz.pk/products/a57-i3.html', currency: 'PKR', reviewCount: 0, inStock: true },
   ];
 
-  test('keeps relevant listings, drops accessories and other models, groups into the seeded product', async () => {
+  test('shows everything the store returned (accessories and other models too), ranked best first, and adopts the sample listing', async () => {
     const productsBefore = await Product.countDocuments();
     mockScrapers({ daraz, priceoye: async () => [] });
     const res = await get('q=samsung galaxy a55');
     expect(res.body.source).toBe('live');
-    expect(res.body.platformStatus.daraz).toMatchObject({ scraped: 3, relevant: 1 });
+    expect(res.body.total).toBe(3); // the phone, the case and the A57: nothing is filtered out
+    expect(res.body.platformStatus.daraz).toMatchObject({ scraped: 3, loaded: 3 });
+    expect(res.body.results[0].title).toMatch(/A55/); // the real match is ranked first
 
-    expect(await Product.countDocuments()).toBe(productsBefore); // grouped, not duplicated
+    expect(await Product.countDocuments()).toBe(productsBefore + 2); // the phone joined the sample product; case and A57 are new
     const product = await Product.findOne({ title: 'Samsung Galaxy A55 5G 8GB 256GB' });
     const listing = await Listing.findOne({ productId: product._id, platform: 'daraz' });
     // The sample Daraz listing was adopted by the live one, so its 90-day history is kept.

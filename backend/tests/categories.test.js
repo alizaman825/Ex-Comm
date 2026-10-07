@@ -105,9 +105,9 @@ describe('trending and platforms', () => {
     res.body.trending.forEach((t) => expect(t.results).toBeGreaterThan(0));
   });
 
-  test('a trending query is served instantly from cache (no scraping)', async () => {
-    const res = await request(app).get('/api/search?q=airpods pro');
-    expect(res.body.source).toBe('cache');
+  test('a trending query shows its stored products (no scraping with live=false)', async () => {
+    const res = await request(app).get('/api/search?q=airpods pro&live=false');
+    expect(res.body).toMatchObject({ source: 'fallback', mode: 'stored' });
     expect(res.body.results[0].title).toMatch(/AirPods Pro/);
   });
 

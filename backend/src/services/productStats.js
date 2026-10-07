@@ -15,18 +15,16 @@ const preferInStock = (list) => {
   return inStock.length ? inStock : list;
 };
 
-// Recompute denormalized product fields (prices, platforms, rating, 7-day change) from its listings.
+// Pure: the denormalized product fields for one product, from its listings.
+// `pastPrice` maps listingId -> that listing's latest price as of 7 days ago.
 //
 // The headline price (minPrice / maxPrice / lowestPlatform / priceChange7d) is the *retail* price a shopper
 // pays locally (Daraz, PriceOye). The supplier price (AliExpress, before shipping and customs) is kept
 // separately in supplierMinPrice, and only becomes the headline for products with no retail listing.
-async function refreshProductStats(productId) {
-  const listings = await Listing.find({ productId }).lean();
+function computeStats(product, listings, pastPrice) {
   if (!listings.length) {
-    await Product.updateOne({ _id: productId }, { listingCount: 0, platforms: [], minPrice: null, maxPrice: null, retailMinPrice: null, supplierMinPrice: null });
-    return;
+    return { listingCount: 0, platforms: [], minPrice: null, maxPrice: null, retailMinPrice: null, supplierMinPrice: null, altTitles: [] };
   }
-
   const retail = listings.filter((l) => !isSupplier(l));
   const supplier = listings.filter(isSupplier);
   const headline = preferInStock(retail.length ? retail : supplier);
@@ -40,21 +38,11 @@ async function refreshProductStats(productId) {
   const rated = listings.filter((l) => l.rating);
   const weight = (l) => Math.max(l.reviewCount || 1, 1);
   const rating = rated.length ? Math.round((rated.reduce((s, l) => s + l.rating * weight(l), 0) / rated.reduce((s, l) => s + weight(l), 0)) * 10) / 10 : null;
-  const reviewCount = listings.reduce((s, l) => s + (l.reviewCount || 0), 0);
 
-  // Each headline listing's latest price as of 7 days ago, compared with today's minimum.
-  const weekAgo = new Date(Date.now() - 7 * DAY);
-  const past = await PriceHistory.aggregate([
-    { $match: { listingId: { $in: headline.map((l) => l._id) }, scrapedAt: { $lte: weekAgo } } },
-    { $sort: { scrapedAt: -1 } },
-    { $group: { _id: '$listingId', price: { $first: '$price' } } },
-  ]);
-  const pastMin = past.length ? Math.min(...past.map((p) => p.price)) : null;
-  const priceChange7d = pastMin ? Math.round(((minPrice - pastMin) / pastMin) * 1000) / 10 : 0;
-
-  const product = await Product.findById(productId);
-  if (!product) return;
-  Object.assign(product, {
+  const past = headline.map((l) => pastPrice.get(String(l._id))).filter((p) => p !== undefined);
+  const pastMin = past.length ? Math.min(...past) : null;
+  const altTitles = altTitlesOf(listings);
+  const fields = {
     minPrice,
     maxPrice: Math.max(...prices),
     retailMinPrice: retailPool.length ? Math.min(...retailPool.map((l) => l.price)) : null,
@@ -63,14 +51,47 @@ async function refreshProductStats(productId) {
     platforms: [...new Set(listings.map((l) => l.platform))].sort(),
     listingCount: listings.length,
     rating,
-    reviewCount,
-    priceChange7d,
-    altTitles: altTitlesOf(listings),
-  });
-  product.searchKey = searchKeyOf(product.brand, product.title, ...product.altTitles);
-  if (!product.image) product.image = listings.find((l) => l.image)?.image;
-  await product.save();
+    reviewCount: listings.reduce((s, l) => s + (l.reviewCount || 0), 0),
+    priceChange7d: pastMin ? Math.round(((minPrice - pastMin) / pastMin) * 1000) / 10 : 0,
+    altTitles,
+    searchKey: searchKeyOf(product.brand, product.title, ...altTitles),
+  };
+  if (!product.image) {
+    const image = listings.find((l) => l.image)?.image;
+    if (image) fields.image = image;
+  }
+  return fields;
 }
+
+// Recompute the denormalized fields of many products with a fixed number of queries (listings, history,
+// products, one bulk write), however many products there are.
+async function refreshProductsStats(productIds) {
+  const ids = [...new Set(productIds.map(String))];
+  if (!ids.length) return;
+  const [listings, products] = await Promise.all([
+    Listing.find({ productId: { $in: ids } }).lean(),
+    Product.find({ _id: { $in: ids } }).select('brand title image').lean(),
+  ]);
+  const weekAgo = new Date(Date.now() - 7 * DAY);
+  const past = await PriceHistory.aggregate([
+    { $match: { listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $lte: weekAgo } } },
+    { $sort: { scrapedAt: -1 } },
+    { $group: { _id: '$listingId', price: { $first: '$price' } } },
+  ]);
+  const pastPrice = new Map(past.map((p) => [String(p._id), p.price]));
+  const byProduct = new Map();
+  for (const l of listings) {
+    const k = String(l.productId);
+    if (!byProduct.has(k)) byProduct.set(k, []);
+    byProduct.get(k).push(l);
+  }
+  const ops = products.map((p) => ({
+    updateOne: { filter: { _id: p._id }, update: { $set: computeStats(p, byProduct.get(String(p._id)) || [], pastPrice) } },
+  }));
+  if (ops.length) await Product.bulkWrite(ops, { ordered: false });
+}
+
+const refreshProductStats = (productId) => refreshProductsStats([productId]);
 
 // Adds alt titles and the compact search key to products stored before they existed (cheap, runs at startup).
 async function backfillSearchKeys() {
@@ -90,4 +111,4 @@ async function backfillSearchKeys() {
   return missing.length;
 }
 
-module.exports = { refreshProductStats, backfillSearchKeys };
+module.exports = { computeStats, refreshProductStats, refreshProductsStats, backfillSearchKeys };

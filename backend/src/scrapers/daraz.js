@@ -50,7 +50,11 @@ async function search(query, { page = 1 } = {}) {
       throw new ScrapeError('Daraz returned HTML instead of JSON (possible captcha)', { code: 'BLOCKED' });
     }
   }
-  return parse(body);
+  const out = parse(body);
+  const info = (body && body.mainInfo) || {};
+  // How many results the store has for this query (Daraz shows e.g. "4063 items found") and its page size.
+  out.meta = { total: Number(info.totalResults) || out.length, pageSize: Number(info.pageSize) || 40 };
+  return out;
 }
 
 // Item id of a stored listing: the numeric externalId, or the "-i<id>.html" part of its product URL.

@@ -15,12 +15,13 @@ describe("search URL state", () => {
       minRating: 4,
       sort: "price_asc",
       page: 2,
+      show: 24,
     });
   });
 
   it("applies defaults and ignores invalid values from a hand-edited URL", () => {
     const s = parse("platform=amazon,daraz&minPrice=abc&maxPrice=-5&minRating=9&sort=cheapest&page=0");
-    expect(s).toEqual({ q: "", category: "", platform: ["daraz"], minPrice: undefined, maxPrice: undefined, minRating: undefined, sort: "relevance", page: 1 });
+    expect(s).toEqual({ q: "", category: "", platform: ["daraz"], minPrice: undefined, maxPrice: undefined, minRating: undefined, sort: "relevance", page: 1, show: 24 });
     expect(parse("page=2.9").page).toBe(2);
     expect(parse("page=abc").page).toBe(1);
   });
@@ -51,5 +52,16 @@ describe("pageWindow", () => {
     expect(pageWindow(1, 10)).toEqual([1, 2, null, 10]);
     expect(pageWindow(5, 10)).toEqual([1, null, 4, 5, 6, null, 10]);
     expect(pageWindow(10, 10)).toEqual([1, null, 9, 10]);
+  });
+});
+
+describe("show (live search result count)", () => {
+  it("defaults to 24, accepts larger values up to 400, round-trips through the URL", () => {
+    expect(parse("q=x").show).toBe(24);
+    expect(parse("q=x&show=72").show).toBe(72);
+    expect(parse("q=x&show=9999").show).toBe(400);
+    expect(parse("q=x&show=abc").show).toBe(24);
+    expect(toSearchParams({ q: "x", show: 72 }).toString()).toBe("q=x&show=72");
+    expect(toSearchParams({ q: "x", show: 24 }).toString()).toBe("q=x");
   });
 });

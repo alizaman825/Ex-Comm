@@ -20,6 +20,7 @@ const searchQuerySchema = z
     sort: z.enum(['relevance', 'price_asc', 'price_desc', 'rating', 'discount']).default('relevance'),
     page: z.coerce.number().int().min(1).max(100).default(1),
     pageSize: z.coerce.number().int().min(1).max(48).default(12),
+    limit: z.coerce.number().int().min(1).max(400).default(24), // live search: how many results to return (more are loaded from the stores on demand)
     live: bool.default('true'),
     refresh: bool.default('false'), // ignore an earlier live result and check the stores again
   })

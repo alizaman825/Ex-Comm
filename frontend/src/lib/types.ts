@@ -75,6 +75,11 @@ export interface PlatformStatus {
   code?: string;
   scraped?: number;
   relevant?: number;
+  /** live search: results loaded so far from this store, how many the store has, and whether all are loaded */
+  loaded?: number;
+  total?: number | null;
+  approximate?: boolean;
+  exhausted?: boolean;
   ms?: number;
   error?: string;
   saved?: boolean;
@@ -85,6 +90,11 @@ export interface SearchResponse {
   source: SearchSource;
   /** true: live scraping is switched off on the server (only saved data is shown) */
   demoMode?: boolean;
+  /** live: mirrors the stores (Show more loads further results); stored: saved data, numbered pages */
+  mode?: "live" | "stored";
+  loaded?: number;
+  estimatedTotal?: number;
+  hasMore?: boolean;
   fetchedAt: string | null;
   platformStatus: Partial<Record<Platform, PlatformStatus>>;
   total: number;

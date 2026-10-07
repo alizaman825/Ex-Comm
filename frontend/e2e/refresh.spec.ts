@@ -109,3 +109,32 @@ test.describe("refresh results from the stores", () => {
     await expect(page.getByTestId("refresh-results")).toHaveCount(0);
   });
 });
+
+test.describe("live search mirrors the stores: Show more", () => {
+  const live = (limit: number) => ({
+    query: "iphone 16 pro max", source: "live", mode: "live", demoMode: false, fetchedAt: new Date().toISOString(),
+    platformStatus: { daraz: { status: "success", loaded: 40, total: 4063, relevant: 40 }, priceoye: { status: "success", loaded: 24, total: 1920, approximate: true, relevant: 24 } },
+    total: limit, loaded: limit, estimatedTotal: 5983, hasMore: true, page: 1, pages: 1, pageSize: 12,
+    results: Array.from({ length: limit }, (_, i) => ({ ...card(`Result number ${i + 1}`, 1000 + i), id: i.toString(16).padStart(24, "0") })),
+  });
+
+  test("shows the store totals and loads more results when asked", async ({ page }) => {
+    const limits: string[] = [];
+    await page.route("**/api/search?**", (route) => {
+      const url = new URL(route.request().url());
+      if (!url.searchParams.get("q")?.startsWith("iphone")) return route.continue();
+      const limit = Number(url.searchParams.get("limit"));
+      limits.push(String(limit));
+      return route.fulfill(json(live(limit)));
+    });
+    await page.goto("/search?q=iphone 16 pro max");
+    await expect(page.getByTestId("result-count")).toContainText("Showing 24 of about 5,983");
+    await expect(page.getByTestId("source-banner")).toContainText("40 of 4,063");
+    await expect(page.getByTestId("source-banner")).toContainText("24 of about 1,920");
+    await expect(page.getByTestId("product-card")).toHaveCount(24);
+    await page.getByTestId("show-more").click();
+    await expect(page.getByTestId("product-card")).toHaveCount(48);
+    await expect(page).toHaveURL(/show=48/);
+    expect(limits).toEqual(["24", "48"]);
+  });
+});

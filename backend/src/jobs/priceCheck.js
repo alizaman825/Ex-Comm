@@ -5,7 +5,7 @@ const { Wishlist, Alert, Listing, JobRun } = require('../models');
 const { config } = require('../config/env');
 const scrapers = require('../scrapers');
 const { appendHistory } = require('../services/ingest');
-const { refreshProductStats } = require('../services/productStats');
+const { refreshProductsStats } = require('../services/productStats');
 const { evaluateProductAlerts } = require('../services/alerts');
 
 let running = false;
@@ -114,10 +114,7 @@ async function runPriceCheck({ mode = 'live', trigger = 'schedule' } = {}) {
           console.error('Price check failed for a listing:', err.message);
         }
       }
-      for (const id of touched) {
-        // eslint-disable-next-line no-await-in-loop
-        await refreshProductStats(id);
-      }
+      await refreshProductsStats([...touched]);
       // Alerts are evaluated for every tracked product, even when scraping was skipped or failed.
       for (const id of productIds) {
         // eslint-disable-next-line no-await-in-loop

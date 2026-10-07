@@ -36,30 +36,17 @@ Limitations to state in the report:
 - Prices are scraped at most every few hours, so a shown price can be slightly out of date. The UI shows "last updated" times.
 - Only public search pages are read, with polite random delays, one request at a time per store, and a circuit breaker. No login-protected or personal data is collected.
 
-### Search relevance and the "show every match" rule
-Stores return loose results, so each scraped title is checked against the query before it is stored. The rules:
-- **A product from any one store is a result.** Nothing in search, grouping, caching or browsing requires a second store to carry a product. Products on one store are shown as their own result ("Only on Daraz"), and the compare view lists all three stores with "Not available on this store" for the ones that do not have it.
-- **Model numbers must match, in any spelling:** case, spacing, hyphens and word order are ignored and glued forms are split ("15promax" = "15 pro max", "iphone15" = "iphone 15", "s24ultra" = "s24 ultra"). "15 inch" also matches "15.6 inch".
-- **Other words** need at least two thirds present; a recognised brand in the query is binding against titles that name a different brand (a Tefal search does not return a Philips), but titles with no recognisable brand (common on Daraz) stay eligible. Equivalent words match ("laptop" ~ "MacBook", "headphones" ~ "headset").
-- **Accessory words in the query (cover, case, charger, cable, strap, sleeve, protector, stand, skin ...) are a preference, never a requirement.** The accessory filter is not applied, and titles containing those words rank first. Without an accessory word in the query, accessories are dropped so that "iphone 15" does not return cases.
+### Live search mirrors the stores (nothing is filtered)
+Decision after user testing: an earlier design checked every scraped title against the query and dropped the rest. A search for "iphone 16 pro max" then showed 1 product while Daraz itself listed about 4,000, so the filter was removed. The rules now:
+- **Live search shows what the stores show.** Each store's own search is asked for the query; its results are stored in our database (so they can be compared, charted, wishlisted and alerted on) and listed in the stores' order. Nothing is dropped for being an accessory, loosely related or a duplicate.
+- **A product from any one store is a result.** Nothing requires a second store to carry it. One-store products show as "Only on Daraz"; the compare view marks the other stores "Not available".
+- **Ranking only.** Inside each loaded batch, the best matches are placed first (model numbers matching in any spelling, brand, accessory words when the query contains one; accessory-like or "for iPhone ..." titles are ranked lower when the query is not about accessories). Ranking never removes an item. Sorting and filters (store, price, rating, category) apply to the results loaded so far.
+- **Show more.** The first request loads one page per store (Daraz 40, PriceOye 24) and shows 24 results; "Show more" raises the count by 24 and loads further store pages only when needed (at most 3 pages per store per request; the page says "Showing N of about X" and each store chip "40 of 4,063"). The totals come from the stores (Daraz reports its item count; PriceOye's is estimated from its last page number and marked "about").
+- **Same-store listings are never merged** (two sellers of the same title stay separate products); listings from different stores are grouped into one product by exact normalised key or fuzzy match, with threshold 0.7.
+- **Reuse window.** The ordered list for a query is kept in the database and reused for 15 minutes (10 minutes if it was empty). "Refresh from stores" bypasses it and also closes the per-store circuit breaker.
+- **Stored data** (relevance-filtered search over our database) is used only for demo mode, category browsing, `live=false`, and when no store answers; it keeps the model-number, brand and accessory rules (`services/relevance.js`), including spacing/glue tolerance ("15promax" = "15 pro max") and a property-style test that the database pre-filter never excludes what the relevance check accepts.
 
-Pipeline audit for the bug "iphone 15 pro max cover returns nothing" (traced with `scripts/trace-search.js`). Places where a matching product could be lost, and the fix:
-
-| Stage | How a match was lost | Fix |
-|---|---|---|
-| Store search | Daraz ranks generic covers first for "cover" (0 of 120 results named the phone) but answers "case" with dozens of matches; the query was sent once | Up to 3 phrasings per store (synonyms such as cover/case, strap/band; the family word dropped), tried while fewer than 5 relevant items were found |
-| Store search | The matching product sits below the first page (amazfit gts: 0 on page 1, 5 on pages 2-3) | Pages 2 and 3 are read when the previous page was full and results are still thin (at most 4 requests per store) |
-| Relevance | Glued model names (15PROMAX, iphone15) did not match "15", "pro", "max" | Normalisation splits glued forms |
-| Relevance | Accessory words were treated as required, and accessory titles were filtered out of accessory searches | Accessory words are a ranking preference; the accessory filter only applies to non-accessory queries |
-| Relevance | "Levi's" (normalised "levi") did not equal the query "levis" once brand became binding (27 results dropped to 1) | Brand spellings are canonicalised; found by the sweep before release |
-| Ingest | Only the first 25 relevant items per store were stored | One full store page (40) is stored |
-| Grouping | none: single-store products already become their own product; identical items from different sellers are grouped, and every listing stays visible on the product page | unchanged, covered by tests |
-| Local search | The final relevance check ran on the shortened product title, so a product vanished although its store listing matched | A product matches if any of its listing titles does (`altTitles`) |
-| Local search | The database pre-filter was stricter than the relevance check ("15 inch" vs "15.6 inch", plural vs singular, equivalent words) | The pre-filter mirrors every tolerance; a property-style test checks it never excludes what the relevance check accepts |
-| Local search | Candidate lists were capped at 300 and category browsing sorted after the cap | Cap raised, and browsing sorts in the database before limiting |
-| Cache | A search that found nothing was cached as "fresh" for 6 hours, hiding a product that appears later | Empty results are cached for 10 minutes only |
-| Time budget | Results already found were discarded when the 10 s budget ran out | Partial results are returned and the store is marked "time budget reached" |
-
+Consequences to state in the report: mirrored results include accessories and spam that the store itself returns (they are ranked below real products, not hidden); PriceOye's search returns loosely related items for most queries; the store-reported totals are what the store claims, and a store may stop paging earlier (Daraz serves about 100 pages). The earlier relevance-filter audit (glued model names, accessory words, Levi's brand spelling, pre-filter tolerances, cache of empty results, time budget) still applies to the stored-data path and is covered by tests.
 ### When a store cannot be reached
 The results banner never says only "could not be reached". Each store that did not answer is listed with its reason, taken from the error the scraper reported:
 
@@ -75,18 +62,13 @@ The results banner never says only "could not be reached". Each store that did n
 A store that answered but has no matching product is not a problem and is not listed as one. `GET /api/platforms` also exposes each store's last error, last success time and breaker state.
 
 ### Items that only say what they fit
-Keyword-stuffed listings such as "Mini Pearl Handbag for iPhone 15 Pro Max" matched searches for the phone. For a search that names a model number (and no accessory word), the model number must now appear before "for / compatible with / fits"; titles where it only appears after are treated as accessories. Searches without a model number ("men's sneakers" ~ "Sneakers for Men") are unaffected. A sweep before and after the change differed in 3 of 58 store results, all of them dropped accessory or spam items.
-
-Honest limits: a store that genuinely has no matching product contributes nothing (for "iphone 15 pro max cover" no matching PriceOye product could be found with 3 phrasings, 2 pages and its suggest endpoint, so only Daraz results are shown). Stores that sell only unbranded copies (Ray-Ban) cannot be matched by brand.
-
+Keyword-stuffed listings such as "Mini Pearl Handbag for iPhone 15 Pro Max" are shown in live search (nothing is filtered) but ranked below real phones. In stored-data search, where relevance filtering still applies, a model number that only appears after "for / compatible with / fits" counts as an accessory.
 ### Search sweep (live test of 29 terms)
-Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep.js ../docs/search_sweep.md` from `backend/`). The sweep uses the same gather stage as the app. Terms cover the six categories, three non-electronics and six accessory queries (cover, case, charger, sleeve, strap).
-- **Reliability:** all 58 term-and-store searches succeeded (no blocks or timeouts).
-- **Daraz** returned relevant products for 26 of 29 terms and **PriceOye** for 16 of 29 (PriceOye sells electronics only). 28 of 29 terms returned at least one result from at least one store; the exception, "ray-ban sunglasses", is only sold on Daraz as unbranded copies.
-- **Accessory queries:** "iphone 15 pro max cover" 36 Daraz results (found through the "case" phrasing; 0 before the fix), "samsung a15 case" 38 + 1, "airpods pro case" 25 + 9, "iphone 15 charger" 15, "laptop sleeve 15 inch" 26 + 3, "apple watch strap" 9 + 24.
-- **Zero results are sometimes correct:** "macbook air m3" and "apple watch series 10" return only cases and straps on Daraz (shown as "no results on this store" rather than wrong matches).
-- **Categories:** products are classified from title keywords; items outside the six categories (bed sheet, protein powder) get no category and are found by search but not by category browsing.
-
+Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep.js ../docs/search_sweep.md` from `backend/`). For each term the sweep reads the first page of each live store, as the app does, and records the store's reported total. Terms cover the six categories, non-electronics and six accessory queries.
+- **Reliability:** all 58 term-and-store requests succeeded.
+- **Volume:** Daraz reports 2,500 to 4,080 results for every term (it pads short queries with loosely related items); PriceOye reports from 1 to about 2,800 (electronics only).
+- **"Looks like the product"** counts first-page titles that contain the query's model/words, which measures the stores' own ranking, not our filtering (we do not filter). Examples: "air fryer" 40 of 40 on Daraz; "iphone 16" 1 of 40 (Daraz puts cases and cables first), "macbook air m3" 0 of 40 on Daraz and 2 of 24 on PriceOye.
+- Ranking moves such matches to the top of each loaded batch; Show more reaches the rest.
 ### Price check job
 - The job re-fetches only tracked listings (wishlisted or with an active alert), at most 60 per run, one request at a time per store. Each listing is re-fetched **by its own store link**, not by searching again: Daraz by item id (the catalog endpoint returns exactly that item), PriceOye by its product page (price, stock and rating from the page's structured data). Fuzzy title matching is used only when a search discovers listings, to group the same product across stores; it plays no part in price updates, so a price can never be taken from a similar-looking product.
 - A listing the store no longer shows (item removed, page gone) is counted as "not found" and keeps its last price. **Sample (seeded) listings have no real store link, so the job does not re-fetch them**: they are reported as "unlinked" and stay as sample data until a live search finds the real item and adopts the listing. Real-store titles are noisy (warranty text, screen sizes, marketing words); normalization removes the common noise when grouping search results.

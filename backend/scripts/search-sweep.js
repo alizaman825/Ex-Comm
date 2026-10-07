@@ -1,8 +1,10 @@
-// Live sweep: runs varied search terms through the same gather stage the app uses (including alternative
-// phrasings) and reports what each store returned, and what survived the relevance filter.
+// Live sweep: runs varied search terms against both live stores (first page, as the app does) and reports what
+// each store returned, how many results the store says it has, and how many look like the searched product.
+// Nothing is filtered in the app: "matching" here is only a measure of how good the store's own ranking is.
 // Usage: node scripts/search-sweep.js ../docs/search_sweep.md
 const fs = require('fs');
-const { gatherAll } = require('../src/services/gather');
+const scrapers = require('../src/scrapers');
+const { parseQuery, isRelevant } = require('../src/services/relevance');
 const { classify } = require('../src/services/categories');
 
 const TERMS = [
@@ -42,26 +44,28 @@ function fieldStats(listings) {
   const rows = [];
   for (const [expected, term] of TERMS) {
     // eslint-disable-next-line no-await-in-loop
-    const { platformStatus, listings } = await gatherAll(term, { budgetMs: 30000 });
-    for (const [platform, s] of Object.entries(platformStatus)) {
-      const own = listings.filter((l) => l.platform === platform);
-      rows.push({ term, expected, platform, status: s.status, ms: s.ms, error: s.error, scraped: s.scraped, relevant: s.relevant, phrasings: s.queries.length, ...fieldStats(own) });
-      console.log(`${term.padEnd(26)} ${platform.padEnd(9)} ${s.status.padEnd(8)} scraped ${String(s.scraped).padStart(3)} relevant ${String(s.relevant).padStart(2)} phrasings ${s.queries.length}${s.error ? ` !! ${s.error}` : ''}`);
+    const parsed = parseQuery(term);
+    const results = await Promise.all(scrapers.livePlatforms().map((p) => scrapers.scrapePlatform(p, term, { page: 1 })));
+    for (const r of results) {
+      const own = r.listings || [];
+      const relevant = own.filter((l) => isRelevant(parsed, l.title)).length;
+      const total = (r.meta && r.meta.total) || own.length;
+      rows.push({ term, expected, platform: r.platform, status: r.status, ms: r.ms, error: r.error, scraped: own.length, relevant, total, ...fieldStats(own) });
+      console.log(`${term.padEnd(26)} ${r.platform.padEnd(9)} ${r.status.padEnd(8)} first page ${String(own.length).padStart(3)} of ~${String(total).padStart(5)}, looks like the product: ${String(relevant).padStart(2)}${r.error ? ` !! ${r.error}` : ''}`);
     }
-    // the core rule, per term: a result exists whenever any store had a relevant product
-    const any = rows.filter((r) => r.term === term).some((r) => r.relevant > 0);
-    if (!any) console.log(`   -> no store returned a matching product for "${term}"`);
+    const any = rows.filter((r) => r.term === term).some((r) => r.scraped > 0);
+    if (!any) console.log(`   -> no store returned anything for "${term}"`);
   }
 
   if (out) {
     const lines = [
       '# Search sweep (live)',
       '',
-      `Run: ${new Date().toISOString().slice(0, 10)}. ${TERMS.length} terms x 2 live stores, through the same gather stage as the app (up to 3 phrasings per store when the first attempt finds fewer than 5 relevant items). "Relevant" = passes the query relevance filter; a store that has a matching product contributes it whether or not the other store does. Field columns are the share of relevant items that have the field.`,
+      `Run: ${new Date().toISOString().slice(0, 10)}. ${TERMS.length} terms x 2 live stores, first page of each store's own search, exactly what the app shows first (it mirrors the stores: nothing is filtered, "Show more" loads further pages). "Store total" is the number of results the store reports. "Looks like the product" counts first-page titles that contain the query's model/words, which only measures the store's own ranking. Field columns are the share of first-page items that have the field.`,
       '',
-      '| Term | Expected category | Store | Status | Scraped | Relevant | Phrasings | Image | Rating | Original price | Classified as | Time (ms) |',
+      '| Term | Expected category | Store | Status | First page | Store total | Looks like the product | Image | Rating | Original price | Classified as | Time (ms) |',
       '|---|---|---|---|---|---|---|---|---|---|---|---|',
-      ...rows.map((r) => `| ${r.term} | ${r.expected} | ${r.platform} | ${r.status}${r.error ? ' (' + r.error + ')' : ''} | ${r.scraped} | ${r.relevant} | ${r.phrasings} | ${r.image} | ${r.rating} | ${r.original} | ${r.topCategory} | ${r.ms} |`),
+      ...rows.map((r) => `| ${r.term} | ${r.expected} | ${r.platform} | ${r.status}${r.error ? ' (' + r.error + ')' : ''} | ${r.scraped} | ${r.total} | ${r.relevant} | ${r.image} | ${r.rating} | ${r.original} | ${r.topCategory} | ${r.ms} |`),
     ];
     fs.writeFileSync(out, `${lines.join('\n')}\n`);
     fs.writeFileSync(out.replace(/[.]md$/, '.json'), JSON.stringify(rows, null, 2));

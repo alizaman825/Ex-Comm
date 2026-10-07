@@ -10,7 +10,7 @@ import { api, errorMessage, fetcher } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { problemsSentence, storeProblems } from "@/lib/stores";
 import { useCategories, useTrendingSearches } from "@/lib/hooks";
-import { SORTS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
+import { SHOW_MAX, SHOW_STEP, SORTS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
 import type { SearchResponse } from "@/lib/types";
 import { ErrorState, EmptyState } from "@/components/ui/primitives";
 import { Drawer } from "@/components/ui/Drawer";
@@ -34,7 +34,7 @@ export function SearchView() {
 
   const tooShort = state.q.length > 0 && state.q.length < 2 && !state.category;
   const hasQuery = Boolean((state.q && !tooShort) || state.category);
-  const queryParams = { q: state.q, category: state.category, platform: state.platform.join(","), minPrice: state.minPrice, maxPrice: state.maxPrice, minRating: state.minRating, sort: state.sort, page: state.page, pageSize: PAGE_SIZE };
+  const queryParams = { q: state.q, category: state.category, platform: state.platform.join(","), minPrice: state.minPrice, maxPrice: state.maxPrice, minRating: state.minRating, sort: state.sort, page: state.page, pageSize: PAGE_SIZE, limit: state.show };
   const key = hasQuery ? (["/search", queryParams] as const) : null;
   const { data, error, isLoading, isValidating, mutate } = useSWR<SearchResponse>(key, fetcher as never, { keepPreviousData: true, revalidateOnFocus: false, shouldRetryOnError: false });
 
@@ -55,7 +55,7 @@ export function SearchView() {
 
   const update = useCallback(
     (patch: Partial<SearchState>, keepPage = false) => {
-      const next = { ...state, ...patch, page: keepPage ? (patch.page ?? state.page) : 1 };
+      const next = { ...state, ...patch, page: keepPage ? (patch.page ?? state.page) : 1, show: keepPage ? (patch.show ?? state.show) : SHOW_STEP };
       router.push(`/search?${toSearchParams(next).toString()}`, { scroll: false });
     },
     [router, state]
@@ -87,7 +87,15 @@ export function SearchView() {
           <p className="mt-1.5 text-sm text-slate-500" aria-live="polite" data-testid="result-count">
             {data ? (
               <>
-                {data.total.toLocaleString("en-PK")} {data.total === 1 ? "product" : "products"}
+                {data.mode === "live" ? (
+                  <>
+                    Showing {Math.min(state.show, data.total).toLocaleString("en-PK")} of about {Math.max(data.estimatedTotal ?? 0, data.total).toLocaleString("en-PK")} {data.estimatedTotal === 1 ? "product" : "products"} found in the stores
+                  </>
+                ) : (
+                  <>
+                    {data.total.toLocaleString("en-PK")} {data.total === 1 ? "product" : "products"}
+                  </>
+                )}
                 {state.q && categoryName ? ` in ${categoryName}` : ""}
               </>
             ) : isLoading ? (
@@ -143,14 +151,26 @@ export function SearchView() {
                 ))}
               </div>
               {error && <p className="mt-4 text-center text-sm text-rose-600">Could not refresh results. Showing the previous ones.</p>}
-              <Pagination
-                page={data.page}
-                pages={data.pages}
-                onPage={(p) => {
-                  update({ page: p }, true);
-                  window.scrollTo({ top: 0, behavior: "smooth" });
-                }}
-              />
+              {data.mode === "live" ? (
+                data.hasMore && state.show < SHOW_MAX && (
+                  <div className="mt-8 flex flex-col items-center gap-2">
+                    <button type="button" className="btn-primary" disabled={isValidating} onClick={() => update({ show: state.show + SHOW_STEP }, true)} data-testid="show-more">
+                      {isValidating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
+                      {isValidating ? "Loading more from the stores…" : "Show more"}
+                    </button>
+                    <p className="text-xs text-slate-500">Showing {data.results.length.toLocaleString("en-PK")} so far. More are loaded from Daraz and PriceOye when you ask.</p>
+                  </div>
+                )
+              ) : (
+                <Pagination
+                  page={data.page}
+                  pages={data.pages}
+                  onPage={(p) => {
+                    update({ page: p }, true);
+                    window.scrollTo({ top: 0, behavior: "smooth" });
+                  }}
+                />
+              )}
             </>
           ) : null}
         </section>

@@ -90,3 +90,11 @@ describe("SourceBanner store problems", () => {
     expect(screen.queryByTestId("store-problems")).not.toBeInTheDocument();
   });
 });
+
+describe("SourceBanner store chips (live mirror)", () => {
+  it("shows how many results are loaded of the store's total", () => {
+    render(<SourceBanner data={response({ mode: "live", platformStatus: { daraz: { status: "success", loaded: 40, total: 4063 }, priceoye: { status: "success", loaded: 24, total: 1920, approximate: true } } })} />);
+    expect(screen.getByText("40 of 4,063")).toBeInTheDocument();
+    expect(screen.getByText("24 of about 1,920")).toBeInTheDocument();
+  });
+});

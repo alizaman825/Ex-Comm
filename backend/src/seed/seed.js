@@ -4,7 +4,7 @@
 const mongoose = require('mongoose');
 const catalog = require('./catalog');
 const { analyzeTitle, searchKeyOf } = require('../services/matching');
-const { refreshProductStats } = require('../services/productStats');
+const { refreshProductsStats } = require('../services/productStats');
 const { ensureCategories, resolveCategory } = require('../services/categories');
 const { queryKeyOf, localSearch } = require('../services/search');
 const { parseQuery } = require('../services/relevance');
@@ -197,10 +197,7 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
   await Product.insertMany(products);
   await Listing.insertMany(listings);
   await PriceHistory.insertMany(history);
-  for (const p of products) {
-    // eslint-disable-next-line no-await-in-loop
-    await refreshProductStats(p._id);
-  }
+  await refreshProductsStats(products.map((p) => p._id)); // one pass for every product
 
   // Demo user with wishlist, alerts and notifications.
   let user = await User.findOne({ email: DEMO_USER.email });
