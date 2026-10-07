@@ -3,7 +3,7 @@
 // sample data carries real prices and links straight to the product pages. A store without a confident
 // match (same brand, model, variant and storage) is stored as null and left out of the seed.
 // Resumable: items already in the file are skipped (use --refresh to redo all, or pass filter text).
-// Usage: node scripts/harvest-listings.js [--refresh] [--only=daraz|priceoye|aliexpress] [filterText]
+// Usage: node scripts/harvest-listings.js [--refresh] [--only=daraz|priceoye|aliexpress] [--revalidate] [filterText]
 // Be gentle: Daraz answers a burst of searches with a captcha page for a while. Run with SCRAPER_MIN_DELAY_MS=4000 SCRAPER_MAX_DELAY_MS=7000.
 const fs = require('fs');
 const path = require('path');
@@ -16,6 +16,7 @@ const PLATFORM_OF = { d: 'daraz', p: 'priceoye', a: 'aliexpress' };
 
 const args = process.argv.slice(2);
 const refresh = args.includes('--refresh');
+const revalidate = args.includes('--revalidate');
 const only = (args.find((a) => a.startsWith('--only=')) || '').slice(7);
 const filter = (args.find((a) => !a.startsWith('--')) || '').toLowerCase();
 
@@ -51,12 +52,24 @@ function coverage(item, listing) {
   return hit >= 0.6 ? hit : 0;
 }
 
+// Accessories and look-alikes that borrow the product name ("Strap for Apple Watch Series 10", "Case for ...").
+const JUNK = /(strap|straps|bracelet|protector|replacement|compatible|cover|case|film|charger|cable|tpu|silicone|sticker|skin|holder|stand|tips|ear ?pads?|clone|copy|master ?copy|first ?copy)|for (apple|samsung|xiaomi|sony|jbl|huawei|amazfit|iphone|galaxy|airpods|watch|redmi|ipad|macbook)/i;
+
+// A store price far from what this product costs elsewhere means a different item (accessory, clone, other
+// model). Reference: PriceOye's real price when captured, else the catalog's approximate retail price.
+function plausible(item, listing, row) {
+  const ref = (row && row.priceoye && row.priceoye.price) || item.p;
+  if (listing.price < ref * 0.55 || listing.price > ref * 1.6) return false;
+  const bad = listing.title.match(JUNK);
+  return !(bad && !item.t.toLowerCase().includes(bad[0].toLowerCase()));
+}
+
 // The store's best confident match: highest coverage, ties keep the store's own order.
-function pick(item, listings) {
+function pick(item, listings, row) {
   let best = null;
   let bestScore = 0;
   for (const l of listings) {
-    if (!l.price || !l.url || l.sponsored) continue;
+    if (!l.price || !l.url || l.sponsored || !plausible(item, l, row)) continue;
     const cov = coverage(item, l);
     if (!cov) continue;
     const score = cov + (l.inStock !== false ? 0.001 : 0);
@@ -70,6 +83,23 @@ function pick(item, listings) {
 
 (async () => {
   const data = fs.existsSync(FILE) ? JSON.parse(fs.readFileSync(FILE, 'utf8')) : {};
+  if (revalidate) {
+    // Offline: drop stored matches that fail the checks, so the next run looks them up again.
+    let dropped = 0;
+    for (const item of catalog) {
+      const row = data[item.t] || {};
+      for (const platform of Object.keys(row)) {
+        if (row[platform] && !plausible(item, row[platform], row)) {
+          console.log(`drop ${platform.padEnd(9)} ${item.t.slice(0, 40).padEnd(40)} Rs ${row[platform].price} ${row[platform].title.slice(0, 50)}`);
+          delete row[platform];
+          dropped += 1;
+        }
+      }
+    }
+    fs.writeFileSync(FILE, JSON.stringify(data, null, 2));
+    console.log(`${dropped} stored matches dropped`);
+    process.exit(0);
+  }
   const todo = catalog.filter((c) => !filter || c.t.toLowerCase().includes(filter));
   let n = 0;
   let blocked = 0;
@@ -92,7 +122,7 @@ function pick(item, listings) {
           console.log(`   ${platform} "${q}": ${r.status} ${r.error || ''}`);
           break;
         }
-        found = pick(item, r.listings);
+        found = pick(item, r.listings, row);
         if (found) break;
       }
       if (failed) {

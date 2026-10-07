@@ -11,6 +11,18 @@
       "reviewCount": 11,
       "inStock": true,
       "capturedAt": "2026-10-07T11:32:40.749Z"
+    },
+    "daraz": {
+      "externalId": "1958148618",
+      "title": "Apple iPhone 16 - 128GB",
+      "url": "https://www.daraz.pk/products/apple-iphone-16-128gb-i1958148618.html",
+      "image": "https://static-01.daraz.pk/p/3ce9373ff2cc9cef922b4632057711b5.png",
+      "price": 309899,
+      "originalPrice": 345000,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:12:17.024Z"
     }
   },
   "Apple iPhone 15 128GB": {
@@ -25,10 +37,12 @@
       "reviewCount": 10,
       "inStock": false,
       "capturedAt": "2026-10-07T11:32:43.627Z"
-    }
+    },
+    "daraz": null
   },
   "Samsung Galaxy S25 12GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Samsung Galaxy A55 5G 8GB 256GB": {
     "priceoye": {
@@ -42,10 +56,34 @@
       "reviewCount": 216,
       "inStock": true,
       "capturedAt": "2026-10-07T11:32:53.325Z"
+    },
+    "daraz": {
+      "externalId": "550702491",
+      "title": "Samsung Galaxy A55 5G - 8GB 256GB - 6.6\" Display - 5000 mAh Battery - PTA Approved 1 Year Official Warranty",
+      "url": "https://www.daraz.pk/products/a55-5g-8gb-256gb-66-mah-pta-1-i550702491.html",
+      "image": "https://static-01.daraz.pk/p/24a67a7edc21964454f997eaccfcb7dc.png",
+      "price": 127000,
+      "originalPrice": 140000,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:12:45.184Z"
     }
   },
   "Samsung Galaxy A16 6GB 128GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "751687129",
+      "title": "SAMSUNG GALAXY A16 = 6GB RAM = 128GB ROM = 5000mAh BATTERY",
+      "url": "https://www.daraz.pk/products/a16-6gb-128gb-5000mah-i751687129.html",
+      "image": "https://static-01.daraz.pk/p/2a1b2f78df93d52b1a4b57c5c60c8f8c.png",
+      "price": 51999,
+      "originalPrice": null,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": false,
+      "capturedAt": "2026-10-07T12:12:51.410Z"
+    }
   },
   "Xiaomi Redmi Note 14 8GB 256GB": {
     "priceoye": {
@@ -59,55 +97,114 @@
       "reviewCount": 383,
       "inStock": false,
       "capturedAt": "2026-10-07T11:33:01.873Z"
+    },
+    "daraz": {
+      "externalId": "654367056",
+      "title": "Redmi Note 14  8GB RAM 256GB ROM 6.67 Inches  Display 5500 mAh  Battery PTA Approved Official One Year Brand Warranty",
+      "url": "https://www.daraz.pk/products/redmi-note-14-8gb-ram-256gb-rom-667-inches-display-5500-mah-battery-pta-approved-official-one-year-brand-warranty-i654367056.html",
+      "image": "https://static-01.daraz.pk/p/b05cdf7b60585f4fc69845b62779aac0.jpg",
+      "price": 59650,
+      "originalPrice": null,
+      "rating": 4.3,
+      "reviewCount": 7,
+      "inStock": false,
+      "capturedAt": "2026-10-07T12:12:56.441Z"
     }
   },
   "Xiaomi 14T 12GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Google Pixel 9 12GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Infinix Note 40 8GB 256GB": {
     "priceoye": null
   },
   "Tecno Spark 30 8GB 128GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "604509318",
+      "title": "TECNO SPARK 30 = 8GB RAM = 128GB ROM = 5000mAh BATTERY",
+      "url": "https://www.daraz.pk/products/30-8gb-128gb-5000mah-i604509318.html",
+      "image": "https://static-01.daraz.pk/p/5c13bb98170e3e77fa9804b7873c9573.png",
+      "price": 38999,
+      "originalPrice": null,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": false,
+      "capturedAt": "2026-10-07T12:13:27.459Z"
+    }
   },
   "Vivo Y29 8GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "826779684",
+      "title": "VIVO Y29 = 8GB RAM = 256GB ROM = 6500mAh BATTERY",
+      "url": "https://www.daraz.pk/products/y29-8gb-256gb-6500mah-i826779684.html",
+      "image": "https://static-01.daraz.pk/p/721c4fd190f6a7badef16b77d5491493.png",
+      "price": 55999,
+      "originalPrice": null,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": false,
+      "capturedAt": "2026-10-07T12:13:32.144Z"
+    }
   },
   "Oppo A3 6GB 128GB": {
     "priceoye": null
   },
   "Realme C75 8GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "640992949",
+      "title": "REALME C75 = 8GB RAM = 256GB ROM = 6000mAh BATTERY",
+      "url": "https://www.daraz.pk/products/c75-8gb-256gb-6000mah-i640992949.html",
+      "image": "https://static-01.daraz.pk/p/9befbba43bd96b7322303b170768c7e5.png",
+      "price": 50999,
+      "originalPrice": null,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": false,
+      "capturedAt": "2026-10-07T12:13:44.059Z"
+    }
   },
   "Honor X9c 5G 8GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Nothing Phone 3a 8GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Apple MacBook Air M3 13in 8GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Apple MacBook Air M2 13in 8GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Apple MacBook Pro 14in M3 8GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "HP Victus 15 Core i5 12450H 16GB 512GB RTX 3050": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "HP 15 Core i5 1235U 8GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "HP EliteBook 840 G8 Core i5 1135G7 16GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Lenovo IdeaPad Slim 3 Core i5 13420H 8GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Lenovo ThinkPad E14 Core i5 1335U 16GB 512GB": {
     "priceoye": {
@@ -121,28 +218,36 @@
       "reviewCount": 0,
       "inStock": true,
       "capturedAt": "2026-10-07T11:34:58.951Z"
-    }
+    },
+    "daraz": null
   },
   "Dell Inspiron 15 3520 Core i5 1235U 8GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Dell Latitude 5420 Core i5 1145G7 16GB 256GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Asus VivoBook 15 Core i3 1215U 8GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Asus TUF Gaming F15 Core i5 12500H 16GB 512GB RTX 3050": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Acer Aspire 7 Core i5 12450H 16GB 512GB": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Acer Nitro V15 Core i5 13420H 16GB 512GB RTX 4050": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "MSI Thin 15 Core i5 12450H 16GB 512GB RTX 2050": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Apple AirPods Pro 2 USB-C": {
     "priceoye": null
@@ -159,7 +264,8 @@
       "reviewCount": 10,
       "inStock": true,
       "capturedAt": "2026-10-07T11:36:00.811Z"
-    }
+    },
+    "daraz": null
   },
   "Samsung Galaxy Buds FE": {
     "priceoye": {
@@ -201,10 +307,34 @@
       "reviewCount": 45,
       "inStock": true,
       "capturedAt": "2026-10-07T11:36:11.128Z"
+    },
+    "daraz": {
+      "externalId": "1962739419",
+      "title": "Xiaomi Redmi Buds 6 Active Wireless Bluetooth Earbuds | Bluetooth 5.4 | AI ENC Call Noise Reduction | 36H Battery | USB Type-C | Low Latency Gaming | Black",
+      "url": "https://www.daraz.pk/products/6-1ai-enc-36h-usb-c-i1962739419.html",
+      "image": "https://static-01.daraz.pk/p/076be6f21a6185e881695635c6860e29.png",
+      "price": 5947,
+      "originalPrice": 8899,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:17:25.994Z"
     }
   },
   "JBL Tune 520BT Wireless Headphones": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "1955978424",
+      "title": "Jbl Tune 520Bt Wireless Foldable On the Ear Headphones with Bluetooth 5.3 & 57 Hours Playtime | JBL Tune 520BT - Wireless On-Ear Headphones, Up to 57H Battery Life and Speed Charge, Lightweight, Comfortable and Foldable Design, Hands-Free Calls with Voice",
+      "url": "https://www.daraz.pk/products/jbl-520bt-53-57-jbl-520bt-57-h-i1955978424.html",
+      "image": "https://static-01.daraz.pk/p/b3c3e522f4bb1427946434f0d836ed90.png",
+      "price": 15999,
+      "originalPrice": 18500,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:17:29.933Z"
+    }
   },
   "JBL Flip 6 Portable Bluetooth Speaker": {
     "priceoye": {
@@ -277,7 +407,8 @@
       "reviewCount": 6,
       "inStock": false,
       "capturedAt": "2026-10-07T11:36:44.469Z"
-    }
+    },
+    "daraz": null
   },
   "Haylou GT7 Neo Earbuds": {
     "priceoye": {
@@ -291,10 +422,12 @@
       "reviewCount": 0,
       "inStock": true,
       "capturedAt": "2026-10-07T11:36:46.440Z"
-    }
+    },
+    "daraz": null
   },
   "Audionic Airbud 625 Earbuds": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "QCY T13 ANC Earbuds": {},
   "Apple Watch Series 10 46mm": {
@@ -326,7 +459,8 @@
       "reviewCount": 47,
       "inStock": true,
       "capturedAt": "2026-10-07T11:37:07.348Z"
-    }
+    },
+    "daraz": null
   },
   "Samsung Galaxy Watch FE 40mm": {
     "priceoye": {
@@ -340,7 +474,8 @@
       "reviewCount": 9,
       "inStock": true,
       "capturedAt": "2026-10-07T11:37:11.321Z"
-    }
+    },
+    "daraz": null
   },
   "Xiaomi Redmi Watch 5 Active": {
     "priceoye": {
@@ -354,7 +489,8 @@
       "reviewCount": 40,
       "inStock": false,
       "capturedAt": "2026-10-07T11:37:14.808Z"
-    }
+    },
+    "daraz": null
   },
   "Xiaomi Smart Band 9": {
     "priceoye": null
@@ -402,7 +538,8 @@
     }
   },
   "Huawei Band 9 Fitness Tracker": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Huawei Watch GT 5 46mm": {
     "priceoye": null
@@ -419,15 +556,31 @@
       "reviewCount": 130,
       "inStock": true,
       "capturedAt": "2026-10-07T11:37:49.165Z"
+    },
+    "daraz": {
+      "externalId": "454158913",
+      "title": "Original Haylou Solar Plus RT3 Bluetooth Calling Smart Watch with Heart Rate, Blood Oxygen and Acceleration Sensors-220mAH Battery",
+      "url": "https://www.daraz.pk/products/rt3-i454158913.html",
+      "image": "https://static-01.daraz.pk/p/04b458262265d10c2325f7116bbca990.jpg",
+      "price": 15999,
+      "originalPrice": null,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:20:14.001Z"
     }
   },
-  "Casio G-Shock GA-2100-1A Watch": {},
+  "Casio G-Shock GA-2100-1A Watch": {
+    "daraz": null
+  },
   "Casio F-91W Digital Watch": {},
   "Garmin Forerunner 55 GPS Watch": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Xiaomi Robot Vacuum S10": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": null
   },
   "Xiaomi Smart Air Purifier 4 Lite": {
     "priceoye": {
@@ -441,16 +594,52 @@
       "reviewCount": 2,
       "inStock": true,
       "capturedAt": "2026-10-07T11:38:05.780Z"
+    },
+    "daraz": {
+      "externalId": "1957521646",
+      "title": "GFC Air Purifier (GF-400)",
+      "url": "https://www.daraz.pk/products/gf-400-i1957521646.html",
+      "image": "https://static-01.daraz.pk/p/65056615a2d3776e6797e2362544f8cb.png",
+      "price": 56999,
+      "originalPrice": null,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:21:04.467Z"
     }
   },
   "Xiaomi TV Stick 4K": {
     "priceoye": null
   },
   "Philips Air Fryer HD9252": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "432693523",
+      "title": "Philips Air Fryer Digital HD9252 0.8 kg 4.1 Litre - 1400 Watts",
+      "url": "https://www.daraz.pk/products/hd9252-08-kg-41-i432693523.html",
+      "image": "https://static-01.daraz.pk/p/7784e195fe1f0659307dc2c9605e6d97.jpg",
+      "price": 44499,
+      "originalPrice": 78999,
+      "rating": 5,
+      "reviewCount": 1,
+      "inStock": true,
+      "capturedAt": "2026-10-07T12:21:14.578Z"
+    }
   },
   "Philips HD7432 Coffee Maker": {
-    "priceoye": null
+    "priceoye": null,
+    "daraz": {
+      "externalId": "438145379",
+      "title": "Philips Daily Collection Coffee Maker HD7432/20 - 750 Watts",
+      "url": "https://www.daraz.pk/products/hd743220-750-i438145379.html",
+      "image": "https://static-01.daraz.pk/p/61d14af986b8f802c46067218285b352.jpg",
+      "price": 18789,
+      "originalPrice": 24999,
+      "rating": null,
+      "reviewCount": 0,
+      "inStock": false,
+      "capturedAt": "2026-10-07T12:21:20.990Z"
+    }
   },
   "Philips GC1905 Steam Iron": {
     "priceoye": null
