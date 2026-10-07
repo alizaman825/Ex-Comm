@@ -45,6 +45,12 @@ _Last updated: 2026-10-07 — storefront redesign (light default, opt-in dark, G
 
 - Background catalog sync (`jobs/catalogSync.js`, cron `CATALOG_SYNC_CRON`, default every 30 min, 8 items per run, gated by `JOBS_ENABLED`; off in demo mode): works through every (catalog item, Daraz/PriceOye) task a few at a time, so Daraz is never hit with a burst. A task re-fetches an already linked listing by its product link, otherwise searches the store and stores a confident match (`services/catalogMatch.js`: same brand/model/edition/storage, accessory words rejected, price within 55-160% of the reference price) with real URL and price. A refused request stops asking that store for the rest of the run (other stores continue); progress is kept in `settings.catalogSync` (matches refreshed after 24 h, misses retried after 7 days). `POST /api/jobs/catalog-sync` (x-job-key) runs one batch; `GET /api/jobs/status` shows progress. Replaces the manual harvest runs for Daraz (script still builds `listings.json` for reseeds). Tests: backend 271.
 
+- Project review fixes (2026-10-07), full mapping in `docs/REVIEW_PLAN.md`:
+  - Out-of-stock items no longer lead the home page's Trending/Price drops rails (`products.controller.js` `trending`/`drops` now pull a wider candidate pool and drop any product with nothing in stock before slicing to the requested limit).
+  - `ProductCard` now shows "checked Xh ago" next to an out-of-stock store badge (reuses `lastScrapedAt`, already on every offer). `OfferTable` already had "Last checked" + a direct "View on {store}" link per listing — confirmed, no change needed there.
+  - `docs/report_notes.md` documents that store links are plain links, not affiliate/referral links (no affiliate program exists for this project).
+  - Remaining review items (AliExpress landed-cost estimate, more local retailers, search autosuggest, PTA/variant filters) are scoped in `docs/REVIEW_PLAN.md` against T14/T21/new T22, not yet built.
+
 ## Working
 - **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.

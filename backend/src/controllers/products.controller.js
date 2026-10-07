@@ -64,21 +64,28 @@ const fullListing = (l) => ({
   lastScrapedAt: l.lastScrapedAt,
 });
 
-// GET /api/products/trending: most popular products.
-async function trending(req, res) {
-  const { limit, category } = req.validQuery;
-  const products = await Product.find(categoryFilter(category)).sort({ popularity: -1, reviewCount: -1 }).limit(limit).lean();
-  res.json({ products: await cardsFor(products) });
+// A product with nothing currently in stock anywhere shouldn't lead a promotional rail (home page
+// trending/drops) even though it still has a storable price; fetch extra candidates and drop them.
+async function availableCardsFor(pool, limit) {
+  const cards = await cardsFor(pool);
+  return cards.filter((c) => c.offers.some((o) => o.inStock)).slice(0, limit);
 }
 
-// GET /api/products/drops: biggest price drops over the last 7 days.
+// GET /api/products/trending: most popular, in-stock products.
+async function trending(req, res) {
+  const { limit, category } = req.validQuery;
+  const pool = await Product.find(categoryFilter(category)).sort({ popularity: -1, reviewCount: -1 }).limit(limit * 3).lean();
+  res.json({ products: await availableCardsFor(pool, limit) });
+}
+
+// GET /api/products/drops: biggest price drops over the last 7 days, in-stock only.
 async function drops(req, res) {
   const { limit, category } = req.validQuery;
-  const products = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 } })
+  const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 } })
     .sort({ priceChange7d: 1 })
-    .limit(limit)
+    .limit(limit * 3)
     .lean();
-  res.json({ products: await cardsFor(products) });
+  res.json({ products: await availableCardsFor(pool, limit) });
 }
 
 // GET /api/products/:id: product with every listing (and the user's wishlist/alert state if signed in).
