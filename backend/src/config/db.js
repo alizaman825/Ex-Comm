@@ -9,8 +9,12 @@ let memoryServer;
 // MONGO_URI=memory starts an embedded MongoDB (dev/demo fallback when Atlas is unreachable).
 // Data persists in backend/.data/mongo between restarts.
 async function resolveUri(uri) {
-  if (uri !== 'memory') return uri;
+  if (uri !== 'memory' && uri !== 'memory:ephemeral') return uri;
   const { MongoMemoryServer } = require('mongodb-memory-server');
+  if (uri === 'memory:ephemeral') {
+    memoryServer = await MongoMemoryServer.create(); // nothing written to disk (used by end-to-end tests)
+    return memoryServer.getUri('excomm');
+  }
   const dbPath = path.resolve(__dirname, '../../.data/mongo');
   fs.mkdirSync(dbPath, { recursive: true });
   memoryServer = await MongoMemoryServer.create({ instance: { dbPath, storageEngine: 'wiredTiger' } });

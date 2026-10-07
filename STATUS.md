@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T8b (price job re-fetch by store link) done; plan reordered_
+_Last updated: 2026-10-07 — T9 (frontend scaffold, design system, auth pages) done_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -20,7 +20,10 @@ _Last updated: 2026-10-07 — T8b (price job re-fetch by store link) done; plan 
 - T8: `scripts/search-sweep.js` live sweep of 23 terms → `docs/search_sweep.md`; relevance now tolerates spacing/glued words; watch brand terms. All 46 requests succeeded; Daraz relevant for 20/23, PriceOye 10/23 (electronics only).
 - Seed images: `src/seed/images.json` (harvested from live stores via `scripts/calibrate-catalog.js` + `scripts/fill-images.js`): 64 of 90 products have a real image URL (hotlinked from store CDNs); the rest need a placeholder in the UI.
 - T8b: price-check job re-fetches each tracked listing by its stored link (Daraz: item id via the catalog endpoint; PriceOye: product page JSON-LD). Fuzzy matching is now used only to group search results. Sample listings (no store link) are reported as `unlinked` and skipped; `canRefetch` filter keeps them out of the per-run budget. Live check: 2 linked listings re-fetched in 1.2 s, 0 not found.
-- Tests: 191 passing.
+- T9: `frontend/` Next.js 16 (App Router, TypeScript, Tailwind 3, React 19, SWR, lucide-react). Design system in `tailwind.config.ts` + `globals.css`: one indigo brand colour, slate neutrals, emerald/rose/amber for meaning only, Inter variable font, shared card/button/input/badge/skeleton classes. Layout: sticky navbar (search bar, categories/compare, wishlist, notification bell with unread badge, user menu, mobile menu), footer, skip link, toasts. `/api/*` is proxied to the backend (same-origin httpOnly cookie). API client with typed errors, auth context (`useAuth`, `useRequireAuth`), safe `?next=` redirects. Screens: login (with one-click demo account), register (live validation, strength meter, duplicate-email handling). Reusable `EmptyState`, `ErrorState`, `Skeleton`, `PageHeader`. Placeholder home page (full landing in T10).
+- Backend additions for the frontend: `COOKIE_SECURE` override (a Secure cookie breaks login over http://localhost), `MONGO_URI=memory:ephemeral`.
+- Tests: backend 191 (Jest), frontend 27 (Vitest + Testing Library, happy-dom) and 15 end-to-end (Playwright on installed Edge, real backend in demo mode, desktop + Pixel 7). `npm audit --omit=dev`: 0 vulnerabilities in both apps (Next 16, React 19).
+- Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 ## Working
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
@@ -31,5 +34,5 @@ _Last updated: 2026-10-07 — T8b (price job re-fetch by store link) done; plan 
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
-- Plan reordered after Checkpoint 1: (a) frontend T9–T12 (10+ screens, Checkpoint 2), (b) seller module T14/T16 using saved supplier data, closing T17–T19, (c) NICE last. Live AliExpress adapter dropped. Remaining ~34.5 h + 7 h NICE.
-- Next: T9 Next.js scaffold + design system + auth pages.
+- T10: landing page, categories page, search results (filters/sort/states), about, 404.
+- Then T11 (product detail + chart, compare), T12 (wishlist, alerts, notifications, profile) → Checkpoint 2.

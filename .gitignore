@@ -36,3 +36,10 @@ Thumbs.db
 
 # Embedded dev database (MONGO_URI=memory)
 .data/
+
+# Frontend
+.next-e2e/
+playwright-report/
+test-results/
+*.tsbuildinfo
+next-env.d.ts

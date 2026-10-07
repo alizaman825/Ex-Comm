@@ -10,6 +10,8 @@ const config = {
   mongoUri: process.env.MONGO_URI,
   jwtSecret: process.env.JWT_SECRET,
   jwtExpiresIn: process.env.JWT_EXPIRES_IN || '7d',
+  // Secure cookies need HTTPS. Defaults to on in production; set COOKIE_SECURE=false to run a production build over http://localhost.
+  cookieSecure: process.env.COOKIE_SECURE ? process.env.COOKIE_SECURE === 'true' : env === 'production',
   autoSeed: (process.env.AUTO_SEED || 'true') === 'true',
   demoMode: process.env.DEMO_MODE === 'true',
   jobs: {
