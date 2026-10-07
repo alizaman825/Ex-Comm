@@ -120,3 +120,13 @@ describe("api client", () => {
     expect(err.message).toBe("Request failed (502)");
   });
 });
+
+describe("currentPath", () => {
+  it("keeps the query string so login returns to the same results", async () => {
+    const { currentPath } = await import("./format");
+    window.history.pushState({}, "", "/search?q=iphone%2016&sort=rating");
+    expect(currentPath()).toBe("/search?q=iphone%2016&sort=rating");
+    window.history.pushState({}, "", "/");
+    expect(currentPath()).toBe("/");
+  });
+});

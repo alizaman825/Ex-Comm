@@ -13,3 +13,15 @@ export function useUnreadCount() {
   });
   return data?.count ?? 0;
 }
+
+import type { Category, TrendingSearch } from "./types";
+
+const STATIC = { revalidateOnFocus: false, dedupingInterval: 60_000 } as const;
+
+export function useCategories() {
+  return useSWR<{ categories: Category[] }>(["/categories"], fetcher, STATIC);
+}
+
+export function useTrendingSearches(limit = 8) {
+  return useSWR<{ trending: TrendingSearch[] }>(["/search/trending", { limit }], fetcher, STATIC);
+}

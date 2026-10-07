@@ -58,6 +58,11 @@ export function formatCompact(value: number): string {
   return new Intl.NumberFormat("en", { notation: "compact", maximumFractionDigits: 1 }).format(value);
 }
 
+/** Current page path including the query string, used as the post-login return address. */
+export function currentPath(): string {
+  return typeof window === "undefined" ? "/" : `${window.location.pathname}${window.location.search}`;
+}
+
 /** Only allow same-site relative paths for post-login redirects. */
 export function safeNext(next: string | null | undefined, fallback = "/"): string {
   if (!next || !next.startsWith("/") || next.startsWith("//") || next.startsWith("/\\")) return fallback;

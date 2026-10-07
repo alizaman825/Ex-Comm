@@ -4,6 +4,7 @@ import { createContext, useCallback, useContext, useEffect, useMemo, type ReactN
 import { usePathname, useRouter } from "next/navigation";
 import useSWR, { useSWRConfig } from "swr";
 import { api, ApiError } from "./api";
+import { currentPath } from "./format";
 import type { User } from "./types";
 
 interface AuthContextValue {
@@ -83,7 +84,7 @@ export function useRequireAuth() {
   const router = useRouter();
   const pathname = usePathname();
   useEffect(() => {
-    if (!auth.loading && !auth.user) router.replace(`/login?next=${encodeURIComponent(pathname)}`);
+    if (!auth.loading && !auth.user) router.replace(`/login?next=${encodeURIComponent(currentPath())}`);
   }, [auth.loading, auth.user, router, pathname]);
   return { ...auth, ready: !auth.loading && Boolean(auth.user) };
 }

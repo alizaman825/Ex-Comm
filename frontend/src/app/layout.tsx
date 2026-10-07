@@ -5,6 +5,8 @@ import { AuthProvider } from "@/lib/auth";
 import { ToastProvider } from "@/components/ui/Toast";
 import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
+import { CompareProvider } from "@/components/compare/CompareProvider";
+import { CompareTray } from "@/components/compare/CompareTray";
 
 export const metadata: Metadata = {
   title: { default: "Ex-Comm: compare prices across Daraz, PriceOye and AliExpress", template: "%s | Ex-Comm" },
@@ -26,11 +28,14 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         </a>
         <AuthProvider>
           <ToastProvider>
-            <Navbar />
-            <main id="main" className="flex-1">
-              {children}
-            </main>
-            <Footer />
+            <CompareProvider>
+              <Navbar />
+              <main id="main" className="flex-1">
+                {children}
+              </main>
+              <Footer />
+              <CompareTray />
+            </CompareProvider>
           </ToastProvider>
         </AuthProvider>
       </body>
