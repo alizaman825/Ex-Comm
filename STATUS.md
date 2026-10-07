@@ -41,6 +41,8 @@ _Last updated: 2026-10-07 — storefront redesign (light default, opt-in dark, G
 - On-demand AliExpress check (user decision 2026-10-07, replaces "no live adapter"): `scrapers/aliexpress.js` reads the result list embedded in AliExpress's search page over plain HTTP (PKR prices, about 3 s, 60 items; no browser). It is NOT in LIVE_PLATFORMS, so ordinary searches never call it. `POST /api/search/aliexpress {q}` ingests the listings as supplier offers (matched to existing products by title, otherwise AliExpress-only products) and appends them to the query's result list. UI: "Check on AliExpress" button under the source banner (warns 30 s or more; hidden in demo mode); the AliExpress store filter appears only after a check. Tests: backend 260, frontend 90, e2e 135.
 - Note: a backend process started before commit 0d5f7cd shows the old filtered search ("3 products"); restart it after pulling.
 
+- Real seed data (2026-10-07): the old seed invented prices and linked to store search pages. `scripts/harvest-listings.js` now captures each catalog item's real store listing (price, title, image, direct product-page URL, rating) into `src/seed/listings.json`; the seed uses it (`SEED_SOURCE=real` default outside tests; tests and e2e use the fixed sample catalog via `SEED_SOURCE=sample`). A store with no confident match is left out and a product no retail store lists is not seeded; only the 90-day price history is simulated, ending at the real price. Matching in the harvest: same brand, model numbers, edition (Pro/Max/Ultra) and storage. **Only PriceOye is captured so far: Atlas now holds 24 products / 24 listings.** Daraz (captcha block from this IP, retry slowly) and AliExpress (blocked) are still to capture: `SCRAPER_MIN_DELAY_MS=4000 SCRAPER_MAX_DELAY_MS=7000 node scripts/harvest-listings.js --only=daraz`, then `npm run seed`. Tests: backend 263.
+
 ## Working
 - **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
@@ -50,4 +52,5 @@ _Last updated: 2026-10-07 — storefront redesign (light default, opt-in dark, G
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
+- Finish the Daraz and AliExpress capture (see above), reseed, regenerate screenshots.
 - Checkpoint 2 reached. Next (per the revised plan): seller module T14 (margin calculator + opportunities API), T16 (seller UI), optional T15; then closing T17–T19; NICE last.

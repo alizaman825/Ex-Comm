@@ -18,6 +18,17 @@ try {
   IMAGES = {};
 }
 
+// Real store listings per catalog item (scripts/harvest-listings.js).
+let REAL = {};
+try {
+  REAL = require('./listings.json');
+} catch {
+  REAL = {};
+}
+// The app seeds real captured store data (real prices, product-page links). Tests use the invented sample
+// catalog, which has a fixed shape (90 products, 3 stores). SEED_SOURCE=sample|real overrides.
+const defaultSource = () => process.env.SEED_SOURCE || (process.env.NODE_ENV === 'test' || !Object.keys(REAL).length ? 'sample' : 'real');
+
 const DAY = 24 * 60 * 60 * 1000;
 const HISTORY_DAYS = 90;
 const DEMO_USER = { name: 'Demo User', email: 'demo@excomm.pk', password: 'demo1234' };
@@ -106,6 +117,7 @@ async function seedTrending() {
   for (const [query, hits] of TRENDING) {
     // eslint-disable-next-line no-await-in-loop
     const products = await localSearch(parseQuery(query));
+    if (!products.length) continue; // a popular search with nothing behind it would show an empty page
     // eslint-disable-next-line no-await-in-loop
     await SearchCache.updateOne(
       { queryKey: queryKeyOf(query) },
@@ -128,7 +140,8 @@ async function clearAll() {
   await User.deleteOne({ email: DEMO_USER.email });
 }
 
-async function seedDatabase({ reset = true, log = console.log } = {}) {
+async function seedDatabase({ reset = true, log = console.log, source = defaultSource() } = {}) {
+  const useReal = source === 'real';
   const t0 = Date.now();
   const rand = rng(20261007);
   const between = ([lo, hi]) => lo + rand() * (hi - lo);
@@ -146,53 +159,111 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
   const listings = [];
   const history = [];
 
-  catalog.forEach((item, idx) => {
-    const productId = new mongoose.Types.ObjectId();
-    products.push({
-      _id: productId,
-      title: item.t,
-      matchKey: analyzeTitle(item.t).key,
-      brand: item.b,
-      category: resolveCategory(item.c),
-      searchKey: searchKeyOf(item.b, item.t),
-      image: IMAGES[item.t],
-      popularity: Math.round(rand() * 60 + (item.c === 'Mobiles' ? 40 : 0)),
-    });
-    const recentDrop = idx % 7 === 3;
-
-    for (const code of item.on) {
-      const platform = PLATFORM_OF[code];
-      const prof = PROFILE[platform];
-      const title = listingTitle(platform, item);
-      const isSupplier = platform === 'aliexpress';
-      const factor = isSupplier ? SUPPLIER_FACTOR[resolveCategory(item.c)] : prof.factor;
-      const price = roundPrice(item.p * (1 + between(factor)));
-      const listingId = new mongoose.Types.ObjectId();
-      listings.push({
-        _id: listingId,
-        productId,
-        platform,
-        role: isSupplier ? 'supplier' : 'retail',
-        priceUsd: isSupplier ? Math.round((price / fx.usdToPkr) * 100) / 100 : undefined,
-        externalId: `seed-${slug(item.t)}-${platform}`,
-        title,
-        image: IMAGES[item.t],
-        url: listingUrl(platform, item.t),
-        price,
-        originalPrice: rand() < 0.75 ? roundPrice(price * between(prof.mrp)) : null,
-        currency: 'PKR',
-        rating: Math.round(between(prof.rating) * 10) / 10,
-        reviewCount: Math.round(between(prof.reviews)),
-        inStock: rand() > 0.05,
-        seeded: true,
-        dataSource: 'saved',
-        lastScrapedAt: new Date(today.getTime() - Math.floor(rand() * 6) * 3600 * 1000),
-      });
-      for (const { daysAgo, price: p } of priceSeries(price, rand, { recentDrop })) {
-        history.push({ listingId, productId, platform, price: p, scrapedAt: new Date(today.getTime() - daysAgo * DAY) });
+  if (useReal) {
+    let skipped = 0;
+    catalog.forEach((item, idx) => {
+      // Real store listings captured by scripts/harvest-listings.js: real price, title and product-page link.
+      // A store without a confident match is left out; a product no retail store sells is not seeded.
+      const real = REAL[item.t] || {};
+      const stores = [...item.on].map((code) => PLATFORM_OF[code]).filter((platform) => real[platform]);
+      if (!stores.some((p) => p !== 'aliexpress')) {
+        skipped += 1;
+        return;
       }
-    }
-  });
+      const productId = new mongoose.Types.ObjectId();
+      const image = stores.map((p) => real[p].image).find(Boolean) || IMAGES[item.t];
+      products.push({
+        _id: productId,
+        title: item.t,
+        matchKey: analyzeTitle(item.t).key,
+        brand: item.b,
+        category: resolveCategory(item.c),
+        searchKey: searchKeyOf(item.b, item.t),
+        image,
+        popularity: Math.round(rand() * 60 + (item.c === 'Mobiles' ? 40 : 0)),
+      });
+      const recentDrop = idx % 7 === 3;
+
+      for (const platform of stores) {
+        const r = real[platform];
+        const isSupplier = platform === 'aliexpress';
+        const listingId = new mongoose.Types.ObjectId();
+        listings.push({
+          _id: listingId,
+          productId,
+          platform,
+          role: isSupplier ? 'supplier' : 'retail',
+          priceUsd: isSupplier ? Math.round((r.price / fx.usdToPkr) * 100) / 100 : undefined,
+          externalId: r.externalId,
+          title: r.title,
+          image: r.image || image,
+          url: r.url,
+          price: r.price,
+          originalPrice: r.originalPrice || null,
+          currency: 'PKR',
+          rating: r.rating || undefined,
+          reviewCount: r.reviewCount || 0,
+          inStock: r.inStock !== false,
+          seeded: true,
+          dataSource: 'saved',
+          lastScrapedAt: new Date(r.capturedAt),
+        });
+        // Only the price history is simulated: it ends exactly at the real captured price.
+        for (const { daysAgo, price: p } of priceSeries(r.price, rand, { recentDrop })) {
+          history.push({ listingId, productId, platform, price: p, scrapedAt: new Date(today.getTime() - daysAgo * DAY) });
+        }
+      }
+    });
+    if (skipped) log(`Skipped ${skipped} catalog items that no store currently lists`);
+  } else {
+    catalog.forEach((item, idx) => {
+      const productId = new mongoose.Types.ObjectId();
+      products.push({
+        _id: productId,
+        title: item.t,
+        matchKey: analyzeTitle(item.t).key,
+        brand: item.b,
+        category: resolveCategory(item.c),
+        searchKey: searchKeyOf(item.b, item.t),
+        image: IMAGES[item.t],
+        popularity: Math.round(rand() * 60 + (item.c === 'Mobiles' ? 40 : 0)),
+      });
+      const recentDrop = idx % 7 === 3;
+
+      for (const code of item.on) {
+        const platform = PLATFORM_OF[code];
+        const prof = PROFILE[platform];
+        const title = listingTitle(platform, item);
+        const isSupplier = platform === 'aliexpress';
+        const factor = isSupplier ? SUPPLIER_FACTOR[resolveCategory(item.c)] : prof.factor;
+        const price = roundPrice(item.p * (1 + between(factor)));
+        const listingId = new mongoose.Types.ObjectId();
+        listings.push({
+          _id: listingId,
+          productId,
+          platform,
+          role: isSupplier ? 'supplier' : 'retail',
+          priceUsd: isSupplier ? Math.round((price / fx.usdToPkr) * 100) / 100 : undefined,
+          externalId: `seed-${slug(item.t)}-${platform}`,
+          title,
+          image: IMAGES[item.t],
+          url: listingUrl(platform, item.t),
+          price,
+          originalPrice: rand() < 0.75 ? roundPrice(price * between(prof.mrp)) : null,
+          currency: 'PKR',
+          rating: Math.round(between(prof.rating) * 10) / 10,
+          reviewCount: Math.round(between(prof.reviews)),
+          inStock: rand() > 0.05,
+          seeded: true,
+          dataSource: 'saved',
+          lastScrapedAt: new Date(today.getTime() - Math.floor(rand() * 6) * 3600 * 1000),
+        });
+        for (const { daysAgo, price: p } of priceSeries(price, rand, { recentDrop })) {
+          history.push({ listingId, productId, platform, price: p, scrapedAt: new Date(today.getTime() - daysAgo * DAY) });
+        }
+      }
+    });
+  }
 
   await Product.insertMany(products);
   await Listing.insertMany(listings);
@@ -207,8 +278,12 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
     await user.save();
   }
   const byTitle = async (t) => Product.findOne({ title: t });
-  const wish = ['Samsung Galaxy A55 5G 8GB 256GB', 'Apple AirPods Pro 2 USB-C', 'Sony WH-1000XM5 Wireless Headphones',
-    'Apple MacBook Air M3 13in 8GB 256GB', 'Xiaomi Redmi Watch 5 Active', 'Apple Watch Series 10 46mm'];
+  // Demo account items must exist in the seeded catalog (the real catalog only holds what the stores list).
+  const demo = useReal
+    ? { earbuds: 'Apple AirPods 4', second: 'JBL Flip 6 Portable Bluetooth Speaker', store: 'priceoye' }
+    : { earbuds: 'Apple AirPods Pro 2 USB-C', second: 'Apple MacBook Air M3 13in 8GB 256GB', store: 'daraz' };
+  const wish = ['Samsung Galaxy A55 5G 8GB 256GB', demo.earbuds, 'Sony WH-1000XM5 Wireless Headphones',
+    demo.second, 'Xiaomi Redmi Watch 5 Active', 'Apple Watch Series 10 46mm'];
   for (const [i, t] of wish.entries()) {
     // eslint-disable-next-line no-await-in-loop
     const p = await byTitle(t);
@@ -217,13 +292,13 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
   }
 
   const a55 = await byTitle('Samsung Galaxy A55 5G 8GB 256GB');
-  const airpods = await byTitle('Apple AirPods Pro 2 USB-C');
+  const airpods = await byTitle(demo.earbuds);
   const ps5 = await byTitle('Apple Watch Series 10 46mm');
   const watch = await byTitle('Xiaomi Redmi Watch 5 Active');
   const triggeredAt = new Date(Date.now() - 2 * 3600 * 1000);
   const alerts = await Alert.insertMany([
     { userId: user._id, productId: a55._id, targetPrice: roundPrice(a55.minPrice * 1.02), platform: null, lastTriggeredAt: triggeredAt },
-    { userId: user._id, productId: airpods._id, targetPrice: roundPrice(airpods.minPrice * 0.9), platform: 'daraz' },
+    { userId: user._id, productId: airpods._id, targetPrice: roundPrice(airpods.minPrice * 0.9), platform: demo.store },
     { userId: user._id, productId: ps5._id, targetPrice: roundPrice(ps5.minPrice * 0.93), platform: null },
     { userId: user._id, productId: watch._id, targetPrice: roundPrice(watch.minPrice * 0.85), platform: null, active: false },
   ]);
@@ -234,8 +309,8 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
       createdAt: triggeredAt,
     },
     {
-      userId: user._id, alertId: alerts[1]._id, productId: airpods._id, price: roundPrice(airpods.minPrice * 0.89), platform: 'daraz', read: true,
-      message: `Price drop: ${airpods.title} reached your target on Daraz during a sale.`,
+      userId: user._id, alertId: alerts[1]._id, productId: airpods._id, price: roundPrice(airpods.minPrice * 0.89), platform: demo.store, read: true,
+      message: `Price drop: ${airpods.title} reached your target on ${LABEL[demo.store]} during a sale.`,
       createdAt: new Date(Date.now() - 9 * DAY),
     },
   ]);

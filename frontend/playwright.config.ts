@@ -32,6 +32,7 @@ export default defineConfig({
         PORT: String(BACK),
         NODE_ENV: "development",
         MONGO_URI: "memory:ephemeral",
+        SEED_SOURCE: "sample", // tests rely on the fixed-shape sample catalog, not the real captured listings
         JWT_SECRET: "e2e-secret-not-for-production",
         // E2E_LIVE=1 (report screenshots): real store searches, no demo banner
         DEMO_MODE: process.env.E2E_LIVE ? "false" : "true",
