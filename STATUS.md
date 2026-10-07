@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — live search now mirrors the stores (nothing filtered, Show more, store totals)_
+_Last updated: 2026-10-07 — storefront redesign (light default, opt-in dark, GSAP/three.js landing)_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -35,6 +35,8 @@ _Last updated: 2026-10-07 — live search now mirrors the stores (nothing filter
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 - Search redesign ("iphone 16 pro max" showed 1 result while Daraz had ~4,000): live search mirrors the stores. `services/liveSearch.js` loads store pages (Daraz 40, PriceOye 24) into an ordered per-query list, bulk ingest (`services/ingest.js`), ranking only (`relevanceScore`), same-store listings never merged, `limit` + "Show more" in the UI, store totals in the banner, refresh bypasses the 15-min reuse. Stored-data search (relevance filtered) only for demo mode, category browsing and when no store answers. `gather.js` removed. Sweep script rewritten. Tests: backend 254, frontend 85.
+
+- Storefront redesign (styling/layout/motion only): all colours are CSS-variable tokens (`globals.css`, `tailwind.config.ts`; slate/brand/emerald/amber/rose remapped so existing classes restyle). Light is the default; dark only via the navbar toggle (`data-theme="dark"`, localStorage `excomm-theme`, strict "dark"/"light" check, color-scheme light meta). Fonts: Bricolage Grotesque + DM Sans. Landing: `components/landing` (sticky-pinned compare/track scenes scrubbed by GSAP ScrollTrigger, lazy react-three-fiber price tag, floating real products, static fallback for reduced motion/low power/no WebGL). Category illustration tiles replace icon placeholders. Seller screens do not exist yet (T16), so no dark seller screenshot. Tests: frontend 85, e2e 135.
 
 ## Working
 - **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).

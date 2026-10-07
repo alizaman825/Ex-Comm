@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { imagesSettled, settle } from "./helpers";
+import { imagesSettled, settle, walkPage } from "./helpers";
 
 // Captures report screenshots into docs/screenshots (see docs/screenshots_checklist.md).
 // Run with: npx playwright test e2e/screens.spec.ts --project=desktop
@@ -25,6 +25,7 @@ test.describe("report screenshots", () => {
     await page.goto("/");
     await expect(page.getByTestId("product-card").first()).toBeVisible();
     await settle(page);
+    await walkPage(page);
     await imagesSettled(page);
     await page.screenshot(shot("03-home"));
   });

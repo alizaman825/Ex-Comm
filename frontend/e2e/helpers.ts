@@ -42,3 +42,15 @@ export async function loginDemoUser(page: Page) {
   await page.getByRole("button", { name: /try the demo account/i }).click();
   await expect(page).toHaveURL("/");
 }
+
+/** Scroll down the whole page in steps so scroll-driven scenes and reveals play, then return to the top (for full-page screenshots). */
+export async function walkPage(page: Page) {
+  const total = await page.evaluate(() => document.documentElement.scrollHeight);
+  const step = Math.max(300, Math.floor((page.viewportSize()?.height ?? 800) * 0.6));
+  for (let y = 0; y < total; y += step) {
+    await page.evaluate((v) => window.scrollTo(0, v), y);
+    await page.waitForTimeout(120);
+  }
+  await page.evaluate(() => window.scrollTo(0, 0));
+  await page.waitForTimeout(900);
+}

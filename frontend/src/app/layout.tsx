@@ -15,16 +15,19 @@ const body = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "sw
 export const metadata: Metadata = {
   title: { default: "Ex-Comm: compare prices across Daraz, PriceOye and AliExpress", template: "%s | Ex-Comm" },
   description: "Search once, compare prices across Pakistani online stores, track price history and get alerts when prices drop.",
+  // Light is the only default: ask browsers and extensions not to auto-darken the page.
+  other: { "color-scheme": "light", "darkreader-lock": "" },
 };
 
 export const viewport: Viewport = {
   themeColor: "#FBF8F3",
+  colorScheme: "light",
   width: "device-width",
   initialScale: 1,
 };
 
 // Runs before first paint: dark only when the visitor switched it on earlier (never from the OS setting).
-const THEME_SCRIPT = `try{if(localStorage.getItem("excomm-theme")==="dark")document.documentElement.setAttribute("data-theme","dark")}catch(e){}`;
+const THEME_SCRIPT = `try{var t=localStorage.getItem("excomm-theme");if(t==="dark"){document.documentElement.setAttribute("data-theme","dark")}else{document.documentElement.removeAttribute("data-theme");if(t!==null&&t!=="light")localStorage.removeItem("excomm-theme")}}catch(e){}`;
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
