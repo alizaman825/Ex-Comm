@@ -31,11 +31,11 @@ _Last updated: 2026-10-07 — T12 done: CHECKPOINT 2 (frontend end to end)_
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 ## Working
+- **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
 - Daraz JSON search and PriceOye search HTML reachable without a browser (probed 2026-10-07).
 
 ## Broken / blocked
-- **`MONGO_URI` in `backend/.env` points to `cluster0.qp8uz.mongodb.net`, which no longer exists (DNS NXDOMAIN).** Probably the old owner's cluster. Needs the user's own Atlas URI. Until then, use `MONGO_URI=memory`.
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next

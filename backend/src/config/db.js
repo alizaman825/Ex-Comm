@@ -22,7 +22,10 @@ async function resolveUri(uri) {
 }
 
 async function connectDB(uri) {
-  const conn = await mongoose.connect(await resolveUri(uri), { serverSelectionTimeoutMS: 10000 });
+  const resolved = await resolveUri(uri);
+  // Atlas strings often have no database name (they would land in "test"); default to "excomm".
+  const hasDbName = /^mongodb(\+srv)?:[/][/][^/]+[/][^?]+/.test(resolved);
+  const conn = await mongoose.connect(resolved, { serverSelectionTimeoutMS: 10000, ...(hasDbName ? {} : { dbName: process.env.DB_NAME || 'excomm' }) });
   const where = memoryServer ? 'embedded (MONGO_URI=memory)' : conn.connection.host;
   console.log(`MongoDB connected: ${where}/${conn.connection.name}`);
   return conn;

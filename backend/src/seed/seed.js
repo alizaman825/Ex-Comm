@@ -245,9 +245,21 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
 
   await seedTrending(rand);
 
+  await Setting.set('seedCompletedAt', new Date().toISOString()); // marks a complete seed (see ensureSeeded)
+
   const summary = { products: products.length, listings: listings.length, priceHistory: history.length, demoUser: DEMO_USER.email, ms: Date.now() - t0 };
   log(`Seed complete: ${JSON.stringify(summary)}`);
   return summary;
 }
 
-module.exports = { seedDatabase, DEMO_USER, TRENDING };
+// Seeds on first start. A previous seed that was interrupted (products but no completion marker, e.g. the
+// server was stopped while loading over a slow connection) is detected and redone from scratch.
+async function ensureSeeded({ log = console.log } = {}) {
+  if (await Setting.exists({ key: 'seedCompletedAt' })) return false;
+  const partial = (await Product.estimatedDocumentCount()) > 0;
+  log(partial ? 'Sample data looks incomplete: reloading it' : 'Database is empty: loading sample data');
+  await seedDatabase({ reset: partial, log });
+  return true;
+}
+
+module.exports = { seedDatabase, ensureSeeded, DEMO_USER, TRENDING };

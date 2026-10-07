@@ -1,18 +1,14 @@
 const { config, assertConfig } = require('./config/env');
 const { connectDB } = require('./config/db');
 const { createApp } = require('./app');
-const { Product } = require('./models');
 const { backfillSearchKeys } = require('./services/productStats');
-const { seedDatabase } = require('./seed/seed');
+const { ensureSeeded } = require('./seed/seed');
 const { startScheduler, stopScheduler } = require('./jobs/scheduler');
 
 async function start() {
   assertConfig();
   await connectDB(config.mongoUri);
-  if (config.autoSeed && (await Product.estimatedDocumentCount()) === 0) {
-    console.log('Database is empty: loading sample data (AUTO_SEED=true)');
-    await seedDatabase({ reset: false });
-  }
+  if (config.autoSeed) await ensureSeeded();
   await backfillSearchKeys();
   const app = createApp();
   startScheduler();

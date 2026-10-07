@@ -53,3 +53,30 @@ test('re-running the seed is idempotent', async () => {
   expect(await Product.countDocuments()).toBe(catalog.length);
   expect(await User.countDocuments({ email: DEMO_USER.email })).toBe(1);
 });
+
+describe('ensureSeeded', () => {
+  const { ensureSeeded } = require('../src/seed/seed');
+  const { Setting } = require('../src/models');
+
+  test('does nothing once a complete seed exists', async () => {
+    expect(await Setting.exists({ key: 'seedCompletedAt' })).toBeTruthy();
+    expect(await ensureSeeded({ log: () => {} })).toBe(false);
+  });
+
+  test('redoes an interrupted seed (data present, completion marker missing, demo user gone)', async () => {
+    await Setting.deleteOne({ key: 'seedCompletedAt' });
+    await User.deleteOne({ email: DEMO_USER.email });
+    await Wishlist.deleteMany({});
+    expect(await ensureSeeded({ log: () => {} })).toBe(true);
+    expect(await Product.countDocuments()).toBe(catalog.length);
+    expect(await User.countDocuments({ email: DEMO_USER.email })).toBe(1);
+    expect(await Wishlist.countDocuments()).toBe(6);
+    expect(await Setting.exists({ key: 'seedCompletedAt' })).toBeTruthy();
+  });
+
+  test('seeds an empty database', async () => {
+    await Promise.all([Product, Listing, PriceHistory, Setting].map((M) => M.deleteMany({})));
+    expect(await ensureSeeded({ log: () => {} })).toBe(true);
+    expect(await Product.countDocuments()).toBe(catalog.length);
+  });
+});
