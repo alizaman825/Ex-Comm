@@ -68,6 +68,18 @@ function titleInfo(title) {
   return { tokens, compact: compactOf(title) };
 }
 
+// "Mini Pearl Handbag for iPhone 15 Pro Max": the phone is only what the item fits. For a search that
+// names a model number (and no accessory word) the model must appear BEFORE "for / compatible with ...".
+const FITS_WORDS = new Set(['for', 'compatible', 'fits', 'suitable']);
+function modelOnlyAfterFits(model, title) {
+  const raw = normalizeText(title).split(' ');
+  const at = raw.findIndex((t) => FITS_WORDS.has(t));
+  if (at < 0) return false;
+  const head = raw.slice(0, at).join(' ');
+  const { tokens, compact } = titleInfo(head);
+  return !model.every((t) => tokenMatches(t, tokens, compact));
+}
+
 function isRelevant(parsedQuery, title) {
   const { tokens, wantsAccessory, accessoryWords, model, words } = parsedQuery;
   if (!tokens.length) return true;
@@ -81,6 +93,7 @@ function isRelevant(parsedQuery, title) {
   }
 
   if (!model.every((t) => tokenMatches(t, titleTokens, compact))) return false;
+  if (!wantsAccessory && model.length && modelOnlyAfterFits(model, title)) return false;
   if (!words.length) {
     // Only model numbers and/or accessory words in the query: with nothing else to go on, an
     // accessory-only query ("case") needs at least one of those words.

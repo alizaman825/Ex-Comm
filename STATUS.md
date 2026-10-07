@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — search: refresh button, clearer live/earlier-result wording_
+_Last updated: 2026-10-07 — search: store failures explained, refresh resets the breaker, model-number junk filtered_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -29,7 +29,9 @@ _Last updated: 2026-10-07 — search: refresh button, clearer live/earlier-resul
 - Consistency fix found while reviewing screenshots: the headline price everywhere is now the retail price; the AliExpress supplier price is listed and labelled but never "cheapest" (backend `productStats`, search filters; cards and wishlist). Seeded notification wording fixed.
 - Search fix ("iphone 15 pro max cover" returned nothing): accessory words are a ranking preference; glued/spaced model names match; stores are queried with alternative phrasings and further pages when results are thin (`services/gather.js`); product relevance uses all listing titles (`altTitles`); DB pre-filter mirrors every relevance tolerance; no silent caps; short cache for empty results; brand is binding against other known brands. Single-store products are labelled "Only on X"; the compare view shows "Not available" for missing stores. Audit table in `docs/report_notes.md`; trace tool `scripts/trace-search.js`.
 - Search freshness: an earlier live result is reused for 15 minutes (was 6 hours); `GET /api/search?...&refresh=true` re-checks the stores; the results banner says "Live results from the stores, checked N minutes ago" with a **Refresh from stores** button (progress state, error toast, hidden in demo mode where it explains that scraping is off). Response now includes `demoMode`.
-- Tests: backend 240 (Jest), frontend 69 (Vitest), end-to-end 126 (Playwright); lint and typecheck clean.
+- "Stores could not be reached" diagnosis: the banner and the failed-refresh message now name each store's reason (timeout, blocked, paused after repeated failures, time limit, network). **Refresh from stores closes a tripped circuit breaker.** Live budget raised to 25 s. `/api/platforms` exposes last error/success; `npm run check:stores` (backend) tests both stores from the host. Could not reproduce a failure locally (both stores reachable, "iphone 15 pro max" returns live results).
+- Relevance: for model-number searches, items that only say what they fit ("Handbag for iPhone 15 Pro Max") no longer match. Neither store currently lists the iPhone 15 Pro Max phone itself (PriceOye: 17/18 only), so that query legitimately returns only loosely related items.
+- Tests: backend 253 (Jest), frontend 83 (Vitest), end-to-end 128 (Playwright); lint and typecheck clean.
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 ## Working

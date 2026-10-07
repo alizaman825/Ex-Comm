@@ -11,7 +11,8 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "test": "jest --runInBand",
-    "seed": "node scripts/seed.js"
+    "seed": "node scripts/seed.js",
+    "check:stores": "node scripts/check-stores.js"
   },
   "jest": {
     "testEnvironment": "node",

@@ -208,7 +208,7 @@ describe('pipeline audit', () => {
     const res = await search('budget test gizmo');
     config.search.liveBudgetMs = saved;
     expect(titles(res)).toContain('Budget Test Gizmo 5000');
-    expect(res.body.platformStatus.priceoye.error).toMatch(/time budget/i);
+    expect(res.body.platformStatus.priceoye).toMatchObject({ code: 'BUDGET', error: expect.stringMatching(/time limit/i) });
   });
 
   test('a product buried below the first page is found on a later page', async () => {
@@ -323,5 +323,45 @@ describe('refresh: check the stores again', () => {
 
   test('an invalid refresh value is rejected', async () => {
     expect((await request(app).get('/api/search?q=airpods&refresh=maybe')).status).toBe(400);
+  });
+});
+
+describe('why a store could not be reached is reported, and Refresh can recover', () => {
+  const timeout = () => {
+    throw Object.assign(new Error('Timed out after 8000 ms'), { code: 'TIMEOUT' });
+  };
+
+  test('each failing store reports its own reason code', async () => {
+    stores({ daraz: timeout, priceoye: () => { throw Object.assign(new Error('Blocked by platform (HTTP 403)'), { code: 'BLOCKED' }); } });
+    const res = await search('reason code gadget');
+    expect(res.body.source).toBe('fallback');
+    expect(res.body.platformStatus.daraz).toMatchObject({ status: 'failed', code: 'TIMEOUT', error: expect.stringMatching(/Timed out/) });
+    expect(res.body.platformStatus.priceoye).toMatchObject({ status: 'failed', code: 'BLOCKED' });
+  });
+
+  test('after repeated failures a store is paused; a normal search says so, Refresh tries again', async () => {
+    const daraz = jest.fn(timeout);
+    stores({ daraz });
+    for (let i = 0; i < 3; i += 1) await search(`flaky gadget ${i}`); // three failures in a row trips the breaker
+    const paused = await search('flaky gadget again');
+    expect(paused.body.platformStatus.daraz).toMatchObject({ status: 'skipped', code: 'CIRCUIT_OPEN', error: expect.stringMatching(/paused for about \d+ more minute/) });
+    const callsWhilePaused = daraz.mock.calls.length;
+    await search('flaky gadget once more');
+    expect(daraz.mock.calls.length).toBe(callsWhilePaused); // nothing was sent while paused
+
+    // the store has recovered; the user presses "Refresh from stores"
+    stores({ daraz: () => [listing('daraz', 'Flaky Gadget Pro Recovered', 4321)] });
+    const refreshed = await request(app).get('/api/search?q=flaky gadget again&refresh=true&pageSize=48');
+    expect(refreshed.body.source).toBe('live');
+    expect(refreshed.body.platformStatus.daraz.status).toBe('success');
+    expect(refreshed.body.results.map((r) => r.title)).toContain('Flaky Gadget Pro Recovered');
+  });
+
+  test('/api/platforms exposes the last error and circuit state for diagnosis', async () => {
+    stores({ daraz: timeout });
+    await search('platform status gadget');
+    const res = await request(app).get('/api/platforms');
+    const daraz = res.body.platforms.find((p) => p.id === 'daraz');
+    expect(daraz).toMatchObject({ circuit: 'closed', lastError: { code: 'TIMEOUT', message: expect.stringMatching(/Timed out/) } });
   });
 });

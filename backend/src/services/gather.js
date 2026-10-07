@@ -69,6 +69,7 @@ async function gatherPlatform(platform, query, parsed, state) {
     else if (state.status !== 'success') {
       state.status = r.status;
       state.error = r.error;
+      state.code = r.code;
     }
     return r;
   };
@@ -122,7 +123,11 @@ async function gatherAll(query, { platforms = scrapers.livePlatforms(), budgetMs
       ms: s.ms,
       queries: s.attempts.map((a) => a.query),
       ...(s.attempts.length > 1 ? { attempts: s.attempts } : {}),
-      ...(timedOut ? { error: 'Search time budget reached; showing what was found so far' } : s.error ? { error: s.error } : {}),
+      ...(timedOut
+        ? { error: `Still working when the ${Math.max(1, Math.round(budgetMs / 1000))} second time limit was reached`, code: 'BUDGET' }
+        : s.error
+          ? { error: s.error, code: s.code || 'ERROR' }
+          : {}),
     };
   }
   const anySuccess = Object.values(platformStatus).some((s) => s.status === 'success');

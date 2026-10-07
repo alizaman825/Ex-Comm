@@ -3,6 +3,7 @@
 const { config } = require('../config/env');
 const { Product, Listing, SearchCache } = require('../models');
 const { gatherAll } = require('./gather');
+const scrapers = require('../scrapers');
 const { normalizeText, searchKeyOf } = require('./matching');
 const { resolveCategory } = require('./categories');
 const { parseQuery, isRelevantAny, bestScore, TOKEN_SYNONYMS } = require('./relevance');
@@ -81,6 +82,8 @@ async function prepareData(query, parsed, { live = true, refresh = false } = {})
     return { source: 'fallback', platformStatus: cached?.platformStatus || {}, fetchedAt: cached?.fetchedAt || null, cached };
   }
 
+  // An explicit refresh also lets a paused store through again: the user is asking us to try now.
+  if (refresh) scrapers.closeCircuits(scrapers.livePlatforms());
   if (!inflight.has(queryKey)) {
     inflight.set(queryKey, liveScrapeAndIngest(query).finally(() => inflight.delete(queryKey)));
   }

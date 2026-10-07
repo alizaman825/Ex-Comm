@@ -71,6 +71,8 @@ export interface ProductDetail extends ProductCard {
 
 export interface PlatformStatus {
   status: "success" | "failed" | "skipped";
+  /** TIMEOUT, BLOCKED, CIRCUIT_OPEN, BUDGET, HTTP, PARSE or another error code */
+  code?: string;
   scraped?: number;
   relevant?: number;
   ms?: number;

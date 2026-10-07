@@ -16,6 +16,8 @@ class PoliteQueue {
     this.lastRequestAt = 0;
     this.consecutiveFailures = 0;
     this.openUntil = 0;
+    this.lastError = null; // { message, code, at } of the most recent failure
+    this.lastSuccessAt = null;
   }
 
   get circuitOpen() {
@@ -28,14 +30,23 @@ class PoliteQueue {
       circuit: this.circuitOpen ? 'open' : 'closed',
       consecutiveFailures: this.consecutiveFailures,
       retryAt: this.circuitOpen ? new Date(this.openUntil).toISOString() : null,
+      lastError: this.lastError,
+      lastSuccessAt: this.lastSuccessAt,
     };
+  }
+
+  // Lets requests through again right away (used when the user explicitly asks to refresh).
+  closeCircuit() {
+    this.consecutiveFailures = 0;
+    this.openUntil = 0;
   }
 
   // Runs fn() after earlier tasks finish and the polite delay has passed.
   run(fn) {
     const task = this.tail.then(async () => {
       if (this.circuitOpen) {
-        throw new ScrapeError(`${this.name} paused after repeated failures`, { code: 'CIRCUIT_OPEN' });
+        const minutes = Math.max(1, Math.ceil((this.openUntil - Date.now()) / 60000));
+        throw new ScrapeError(`${this.name} is paused for about ${minutes} more minute${minutes === 1 ? '' : 's'} after repeated failures`, { code: 'CIRCUIT_OPEN' });
       }
       const delay = this.minDelay + Math.random() * (this.maxDelay - this.minDelay);
       const wait = this.lastRequestAt + delay - Date.now();
@@ -44,8 +55,10 @@ class PoliteQueue {
       try {
         const result = await fn();
         this.consecutiveFailures = 0;
+        this.lastSuccessAt = new Date().toISOString();
         return result;
       } catch (err) {
+        this.lastError = { message: err.message, code: err.code || 'ERROR', at: new Date().toISOString() };
         this.consecutiveFailures += 1;
         if (this.consecutiveFailures >= this.failureThreshold) {
           this.openUntil = Date.now() + this.cooldownMs;

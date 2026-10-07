@@ -30,7 +30,7 @@ const config = {
   search: {
     cacheTtlMs: Number(process.env.SEARCH_CACHE_TTL_MS) || 15 * 60 * 1000, // how long an earlier live search is reused
     emptyCacheTtlMs: Number(process.env.SEARCH_EMPTY_CACHE_TTL_MS) || 10 * 60 * 1000, // a search that found nothing
-    liveBudgetMs: Number(process.env.SEARCH_LIVE_BUDGET_MS) || 15000,
+    liveBudgetMs: Number(process.env.SEARCH_LIVE_BUDGET_MS) || 25000, // slow connections need time for up to 4 polite requests per store
     maxIngestPerPlatform: 40, // one full store page: nothing relevant on it is dropped
     rateLimitMax: Number(process.env.SEARCH_RATE_LIMIT_MAX) || 60,
   },

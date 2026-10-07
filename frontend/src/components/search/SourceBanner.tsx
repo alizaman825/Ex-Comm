@@ -3,6 +3,7 @@ import clsx from "clsx";
 import { PLATFORM_LABEL, timeAgo } from "@/lib/format";
 import type { Platform, SearchResponse } from "@/lib/types";
 import { PlatformDot } from "@/components/product/badges";
+import { storeProblems } from "@/lib/stores";
 
 const TONE = {
   live: { box: "border-emerald-200 bg-emerald-50 text-emerald-900", icon: CheckCircle2, iconTone: "text-emerald-600" },
@@ -18,7 +19,7 @@ export function bannerMessage(data: SearchResponse): string {
   if (data.demoMode) return "Demo mode: live store search is switched off, so you are seeing saved sample data.";
   if (data.source === "live") return `Live results from the stores, checked ${timeAgo(data.fetchedAt)}.`;
   if (data.source === "cache") return `Live results from the stores, checked ${timeAgo(data.fetchedAt)}. Prices may have changed since: refresh to check the stores again.`;
-  return "The stores could not be reached just now, so you are seeing saved data. Prices may be out of date.";
+  return "The stores could not be checked just now, so you are seeing saved data. Prices may be out of date.";
 }
 
 interface Props {
@@ -35,12 +36,24 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
   const Icon = tone.icon;
   const stores = Object.entries(data.platformStatus) as [Platform, NonNullable<SearchResponse["platformStatus"][Platform]>][];
   const canRefresh = Boolean(onRefresh) && !data.demoMode;
+  const problems = data.demoMode ? [] : storeProblems(data.platformStatus);
   return (
     <div className={clsx("flex flex-col gap-3 rounded-xl border px-4 py-3 text-sm lg:flex-row lg:items-center lg:justify-between", tone.box)} data-testid="source-banner" data-source={data.source} data-demo={data.demoMode || undefined}>
-      <p className="flex items-start gap-2.5">
+      <div className="flex items-start gap-2.5">
         <Icon className={clsx("mt-0.5 h-4 w-4 shrink-0", tone.iconTone)} aria-hidden />
-        <span>{bannerMessage(data)}</span>
-      </p>
+        <span>
+          {bannerMessage(data)}
+          {problems.length > 0 && (
+            <ul className="mt-1.5 space-y-0.5 text-[13px]" data-testid="store-problems" aria-label="Stores that did not answer">
+              {problems.map((p) => (
+                <li key={p.platform}>
+                  <strong>{p.label}</strong> {p.text}.
+                </li>
+              ))}
+            </ul>
+          )}
+        </span>
+      </div>
       <div className="flex flex-wrap items-center gap-2">
         {!data.demoMode && data.source !== "fallback" && stores.length > 0 && (
           <ul className="flex flex-wrap gap-2" aria-label="Store status">

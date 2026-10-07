@@ -67,6 +67,41 @@ test.describe("refresh results from the stores", () => {
     await expect(page.getByTestId("refresh-results")).toBeEnabled();
   });
 
+  test("when the stores cannot be reached the page says why, for each store, and Refresh keeps trying", async ({ page }) => {
+    const failed = {
+      query: "iphone 15 pro max", source: "fallback", demoMode: false, fetchedAt: null, total: 0, page: 1, pages: 1, pageSize: 12, results: [],
+      platformStatus: { daraz: { status: "failed", code: "TIMEOUT", error: "Timed out after 8000 ms" }, priceoye: { status: "skipped", code: "CIRCUIT_OPEN", error: "priceoye is paused" } },
+    };
+    let refreshCalls = 0;
+    await page.route("**/api/search?**", (route) => {
+      const url = route.request().url();
+      if (!url.includes("q=iphone")) return route.continue();
+      if (url.includes("refresh=true")) refreshCalls += 1;
+      return route.fulfill(json(failed));
+    });
+    await page.goto("/search?q=iphone 15 pro max");
+    const problems = page.getByTestId("store-problems");
+    await expect(problems).toContainText("Daraz took too long to answer");
+    await expect(problems).toContainText("PriceOye is paused for a few minutes");
+
+    await page.getByRole("button", { name: "Try the stores again" }).click();
+    const toast = page.getByRole("alert").filter({ hasText: "Could not check the stores" });
+    await expect(toast).toContainText("Daraz took too long to answer");
+    await expect(toast).toContainText("PriceOye is paused");
+    expect(refreshCalls).toBe(1);
+    await expect(page.getByTestId("refresh-results")).toBeEnabled(); // can be tried again
+  });
+
+  test("a store that answered but has no match is not reported as a problem", async ({ page }) => {
+    await page.route("**/api/search?**", (route) => {
+      if (!route.request().url().includes("q=iphone")) return route.continue();
+      return route.fulfill(json({ ...body("live", 0, 450), platformStatus: { daraz: { status: "success", relevant: 1 }, priceoye: { status: "success", relevant: 0 } } }));
+    });
+    await page.goto("/search?q=iphone 15 pro max cover");
+    await expect(page.getByTestId("source-banner")).toHaveAttribute("data-source", "live");
+    await expect(page.getByTestId("store-problems")).toHaveCount(0);
+  });
+
   test("demo mode explains itself and offers no refresh", async ({ page }) => {
     await page.goto("/search?q=samsung");
     const banner = page.getByTestId("source-banner");

@@ -94,7 +94,8 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | NFR-03 | Security | The API shall set secure HTTP headers (Helmet), restrict CORS to the frontend origin, and validate all input. |
 | NFR-04 | Security | Login and registration shall be rate-limited (10 requests per 15 minutes per IP). The rest of the API shall be limited to 300 requests per 15 minutes per IP. |
 | NFR-05 | Security | No secrets (database URI, JWT secret, SMTP credentials) shall be stored in the source repository. |
-| NFR-06 | Performance | Search served from cache shall respond in under 1 second. A live search shall finish within 10 seconds, or fall back to cached data. |
+| NFR-06 | Performance | Search served from cache shall respond in under 1 second. A live search shall finish within 25 seconds (several polite requests per store), returning whatever was found, or fall back to stored data. |
+| NFR-06a | Diagnosability | When a store cannot be read, the user interface shall name the reason for each store (timeout, blocked, paused, time limit, network), an explicit refresh shall retry a paused store immediately, and a command-line check (`npm run check:stores`) shall test both stores from the host machine. |
 | NFR-07 | Performance | Each platform scraper shall time out after 8 seconds per request. |
 | NFR-08 | Reliability | Failure of one platform shall not prevent results from the other platforms being shown. |
 | NFR-09 | Reliability | A demo mode (`DEMO_MODE=true`) shall serve cached and sample data only, so the app works without internet access to the stores. |

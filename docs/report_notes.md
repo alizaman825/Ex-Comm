@@ -60,6 +60,23 @@ Pipeline audit for the bug "iphone 15 pro max cover returns nothing" (traced wit
 | Cache | A search that found nothing was cached as "fresh" for 6 hours, hiding a product that appears later | Empty results are cached for 10 minutes only |
 | Time budget | Results already found were discarded when the 10 s budget ran out | Partial results are returned and the store is marked "time budget reached" |
 
+### When a store cannot be reached
+The results banner never says only "could not be reached". Each store that did not answer is listed with its reason, taken from the error the scraper reported:
+
+| Reason shown | Cause | What the user can do |
+|---|---|---|
+| took too long to answer | request timed out (8 s per request) | try again; a slow connection can also hit the 25 s search time limit |
+| refused the request | HTTP 403/429 or a captcha page: the store is blocking automated access | wait, avoid repeated searches, or try another network |
+| is paused for a few minutes after repeated failures | the circuit breaker: 3 failures in a row pause a store for 10 minutes so it is not hammered | **Refresh from stores** closes the breaker and tries immediately |
+| was still working when the time limit was reached | the 25 s live-search budget ended; anything found before that is still shown | refresh, or search a narrower phrase |
+| returned a page we could not read | the store changed its page layout | report it; fixture tests detect this |
+| could not be reached: ... | DNS, firewall, VPN or no internet | `npm run check:stores` in `backend/` tests both stores from the machine and explains the failure |
+
+A store that answered but has no matching product is not a problem and is not listed as one. `GET /api/platforms` also exposes each store's last error, last success time and breaker state.
+
+### Items that only say what they fit
+Keyword-stuffed listings such as "Mini Pearl Handbag for iPhone 15 Pro Max" matched searches for the phone. For a search that names a model number (and no accessory word), the model number must now appear before "for / compatible with / fits"; titles where it only appears after are treated as accessories. Searches without a model number ("men's sneakers" ~ "Sneakers for Men") are unaffected. A sweep before and after the change differed in 3 of 58 store results, all of them dropped accessory or spam items.
+
 Honest limits: a store that genuinely has no matching product contributes nothing (for "iphone 15 pro max cover" no matching PriceOye product could be found with 3 phrasings, 2 pages and its suggest endpoint, so only Daraz results are shown). Stores that sell only unbranded copies (Ray-Ban) cannot be matched by brand.
 
 ### Search sweep (live test of 29 terms)

@@ -233,3 +233,19 @@ describe('model codes with hyphens', () => {
     expect(res.body.total).toBeGreaterThan(0);
   });
 });
+
+describe('items that only say what phone they fit are not the phone', () => {
+  const rel = (q, title) => isRelevant(parseQuery(q), title);
+  test.each([
+    ['iphone 15 pro max', 'Mini Pearl Handbag for iPhone 15 Pro Max', false],
+    ['iphone 15 pro max', 'Camera Lens Kit compatible with iPhone 15 Pro Max', false],
+    ['iphone 15 pro max', 'For iPhone 15 Pro Max Dust Plug Kit', false],
+    ['iphone 15 pro max', 'Apple iPhone 15 Pro Max 256GB', true],
+    ['iphone 15 pro max', 'Apple iPhone 15 Pro Max 256GB PTA Approved for Pakistan', true], // "for" comes after the model
+    ['hp victus 15', 'Laptop Bag for HP Victus 15', false],
+    ['hp victus 15', 'HP Victus 15 Core i5 for Gaming', true],
+    ['mens sneakers', 'Sneakers for Men Casual', true], // no model number in the query: unaffected
+    ['iphone 15 pro max cover', 'Cover for iPhone 15 Pro Max', true], // accessory query: accessories wanted
+    ['iphone 15 charger', 'Fast Charger for iPhone 15', true],
+  ])('%s vs "%s" -> %s', (q, title, expected) => expect(rel(q, title)).toBe(expected));
+});

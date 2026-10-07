@@ -8,6 +8,7 @@ import { Loader2, PackageSearch, Search, SlidersHorizontal, TrendingUp } from "l
 import clsx from "clsx";
 import { api, errorMessage, fetcher } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
+import { problemsSentence, storeProblems } from "@/lib/stores";
 import { useCategories, useTrendingSearches } from "@/lib/hooks";
 import { SORTS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
 import type { SearchResponse } from "@/lib/types";
@@ -43,7 +44,8 @@ export function SearchView() {
     try {
       const fresh = await api<SearchResponse>("/search", { params: { ...queryParams, refresh: true } });
       await mutate(fresh, { revalidate: false });
-      toast.success(fresh.source === "live" ? "Checked the stores: results are up to date" : "The stores could not be reached; showing saved data");
+      if (fresh.source === "live") toast.success("Checked the stores: results are up to date");
+      else toast.error(`Could not check the stores: ${problemsSentence(storeProblems(fresh.platformStatus)) || "no answer"}. Showing saved data.`);
     } catch (err) {
       toast.error(errorMessage(err));
     } finally {
@@ -127,7 +129,7 @@ export function SearchView() {
           ) : isLoading && !data ? (
             <div className="space-y-4">
               <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600" role="status">
-                <Loader2 className="h-4 w-4 animate-spin text-brand-600" aria-hidden /> Checking Daraz and PriceOye for the latest prices. This can take a few seconds.
+                <Loader2 className="h-4 w-4 animate-spin text-brand-600" aria-hidden /> Checking Daraz and PriceOye for the latest prices. This can take up to 30 seconds if a store is slow.
               </div>
               <ProductGridSkeleton count={PAGE_SIZE} />
             </div>

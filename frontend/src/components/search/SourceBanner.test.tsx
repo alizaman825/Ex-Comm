@@ -27,7 +27,7 @@ describe("SourceBanner wording", () => {
   });
 
   it("is honest when the stores could not be reached, and in demo mode", () => {
-    expect(bannerMessage(response({ source: "fallback" }))).toMatch(/could not be reached/);
+    expect(bannerMessage(response({ source: "fallback" }))).toMatch(/could not be checked/);
     expect(bannerMessage(response({ source: "fallback", demoMode: true }))).toMatch(/Demo mode.*saved sample data/);
   });
 });
@@ -63,5 +63,30 @@ describe("SourceBanner refresh button", () => {
     expect(list).toHaveTextContent("12 found");
     expect(list).toHaveTextContent("PriceOye");
     expect(list).toHaveTextContent("unavailable");
+  });
+});
+
+describe("SourceBanner store problems", () => {
+  it("names the reason for each store that did not answer", () => {
+    render(
+      <SourceBanner
+        data={response({ source: "fallback", platformStatus: { daraz: { status: "failed", code: "TIMEOUT" }, priceoye: { status: "skipped", code: "CIRCUIT_OPEN" } } })}
+        onRefresh={() => {}}
+      />
+    );
+    const list = screen.getByTestId("store-problems");
+    expect(list).toHaveTextContent("Daraz took too long to answer");
+    expect(list).toHaveTextContent("PriceOye is paused for a few minutes after repeated failures");
+  });
+
+  it("shows the reason for the failing store next to the counts for the one that worked", () => {
+    render(<SourceBanner data={response({ source: "live", platformStatus: { daraz: { status: "success", relevant: 7 }, priceoye: { status: "failed", code: "BLOCKED" } } })} onRefresh={() => {}} />);
+    expect(screen.getByRole("list", { name: "Store status" })).toHaveTextContent("7 found");
+    expect(screen.getByTestId("store-problems")).toHaveTextContent("PriceOye refused the request");
+  });
+
+  it("shows no problem list when every store answered", () => {
+    render(<SourceBanner data={response({ source: "live", platformStatus: { daraz: { status: "success", relevant: 2 }, priceoye: { status: "success", relevant: 0 } } })} />);
+    expect(screen.queryByTestId("store-problems")).not.toBeInTheDocument();
   });
 });

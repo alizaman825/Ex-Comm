@@ -83,8 +83,13 @@ function canRefetch(listing) {
   return Boolean(adapter && adapter.canRefetch && adapter.canRefetch(listing));
 }
 
+// Closes the circuit breaker of the given stores so the next request is actually sent.
+function closeCircuits(platforms = Object.keys(queues)) {
+  for (const p of platforms) if (queues[p]) queues[p].closeCircuit();
+}
+
 function platformStatus() {
   return Object.values(queues).map((q) => q.status());
 }
 
-module.exports = { adapters, queues, livePlatforms, scrapePlatform, scrapeAll, fetchCurrentListing, canRefetch, platformStatus };
+module.exports = { adapters, queues, livePlatforms, scrapePlatform, scrapeAll, fetchCurrentListing, canRefetch, closeCircuits, platformStatus };

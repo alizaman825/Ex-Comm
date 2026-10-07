@@ -35,6 +35,9 @@ function listPlatforms(_req, res) {
       ...p,
       live: !config.demoMode && scrapers.livePlatforms().includes(p.id),
       circuit: circuits[p.id]?.circuit || null,
+      retryAt: circuits[p.id]?.retryAt || null,
+      lastError: circuits[p.id]?.lastError || null,
+      lastSuccessAt: circuits[p.id]?.lastSuccessAt || null,
     })),
   });
 }
