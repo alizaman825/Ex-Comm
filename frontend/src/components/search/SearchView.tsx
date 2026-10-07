@@ -18,6 +18,7 @@ import { Pagination } from "@/components/ui/Pagination";
 import { ProductCard, ProductGridSkeleton } from "@/components/product/ProductCard";
 import { Filters } from "./Filters";
 import { SourceBanner } from "./SourceBanner";
+import { AliExpressCheck } from "./AliExpressCheck";
 
 const PAGE_SIZE = 12;
 
@@ -125,12 +126,13 @@ export function SearchView() {
       <div className="grid gap-8 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         <aside className="hidden lg:block" aria-label="Filters">
           <div className="card sticky top-24 p-5">
-            <Filters state={state} categories={categories} onChange={(p) => update(p)} onReset={reset} />
+            <Filters state={state} showAliExpress={Boolean(data?.platformStatus.aliexpress)} categories={categories} onChange={(p) => update(p)} onReset={reset} />
           </div>
         </aside>
 
         <section aria-label="Search results" className="min-w-0">
           {data && <SourceBanner data={data} onRefresh={refresh} refreshing={refreshing} />}
+          {data && !data.demoMode && state.q && !tooShort && <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />}
 
           {error && !data ? (
             <ErrorState title="We could not load results" description="The search service did not respond. Check your connection and try again." onRetry={() => mutate()} />
@@ -177,7 +179,7 @@ export function SearchView() {
       </div>
 
       <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
-        <Filters state={state} categories={categories} onChange={(p) => update(p)} onReset={reset} />
+        <Filters state={state} showAliExpress={Boolean(data?.platformStatus.aliexpress)} categories={categories} onChange={(p) => update(p)} onReset={reset} />
         <button type="button" className="btn-primary mt-6 w-full" onClick={() => setFiltersOpen(false)}>
           Show {data ? data.total : ""} results
         </button>

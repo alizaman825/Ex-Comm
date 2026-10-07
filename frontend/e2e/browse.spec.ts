@@ -88,10 +88,10 @@ test.describe("search results", () => {
     await expect(cards(page).first()).toBeVisible();
     const total = await cards(page).count();
 
-    await page.getByRole("checkbox", { name: /AliExpress/ }).click();
-    await expect(page).toHaveURL(/platform=aliexpress/);
+    await page.getByRole("checkbox", { name: /PriceOye/ }).click();
+    await expect(page).toHaveURL(/platform=priceoye/);
     await expect(cards(page).first()).toBeVisible();
-    for (const text of await cards(page).allTextContents()) expect(text).toContain("AliExpress");
+    for (const text of await cards(page).allTextContents()) expect(text).toContain("PriceOye");
 
     // inverted price range is rejected and does not change the URL
     await page.getByLabel("Minimum price (Rs)").fill("90000");

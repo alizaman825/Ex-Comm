@@ -37,8 +37,8 @@ test("filters open in a drawer on mobile and apply to the results", async ({ pag
   await page.getByRole("button", { name: /^Filters/ }).click();
   const drawer = page.getByRole("dialog", { name: "Filters" });
   await expect(drawer).toBeVisible();
-  await drawer.getByRole("checkbox", { name: /AliExpress/ }).click();
-  await expect(page).toHaveURL(/platform=aliexpress/);
+  await drawer.getByRole("checkbox", { name: /PriceOye/ }).click();
+  await expect(page).toHaveURL(/platform=priceoye/);
   await page.keyboard.press("Escape");
   await expect(drawer).toBeHidden();
   await expect(page.getByRole("button", { name: /^Filters/ })).toContainText("1");

@@ -1,6 +1,9 @@
 const { z } = require('zod');
 const { PLATFORMS } = require('../models');
 const search = require('../services/search');
+const aliexpress = require('../services/aliexpressCheck');
+const { config } = require('../config/env');
+const AppError = require('../utils/AppError');
 
 const bool = z.enum(['true', 'false', '1', '0']).transform((v) => v === 'true' || v === '1');
 const num = (min = 0) => z.coerce.number().min(min).finite();
@@ -30,8 +33,15 @@ const searchQuerySchema = z
     path: ['minPrice'],
   });
 
+const aliexpressBodySchema = z.object({ q: z.string().trim().min(2, 'Search for at least 2 characters').max(100) });
+
+async function checkAliExpress(req, res) {
+  if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
+  res.json(await aliexpress.checkAliExpress(req.body.q));
+}
+
 async function searchProducts(req, res) {
   res.json(await search.search(req.validQuery));
 }
 
-module.exports = { searchProducts, searchQuerySchema };
+module.exports = { searchProducts, searchQuerySchema, checkAliExpress, aliexpressBodySchema };

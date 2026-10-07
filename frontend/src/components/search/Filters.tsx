@@ -13,6 +13,8 @@ interface Props {
   categories: Category[];
   onChange: (patch: Partial<SearchState>) => void;
   onReset: () => void;
+  /** list AliExpress as a store filter (only after AliExpress has been checked for this search) */
+  showAliExpress?: boolean;
 }
 
 const RATINGS = [
@@ -75,7 +77,7 @@ function PriceRange({ state, onChange }: Pick<Props, "state" | "onChange">) {
   );
 }
 
-export function Filters({ state, categories, onChange, onReset }: Props) {
+export function Filters({ state, categories, onChange, onReset, showAliExpress = false }: Props) {
   const count = activeFilterCount(state);
 
   function togglePlatform(p: Platform) {
@@ -118,7 +120,7 @@ export function Filters({ state, categories, onChange, onReset }: Props) {
 
       <Section title="Store">
         <div className="space-y-2.5">
-          {PLATFORMS.map((p) => (
+          {PLATFORMS.filter((p) => p !== "aliexpress" || showAliExpress || state.platform.includes(p)).map((p) => (
             <label key={p} className="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
               <input type="checkbox" checked={state.platform.includes(p)} onChange={() => togglePlatform(p)} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
               <PlatformDot platform={p} />

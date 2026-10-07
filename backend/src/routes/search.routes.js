@@ -8,6 +8,7 @@ const ah = require('../utils/asyncHandler');
 module.exports = () => {
   const router = express.Router();
   router.get('/trending', ah(meta.trending));
+  router.post('/aliexpress', searchLimiter(), validate({ body: ctrl.aliexpressBodySchema }), ah(ctrl.checkAliExpress));
   router.get('/', searchLimiter(), validate({ query: ctrl.searchQuerySchema }), ah(ctrl.searchProducts));
   return router;
 };

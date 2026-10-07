@@ -41,6 +41,7 @@ async function appendHistory(listing, price, now, { force = false } = {}) {
 }
 
 const listingFields = (l, now) => ({
+  role: l.role || 'retail',
   title: l.title,
   url: l.url,
   image: l.image || undefined,

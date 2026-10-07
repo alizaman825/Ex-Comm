@@ -109,7 +109,8 @@ function ensureLoaded(query, parsed, { need, refresh = false, key, platforms = s
       }
     }
 
-    const platformStatus = describe(platforms, state, ms);
+    // stores added on demand (AliExpress) keep their entry; they are not part of the ordinary live search
+    const platformStatus = describe(Object.keys(state), state, ms);
     await SearchCache.updateOne(
       { queryKey: key },
       { $set: { query: query.trim().toLowerCase(), productIds: ids, platformState: state, platformStatus, source: 'live', fetchedAt } },
