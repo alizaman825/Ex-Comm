@@ -81,6 +81,8 @@ export interface PlatformStatus {
 export interface SearchResponse {
   query: string;
   source: SearchSource;
+  /** true: live scraping is switched off on the server (only saved data is shown) */
+  demoMode?: boolean;
   fetchedAt: string | null;
   platformStatus: Partial<Record<Platform, PlatformStatus>>;
   total: number;

@@ -280,3 +280,48 @@ describe('pipeline audit', () => {
     expect(await Product.countDocuments({ _id: productIds[0] })).toBe(1);
   });
 });
+
+describe('refresh: check the stores again', () => {
+  test('an earlier live result is reused only until the user asks to refresh', async () => {
+    const calls = jest.fn(() => [listing('daraz', 'Refresh Test Gadget Pro 3000', 1500)]);
+    stores({ daraz: calls });
+    const first = await search('refresh test gadget');
+    expect(first.body.source).toBe('live');
+    const afterFirst = calls.mock.calls.length;
+
+    const again = await search('refresh test gadget');
+    expect(again.body.source).toBe('cache');
+    expect(calls.mock.calls.length).toBe(afterFirst); // reused, no scraping
+
+    const refreshed = await request(app).get('/api/search?q=refresh test gadget&refresh=true');
+    expect(refreshed.body.source).toBe('live');
+    expect(calls.mock.calls.length).toBeGreaterThan(afterFirst); // the stores were asked again
+    expect(refreshed.body.demoMode).toBe(false);
+  });
+
+  test('a refresh picks up a price change from the store', async () => {
+    let price = 2000;
+    stores({ daraz: () => [{ ...listing('daraz', 'Refresh Price Widget X1', price), externalId: 'fixed-id-1' }] });
+    const first = await search('refresh price widget');
+    expect(first.body.results[0].minPrice).toBe(2000);
+    price = 1800;
+    const refreshed = await request(app).get('/api/search?q=refresh price widget&refresh=true');
+    expect(refreshed.body.results[0].minPrice).toBe(1800);
+  });
+
+  test('the reuse window is 15 minutes by default', () => {
+    expect(config.search.cacheTtlMs).toBe(15 * 60 * 1000);
+  });
+
+  test('refresh in demo mode never scrapes and reports demoMode', async () => {
+    config.demoMode = true;
+    const spy = jest.spyOn(scrapers.adapters.daraz, 'search');
+    const res = await request(app).get('/api/search?q=airpods pro&refresh=true');
+    expect(res.body).toMatchObject({ source: 'fallback', demoMode: true });
+    expect(spy).not.toHaveBeenCalled();
+  });
+
+  test('an invalid refresh value is rejected', async () => {
+    expect((await request(app).get('/api/search?q=airpods&refresh=maybe')).status).toBe(400);
+  });
+});

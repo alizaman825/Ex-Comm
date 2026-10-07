@@ -6,7 +6,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
 import { Loader2, PackageSearch, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
 import clsx from "clsx";
-import { fetcher } from "@/lib/api";
+import { api, errorMessage, fetcher } from "@/lib/api";
+import { useToast } from "@/components/ui/Toast";
 import { useCategories, useTrendingSearches } from "@/lib/hooks";
 import { SORTS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
 import type { SearchResponse } from "@/lib/types";
@@ -23,20 +24,32 @@ export function SearchView() {
   const router = useRouter();
   const params = useSearchParams();
   const state = useMemo(() => parseSearchParams(new URLSearchParams(params.toString())), [params]);
+  const toast = useToast();
   const [filtersOpen, setFiltersOpen] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
   const { data: catData } = useCategories();
   const categories = catData?.categories ?? [];
   const categoryName = categories.find((c) => c.slug === state.category)?.name;
 
   const tooShort = state.q.length > 0 && state.q.length < 2 && !state.category;
   const hasQuery = Boolean((state.q && !tooShort) || state.category);
-  const key = hasQuery
-    ? ([
-        "/search",
-        { q: state.q, category: state.category, platform: state.platform.join(","), minPrice: state.minPrice, maxPrice: state.maxPrice, minRating: state.minRating, sort: state.sort, page: state.page, pageSize: PAGE_SIZE },
-      ] as const)
-    : null;
+  const queryParams = { q: state.q, category: state.category, platform: state.platform.join(","), minPrice: state.minPrice, maxPrice: state.maxPrice, minRating: state.minRating, sort: state.sort, page: state.page, pageSize: PAGE_SIZE };
+  const key = hasQuery ? (["/search", queryParams] as const) : null;
   const { data, error, isLoading, isValidating, mutate } = useSWR<SearchResponse>(key, fetcher as never, { keepPreviousData: true, revalidateOnFocus: false, shouldRetryOnError: false });
+
+  // Ask the server to check the stores again (it ignores any earlier live result), then show the new results.
+  async function refresh() {
+    setRefreshing(true);
+    try {
+      const fresh = await api<SearchResponse>("/search", { params: { ...queryParams, refresh: true } });
+      await mutate(fresh, { revalidate: false });
+      toast.success(fresh.source === "live" ? "Checked the stores: results are up to date" : "The stores could not be reached; showing saved data");
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setRefreshing(false);
+    }
+  }
 
   const update = useCallback(
     (patch: Partial<SearchState>, keepPage = false) => {
@@ -107,7 +120,7 @@ export function SearchView() {
         </aside>
 
         <section aria-label="Search results" className="min-w-0">
-          {data && <SourceBanner data={data} />}
+          {data && <SourceBanner data={data} onRefresh={refresh} refreshing={refreshing} />}
 
           {error && !data ? (
             <ErrorState title="We could not load results" description="The search service did not respond. Check your connection and try again." onRetry={() => mutate()} />
@@ -122,7 +135,7 @@ export function SearchView() {
             <NoResults query={state.q} filterCount={filterCount} onReset={reset} />
           ) : data ? (
             <>
-              <div className={clsx("mt-5 grid grid-cols-1 gap-5 transition-opacity sm:grid-cols-2 xl:grid-cols-3", isValidating && "opacity-60")} data-testid="results-grid">
+              <div className={clsx("mt-5 grid grid-cols-1 gap-5 transition-opacity sm:grid-cols-2 xl:grid-cols-3", (isValidating || refreshing) && "opacity-60")} data-testid="results-grid">
                 {data.results.map((p, i) => (
                   <ProductCard key={p.id} product={p} priority={i < 3} />
                 ))}

@@ -79,7 +79,8 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | ID | Requirement |
 |---|---|
 | FR-29 | The system shall collect product data (title, price, original price, rating, reviews, image, URL, stock) from Daraz and PriceOye by scraping their public search pages. |
-| FR-30 | The system shall cache search results in the database and serve fresh cached results (less than 6 hours old) without scraping again. |
+| FR-30 | Every search shall check the stores live. To avoid repeating identical requests, the result of an earlier live search for the same query shall be reused for at most 15 minutes (searches that found nothing for 10 minutes); the page shall state that the results are live and how long ago they were checked. |
+| FR-30a | The user shall be able to re-check the stores at any time with a "Refresh from stores" button, which ignores any earlier result and updates the stored products and prices. In demo mode (live scraping off) the page shall say so and offer no refresh. |
 | FR-31 | If a live scrape fails or times out, the system shall serve the most recent cached results, or sample data if there is no cache, instead of an error. |
 | FR-32 | The system shall provide a seed script that loads realistic sample products, listings on three platforms, and 90 days of price history. |
 | FR-33 | The system shall log every scrape attempt (platform, query, status, item count, duration, error). |

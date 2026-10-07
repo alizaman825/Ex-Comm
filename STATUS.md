@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — search fix: every matching product is shown (accessory queries, single-store results)_
+_Last updated: 2026-10-07 — search: refresh button, clearer live/earlier-result wording_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -28,7 +28,8 @@ _Last updated: 2026-10-07 — search fix: every matching product is shown (acces
 - T12: `/wishlist` (sort, remove, price vs when saved), `/alerts` (tabs, create via product search, edit, pause/resume, delete with confirmation; bell refreshes), `/notifications` (unread filter, open, mark all read, pagination), `/profile` (name, email-alert preference, change password, delete account). All guarded by `AuthGate` (redirect to login and back). Loading, empty and error-with-retry states on all four pages.
 - Consistency fix found while reviewing screenshots: the headline price everywhere is now the retail price; the AliExpress supplier price is listed and labelled but never "cheapest" (backend `productStats`, search filters; cards and wishlist). Seeded notification wording fixed.
 - Search fix ("iphone 15 pro max cover" returned nothing): accessory words are a ranking preference; glued/spaced model names match; stores are queried with alternative phrasings and further pages when results are thin (`services/gather.js`); product relevance uses all listing titles (`altTitles`); DB pre-filter mirrors every relevance tolerance; no silent caps; short cache for empty results; brand is binding against other known brands. Single-store products are labelled "Only on X"; the compare view shows "Not available" for missing stores. Audit table in `docs/report_notes.md`; trace tool `scripts/trace-search.js`.
-- Tests: backend 235 (Jest), frontend 62 (Vitest), end-to-end 122 (Playwright); lint and typecheck clean.
+- Search freshness: an earlier live result is reused for 15 minutes (was 6 hours); `GET /api/search?...&refresh=true` re-checks the stores; the results banner says "Live results from the stores, checked N minutes ago" with a **Refresh from stores** button (progress state, error toast, hidden in demo mode where it explains that scraping is off). Response now includes `demoMode`.
+- Tests: backend 240 (Jest), frontend 69 (Vitest), end-to-end 126 (Playwright); lint and typecheck clean.
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 ## Working

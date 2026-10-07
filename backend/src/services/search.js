@@ -69,12 +69,13 @@ async function liveScrapeAndIngest(query) {
 }
 
 // Decide where data comes from and refresh the DB if needed. Returns { source, platformStatus, fetchedAt }.
-async function prepareData(query, parsed, { live = true } = {}) {
+async function prepareData(query, parsed, { live = true, refresh = false } = {}) {
   const queryKey = queryKeyOf(query);
   const cached = await SearchCache.findOne({ queryKey });
   // A search that found nothing is only remembered briefly: stores change, and a miss must not hide a product for hours.
   const ttl = cached && cached.productIds && cached.productIds.length ? config.search.cacheTtlMs : config.search.emptyCacheTtlMs;
-  const fresh = cached && Date.now() - cached.fetchedAt.getTime() < ttl;
+  // refresh = the user asked to check the stores again, so an earlier result is never reused
+  const fresh = !refresh && cached && Date.now() - cached.fetchedAt.getTime() < ttl;
   if (fresh) return { source: 'cache', platformStatus: cached.platformStatus, fetchedAt: cached.fetchedAt, cached };
   if (!live || config.demoMode) {
     return { source: 'fallback', platformStatus: cached?.platformStatus || {}, fetchedAt: cached?.fetchedAt || null, cached };
@@ -142,13 +143,13 @@ const SORTS = {
 
 // params: { q, category, platform[], minPrice, maxPrice, minRating, sort, page, pageSize, live }
 async function search(params) {
-  const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, live = true } = params;
+  const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, live = true, refresh = false } = params;
   const parsed = parseQuery(q);
 
   let meta = { source: 'fallback', platformStatus: {}, fetchedAt: null };
   let cached = null;
   if (parsed.tokens.length) {
-    meta = await prepareData(q, parsed, { live });
+    meta = await prepareData(q, parsed, { live, refresh });
     cached = meta.cached;
   }
 
@@ -204,6 +205,7 @@ async function search(params) {
   return {
     query: q,
     source: meta.source,
+    demoMode: config.demoMode, // true: live scraping is switched off, only saved data is shown
     fetchedAt: meta.fetchedAt,
     platformStatus: meta.platformStatus,
     total,

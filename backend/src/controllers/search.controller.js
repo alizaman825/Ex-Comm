@@ -21,6 +21,7 @@ const searchQuerySchema = z
     page: z.coerce.number().int().min(1).max(100).default(1),
     pageSize: z.coerce.number().int().min(1).max(48).default(12),
     live: bool.default('true'),
+    refresh: bool.default('false'), // ignore an earlier live result and check the stores again
   })
   .refine((v) => v.q || v.category, { message: 'Provide a search term (q) or a category', path: ['q'] })
   .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
