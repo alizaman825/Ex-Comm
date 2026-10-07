@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { firstId, imagesSettled, settle } from "./helpers";
+import { firstId, imagesSettled, settle, snap } from "./helpers";
 
 // Phone-width screenshots and layout checks for the account screens (runs in the "mobile" project).
 const OUT = path.resolve(__dirname, "../../docs/screenshots");
@@ -28,26 +28,26 @@ test("17 mobile screenshots: home, search, product, alerts", async ({ page, requ
   await expect(page.getByTestId("product-card").first()).toBeVisible();
   await settle(page);
   await imagesSettled(page);
-  await page.screenshot(shot("17-mobile-home"));
+  await snap(page, shot("17-mobile-home"));
 
   await page.goto("/search?q=samsung");
   await expect(page.getByTestId("product-card").first()).toBeVisible();
   await settle(page);
   await imagesSettled(page);
-  await page.screenshot(shot("17-mobile-search"));
+  await snap(page, shot("17-mobile-search"));
 
   await page.goto(`/products/${await firstId(request, "samsung galaxy a55")}`);
   await expect(page.getByTestId("history-summary")).toBeVisible();
   await settle(page);
   await imagesSettled(page);
-  await page.screenshot(shot("17-mobile-product"));
+  await snap(page, shot("17-mobile-product"));
 
   await loginDemoMobile(page);
   await page.goto("/alerts");
   await expect(page.getByTestId("alert-item").first()).toBeVisible();
   await settle(page);
   await imagesSettled(page);
-  await page.screenshot(shot("17-mobile-alerts"));
+  await snap(page, shot("17-mobile-alerts"));
 });
 
 test("compare tray and wishlist heart are usable with touch targets of at least 36px", async ({ page }) => {

@@ -1,4 +1,5 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
+import { snap } from "./helpers";
 import path from "node:path";
 
 // Loading, empty and error states for the product and compare pages (NFR-12).
@@ -20,7 +21,7 @@ test.describe("product page states", () => {
     });
     await page.goto(`/products/${id}`);
     await expect(page.getByRole("status", { name: "Loading product" })).toBeVisible();
-    await page.screenshot({ path: path.join(OUT, "state-product-loading.png"), fullPage: true });
+    await snap(page, { path: path.join(OUT, "state-product-loading.png"), fullPage: true });
     await expect(page.getByRole("heading", { level: 1 })).toContainText("Galaxy A55", { timeout: 10_000 });
   });
 
@@ -44,7 +45,7 @@ test.describe("product page states", () => {
     await page.goto(`/products/${id}`);
     await expect(page.getByRole("status", { name: "Loading price history" })).toBeVisible();
     await expect(page.getByTestId("price-chart").locator('[data-state="empty"]')).toContainText("No price history yet");
-    await page.screenshot({ path: path.join(OUT, "state-chart-empty.png"), fullPage: true });
+    await snap(page, { path: path.join(OUT, "state-chart-empty.png"), fullPage: true });
 
     await page.unroute(`**/api/products/${id}/history**`);
     let fail = true;

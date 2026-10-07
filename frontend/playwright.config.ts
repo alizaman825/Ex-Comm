@@ -33,7 +33,8 @@ export default defineConfig({
         NODE_ENV: "development",
         MONGO_URI: "memory:ephemeral",
         JWT_SECRET: "e2e-secret-not-for-production",
-        DEMO_MODE: "true",
+        // E2E_LIVE=1 (report screenshots): real store searches, no demo banner
+        DEMO_MODE: process.env.E2E_LIVE ? "false" : "true",
         JOBS_ENABLED: "false",
         JOB_KEY: "e2e-key",
         AUTH_RATE_LIMIT_MAX: "1000",

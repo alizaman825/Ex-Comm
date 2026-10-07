@@ -1,4 +1,5 @@
 import { expect, test } from "@playwright/test";
+import { snap } from "./helpers";
 import path from "node:path";
 
 // Loading, empty and error states (NFR-12). Screenshots go to docs/screenshots for the report.
@@ -14,7 +15,7 @@ test.describe("search page states", () => {
     await expect(page.getByRole("status", { name: "Loading products" })).toBeVisible();
     await expect(page.getByTestId("product-skeleton")).toHaveCount(12);
     await expect(page.getByText("Checking Daraz and PriceOye for the latest prices")).toBeVisible();
-    await page.screenshot({ path: path.join(OUT, "state-search-loading.png"), fullPage: true });
+    await snap(page, { path: path.join(OUT, "state-search-loading.png"), fullPage: true });
     await expect(page.getByTestId("product-card").first()).toBeVisible({ timeout: 15_000 });
     await expect(page.getByTestId("product-skeleton")).toHaveCount(0);
   });
@@ -27,7 +28,7 @@ test.describe("search page states", () => {
     await page.goto("/search?q=samsung");
     const error = page.locator('[data-state="error"]');
     await expect(error).toContainText("We could not load results");
-    await page.screenshot({ path: path.join(OUT, "state-search-error.png"), fullPage: true });
+    await snap(page, { path: path.join(OUT, "state-search-error.png"), fullPage: true });
     fail = false;
     await error.getByRole("button", { name: "Try again" }).click();
     await expect(page.getByTestId("product-card").first()).toBeVisible();
@@ -43,7 +44,7 @@ test.describe("search page states", () => {
   test("empty: nothing matches", async ({ page }) => {
     await page.goto("/search?q=zzqqxx");
     await expect(page.locator('[data-state="empty"]')).toContainText("No products found");
-    await page.screenshot({ path: path.join(OUT, "state-search-empty.png"), fullPage: true });
+    await snap(page, { path: path.join(OUT, "state-search-empty.png"), fullPage: true });
   });
 
   test("empty: filters exclude everything, with a way back", async ({ page }) => {

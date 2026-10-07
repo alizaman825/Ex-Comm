@@ -1,6 +1,6 @@
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import path from "node:path";
-import { imagesSettled, settle } from "./helpers";
+import { imagesSettled, settle, snap } from "./helpers";
 
 // Report screenshots for the product and compare pages (docs/screenshots_checklist.md).
 const OUT = path.resolve(__dirname, "../../docs/screenshots");
@@ -19,7 +19,7 @@ test.describe("report screenshots: product and compare", () => {
     await expect(page.locator(".recharts-line").first()).toBeVisible();
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot(shot("07-product"));
+    await snap(page, shot("07-product"));
   });
 
   test("07b price alert dialog", async ({ page, request }) => {
@@ -31,7 +31,7 @@ test.describe("report screenshots: product and compare", () => {
     await page.getByRole("button", { name: "Set price alert" }).click();
     await expect(page.getByRole("dialog")).toBeVisible();
     await settle(page);
-    await page.screenshot({ path: path.join(OUT, "07b-alert-dialog.png") });
+    await snap(page, { path: path.join(OUT, "07b-alert-dialog.png") });
   });
 
   test("08 compare: products side by side", async ({ page, request }) => {
@@ -40,7 +40,7 @@ test.describe("report screenshots: product and compare", () => {
     await expect(page.getByTestId("compare-table")).toBeVisible();
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot(shot("08-compare"));
+    await snap(page, shot("08-compare"));
   });
 
   test("08b compare: one product across stores", async ({ page, request }) => {
@@ -49,6 +49,6 @@ test.describe("report screenshots: product and compare", () => {
     await expect(page.getByTestId("compare-table")).toBeVisible();
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot(shot("08b-compare-stores"));
+    await snap(page, shot("08b-compare-stores"));
   });
 });

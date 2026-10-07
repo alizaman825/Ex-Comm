@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
 import { firstId } from "./helpers";
-import { imagesSettled, settle, walkPage } from "./helpers";
+import { imagesSettled, settle, snap, snapLanding } from "./helpers";
 
 // Dark-mode screenshots for the report (18-dark-*.png). Dark is opt-in, so the saved choice is set before load.
 // Run with: npx playwright test e2e/screens-dark.spec.ts --project=desktop
@@ -51,9 +51,7 @@ test("18 dark home", async ({ page }) => {
   await page.goto("/");
   await expect(page.getByTestId("product-card").first()).toBeVisible();
   await settle(page);
-  await walkPage(page);
-  await imagesSettled(page);
-  await page.screenshot(shot("18-dark-home"));
+  await snapLanding(page, OUT, "18-dark-home");
 });
 
 test("18 dark search", async ({ page }) => {
@@ -61,7 +59,7 @@ test("18 dark search", async ({ page }) => {
   await expect(page.getByTestId("product-card").first()).toBeVisible();
   await settle(page);
   await imagesSettled(page);
-  await page.screenshot(shot("18-dark-search"));
+  await snap(page, shot("18-dark-search"));
 });
 
 test("18 dark product", async ({ page, request }) => {
@@ -70,5 +68,5 @@ test("18 dark product", async ({ page, request }) => {
   await expect(page.getByTestId("price-chart").locator("svg.recharts-surface").first()).toBeVisible();
   await settle(page);
   await imagesSettled(page);
-  await page.screenshot(shot("18-dark-product"));
+  await snap(page, shot("18-dark-product"));
 });

@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { loginDemoUser, registerUser } from "./helpers";
+import { loginDemoUser, registerUser, snap } from "./helpers";
 
 // Loading, empty and error states for the signed-in pages (NFR-12).
 const OUT = path.resolve(__dirname, "../../docs/screenshots");
@@ -22,7 +22,7 @@ for (const p of PAGES) {
       });
       await page.goto(p.path);
       await expect(page.getByRole("status", { name: p.loading })).toBeVisible();
-      await page.screenshot({ path: path.join(OUT, `state-${p.name}-loading.png`), fullPage: true });
+      await snap(page, { path: path.join(OUT, `state-${p.name}-loading.png`), fullPage: true });
       await expect(page.getByTestId(p.filled).first()).toBeVisible({ timeout: 10_000 });
       await expect(page.getByRole("status", { name: p.loading })).toHaveCount(0);
     });
@@ -33,7 +33,7 @@ for (const p of PAGES) {
       await page.route(p.api, (route) => (fail ? route.fulfill(serverError) : route.continue()));
       await page.goto(p.path);
       await expect(page.locator('[data-state="error"]')).toContainText(p.error);
-      await page.screenshot({ path: path.join(OUT, `state-${p.name}-error.png`), fullPage: true });
+      await snap(page, { path: path.join(OUT, `state-${p.name}-error.png`), fullPage: true });
       fail = false;
       await page.getByRole("button", { name: "Try again" }).click();
       await expect(page.getByTestId(p.filled).first()).toBeVisible();
@@ -43,7 +43,7 @@ for (const p of PAGES) {
       await registerUser(page);
       await page.goto(p.path);
       await expect(page.locator('[data-state="empty"]')).toContainText(p.empty);
-      await page.screenshot({ path: path.join(OUT, `state-${p.name}-empty.png`), fullPage: true });
+      await snap(page, { path: path.join(OUT, `state-${p.name}-empty.png`), fullPage: true });
     });
   });
 }

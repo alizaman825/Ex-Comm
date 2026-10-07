@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 import path from "node:path";
-import { imagesSettled, loginDemoUser, settle } from "./helpers";
+import { imagesSettled, loginDemoUser, settle, snap } from "./helpers";
 
 // Report screenshots for the signed-in screens (docs/screenshots_checklist.md), using the demo account.
 const OUT = path.resolve(__dirname, "../../docs/screenshots");
@@ -16,7 +16,7 @@ test.describe("report screenshots: signed-in screens", () => {
     await expect(page.getByTestId("wishlist-item")).toHaveCount(6);
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot(shot("09-wishlist"));
+    await snap(page, shot("09-wishlist"));
   });
 
   test("10 price alerts", async ({ page }) => {
@@ -24,7 +24,7 @@ test.describe("report screenshots: signed-in screens", () => {
     await expect(page.getByTestId("alert-item")).toHaveCount(4);
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot(shot("10-alerts"));
+    await snap(page, shot("10-alerts"));
   });
 
   test("10b new alert: choose a product", async ({ page }) => {
@@ -35,7 +35,7 @@ test.describe("report screenshots: signed-in screens", () => {
     await expect(dialog.getByRole("list", { name: "Search results" })).toBeVisible();
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot({ path: path.join(OUT, "10b-new-alert.png") });
+    await snap(page, { path: path.join(OUT, "10b-new-alert.png") });
   });
 
   test("11 notifications", async ({ page }) => {
@@ -43,13 +43,13 @@ test.describe("report screenshots: signed-in screens", () => {
     await expect(page.getByTestId("notification")).toHaveCount(2);
     await settle(page);
     await imagesSettled(page);
-    await page.screenshot(shot("11-notifications"));
+    await snap(page, shot("11-notifications"));
   });
 
   test("12 profile and settings", async ({ page }) => {
     await page.goto("/profile");
     await expect(page.getByRole("heading", { name: "Profile & settings" })).toBeVisible();
     await settle(page);
-    await page.screenshot(shot("12-profile"));
+    await snap(page, shot("12-profile"));
   });
 });
