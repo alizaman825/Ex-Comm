@@ -107,10 +107,9 @@ function Art({ slug }: { slug?: string | null }) {
     case "fashion":
       return (
         <>
-          <path d="M14 78c0-6 4-10 10-10h14l8-14c2-3 6-3 8 0l4 6 10 4c10 3 26 8 40 8 6 0 10 4 10 10v6H14z" className={INK} />
-          <path d="M14 90h92v6a6 6 0 0 1-6 6H20a6 6 0 0 1-6-6z" className={PAPER} />
-          <path d="M44 62l4 6M52 58l4 7M60 61l3 6" fill="none" strokeWidth="3" strokeLinecap="round" className="stroke-surface" />
-          <circle cx="28" cy="76" r="4" className="fill-highlight" />
+          <path d="M40 18L14 34l10 22 14-7v57h44V49l14 7 10-22L80 18c-3 9-10 14-20 14s-17-5-20-14z" className={INK} />
+          <path d="M44 76h32v8H44z" className="fill-highlight" />
+          <circle cx="60" cy="58" r="6" className={PAPER} />
         </>
       );
     default:
@@ -130,8 +129,7 @@ export function CategoryTile({ category, label, className }: { category?: string
   const t = themeFor(category);
   return (
     <div
-      role="img"
-      aria-label={label}
+      {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
       className={clsx("flex items-center justify-center overflow-hidden", className)}
       style={{ backgroundImage: `linear-gradient(135deg, rgb(var(--${t.from})), rgb(var(--${t.to})))` }}
     >

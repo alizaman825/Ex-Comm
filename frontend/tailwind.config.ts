@@ -57,7 +57,7 @@ const config: Config = {
       fontSize: {
         // Fluid sizes. [size, { lineHeight, letterSpacing, fontWeight }]
         giant: ["clamp(4rem, 17vw, 15rem)", { lineHeight: "0.82", letterSpacing: "-0.05em", fontWeight: "800" }],
-        hero: ["clamp(3rem, 3.2rem + 5.6vw, 9rem)", { lineHeight: "0.9", letterSpacing: "-0.045em", fontWeight: "800" }],
+        hero: ["clamp(2.75rem, 1rem + 12vw, 9rem)", { lineHeight: "0.9", letterSpacing: "-0.045em", fontWeight: "800" }],
         display: ["clamp(2.25rem, 1.4rem + 3.6vw, 4.5rem)", { lineHeight: "0.98", letterSpacing: "-0.035em", fontWeight: "800" }],
         h1: ["clamp(1.75rem, 1.2rem + 1.8vw, 2.75rem)", { lineHeight: "1.08", letterSpacing: "-0.03em", fontWeight: "800" }],
         h2: ["clamp(1.375rem, 1.1rem + 1vw, 2rem)", { lineHeight: "1.15", letterSpacing: "-0.025em", fontWeight: "700" }],

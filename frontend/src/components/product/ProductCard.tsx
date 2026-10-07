@@ -69,11 +69,11 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
               <span className="flex min-w-0 items-center gap-2 text-slate-600">
                 <PlatformDot platform={o.platform} />
                 <span className="truncate">{PLATFORM_LABEL[o.platform]}</span>
-                {o.role === "supplier" && <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-600">supplier</span>}
-                {o.dataSource === "saved" && <span className="rounded bg-amber-50 px-1 py-px text-[10px] font-medium text-amber-700">saved</span>}
+                {o.role === "supplier" && <span className="shrink-0 rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-600">supplier</span>}
+                {o.dataSource === "saved" && <span className="shrink-0 rounded bg-amber-100 px-1 py-px text-[10px] font-medium text-amber-700">saved</span>}
                 {!o.inStock && <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500">out of stock</span>}
               </span>
-              <span className={clsx("tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-700" : "text-slate-600")}>{formatPrice(o.price)}</span>
+              <span className={clsx("shrink-0 whitespace-nowrap tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-700" : "text-slate-600")}>{formatPrice(o.price)}</span>
             </li>
           ))}
         </ul>

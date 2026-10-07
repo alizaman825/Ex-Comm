@@ -302,3 +302,11 @@
 :root[data-theme="dark"] .tint-lilac,
 :root[data-theme="dark"] .tint-butter,
 :root[data-theme="dark"] .photo { background-color: rgb(var(--tile)); }
+
+/* Landing scenes: plain stacked sections by default; pinned (sticky) scroll scenes only when motion is enabled */
+.scene-inner { padding-top: 7rem; padding-bottom: 6rem; min-height: 38rem; }
+html[data-motion="on"] .scene { height: 260vh; }
+html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; min-height: 0; padding-top: 5.5rem; padding-bottom: 2rem; }
+@media (max-width: 640px) {
+  html[data-motion="on"] .scene-inner { padding-top: 5rem; }
+}

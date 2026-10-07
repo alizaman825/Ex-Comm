@@ -31,8 +31,8 @@ const COLUMNS = [
 
 export function Footer() {
   return (
-    <footer className="mt-auto border-t border-slate-200 bg-surface">
-      <div className="container py-12">
+    <footer className="relative z-[6] mt-10 bg-canvas border-t border-slate-200/70">
+      <div className="container py-16">
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(3,1fr)]">
           <div>
             <Logo />
@@ -46,7 +46,7 @@ export function Footer() {
               <ul className="mt-4 space-y-2.5">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-slate-500 transition hover:text-brand-700">
+                    <Link href={l.href} className="text-sm text-slate-500 transition hover:text-ink">
                       {l.label}
                     </Link>
                   </li>
@@ -55,7 +55,7 @@ export function Footer() {
             </nav>
           ))}
         </div>
-        <div className="mt-10 flex flex-col gap-2 border-t border-slate-100 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-2 border-t border-slate-200/70 pt-6 text-xs text-slate-500 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Ex-Comm. A university final-year project.</p>
           <p>Prices come from public store pages and sample data and can change. Always confirm on the store before buying.</p>
         </div>
