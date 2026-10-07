@@ -37,6 +37,7 @@ const config: Config = {
         ink: token("slate-900"),
         onbrand: token("on-brand"),
         onaccent: token("on-accent"),
+        onyellow: token("on-yellow"),
         highlight: token("yellow"),
         peach: token("peach"),
         mint: token("mint"),

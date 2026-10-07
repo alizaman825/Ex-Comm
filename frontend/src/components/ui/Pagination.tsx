@@ -15,10 +15,10 @@ export function pageWindow(page: number, pages: number): (number | null)[] {
 
 export function Pagination({ page, pages, onPage }: { page: number; pages: number; onPage: (p: number) => void }) {
   if (pages <= 1) return null;
-  const btn = "inline-flex h-10 min-w-10 items-center justify-center rounded-lg border px-3 text-sm font-medium transition";
+  const btn = "inline-flex h-10 min-w-10 items-center justify-center rounded-full border-0 px-3 text-sm font-semibold shadow-sm ring-1 ring-slate-200 transition duration-200 ease-soft";
   return (
     <nav className="mt-10 flex items-center justify-center gap-1.5" aria-label="Pagination">
-      <button type="button" className={clsx(btn, "border-slate-200 bg-surface text-slate-600 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40")} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">
+      <button type="button" className={clsx(btn, "bg-surface text-slate-600 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40")} disabled={page <= 1} onClick={() => onPage(page - 1)} aria-label="Previous page">
         <ChevronLeft className="h-4 w-4" aria-hidden />
       </button>
       {pageWindow(page, pages).map((p, i) =>
@@ -27,12 +27,12 @@ export function Pagination({ page, pages, onPage }: { page: number; pages: numbe
             …
           </span>
         ) : (
-          <button key={p} type="button" onClick={() => onPage(p)} aria-current={p === page ? "page" : undefined} aria-label={`Page ${p}`} className={clsx(btn, p === page ? "border-brand-600 bg-brand-600 text-onbrand" : "border-slate-200 bg-surface text-slate-600 hover:bg-slate-50")}>
+          <button key={p} type="button" onClick={() => onPage(p)} aria-current={p === page ? "page" : undefined} aria-label={`Page ${p}`} className={clsx(btn, p === page ? "bg-brand-600 text-onbrand ring-0" : "border-slate-200 bg-surface text-slate-600 hover:bg-slate-50")}>
             {p}
           </button>
         )
       )}
-      <button type="button" className={clsx(btn, "border-slate-200 bg-surface text-slate-600 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40")} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page">
+      <button type="button" className={clsx(btn, "bg-surface text-slate-600 hover:bg-slate-50 disabled:pointer-events-none disabled:opacity-40")} disabled={page >= pages} onClick={() => onPage(page + 1)} aria-label="Next page">
         <ChevronRight className="h-4 w-4" aria-hidden />
       </button>
     </nav>

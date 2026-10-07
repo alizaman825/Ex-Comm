@@ -15,6 +15,7 @@
   --yellow: 255 216 77; /* #FFD84D */
   --on-brand: 255 255 255;
   --on-accent: 255 255 255;
+  --on-yellow: 23 20 15;
 
   /* warm neutrals; 900 = ink #17140F, 500 = muted #6B645B */
   --slate-50: 246 242 234;
@@ -171,7 +172,7 @@
     display: none;
   }
   ::selection {
-    @apply bg-highlight text-slate-900;
+    @apply bg-highlight text-onyellow;
   }
   :focus-visible {
     @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-canvas;
@@ -218,7 +219,7 @@
   .btn-secondary { @apply btn bg-surface text-ink shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300; }
   .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100 hover:text-ink; }
   .btn-danger { @apply btn bg-rose-600 text-white shadow-sm hover:bg-rose-700; }
-  .btn-yellow { @apply btn bg-highlight text-slate-900 shadow-sm hover:shadow-card; }
+  .btn-yellow { @apply btn bg-highlight text-onyellow shadow-sm hover:shadow-card; }
   .btn-sm { @apply px-3.5 py-1.5 text-xs; }
   .btn-lg { @apply px-7 py-3.5 text-base; }
 
@@ -239,9 +240,9 @@
   .badge-danger { @apply badge bg-rose-50 text-rose-700; }
   .badge-warning { @apply badge bg-amber-50 text-amber-800; }
   .badge-best { @apply badge bg-emerald-600 text-onaccent; }
-  .badge-deal { @apply badge bg-highlight text-slate-900; }
+  .badge-deal { @apply badge bg-highlight text-onyellow; }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full bg-surface px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition duration-200 ease-soft hover:-translate-y-px hover:bg-highlight hover:text-slate-900 hover:ring-highlight;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-surface px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition duration-200 ease-soft hover:-translate-y-px hover:bg-highlight hover:text-onyellow hover:ring-highlight;
   }
 
   /* Loading skeleton with shimmer */
@@ -287,3 +288,17 @@
 @keyframes swash-in {
   to { transform: rotate(-1.2deg) scaleX(1); }
 }
+
+/* Photo backdrops: category pastel in light mode, a light tile in dark mode (multiply breaks on dark) */
+.tint-peach { background-color: color-mix(in srgb, rgb(var(--peach)) 70%, white); }
+.tint-mint { background-color: color-mix(in srgb, rgb(var(--mint)) 70%, white); }
+.tint-sky { background-color: color-mix(in srgb, rgb(var(--sky)) 70%, white); }
+.tint-lilac { background-color: color-mix(in srgb, rgb(var(--lilac)) 70%, white); }
+.tint-butter { background-color: color-mix(in srgb, rgb(var(--butter)) 70%, white); }
+.photo { mix-blend-mode: var(--blend); }
+:root[data-theme="dark"] .tint-peach,
+:root[data-theme="dark"] .tint-mint,
+:root[data-theme="dark"] .tint-sky,
+:root[data-theme="dark"] .tint-lilac,
+:root[data-theme="dark"] .tint-butter,
+:root[data-theme="dark"] .photo { background-color: rgb(var(--tile)); }

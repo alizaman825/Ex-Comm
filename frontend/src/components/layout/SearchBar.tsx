@@ -10,9 +10,13 @@ interface SearchBarProps {
   autoFocus?: boolean;
   className?: string;
   placeholder?: string;
+  /** Label on the large bar's button */
+  buttonLabel?: string;
+  /** Accessible name of the box (keep it distinct when a page has more than one large bar) */
+  label?: string;
 }
 
-export function SearchBar({ size = "md", autoFocus, className, placeholder = 'Search "iPhone 16", "air fryer", "Sony headphones"' }: SearchBarProps) {
+export function SearchBar({ size = "md", autoFocus, className, buttonLabel = "Compare prices", label = "Search products", placeholder = 'Search "iPhone 16", "air fryer", "Sony headphones"' }: SearchBarProps) {
   const router = useRouter();
   const pathname = usePathname();
   const params = useSearchParams();
@@ -37,7 +41,7 @@ export function SearchBar({ size = "md", autoFocus, className, placeholder = 'Se
   return (
     <form onSubmit={onSubmit} role="search" className={clsx("w-full", className)}>
       <div className="relative">
-        <Search className={clsx("pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-400", large ? "left-5 h-5 w-5" : "left-3.5 h-4 w-4")} aria-hidden />
+        <Search className={clsx("pointer-events-none absolute top-1/2 -translate-y-1/2 text-slate-400", large ? "left-6 h-5 w-5" : "left-3.5 h-4 w-4")} aria-hidden />
         <input
           type="search"
           name="q"
@@ -48,18 +52,18 @@ export function SearchBar({ size = "md", autoFocus, className, placeholder = 'Se
             setError(false);
           }}
           placeholder={placeholder}
-          aria-label="Search products"
+          aria-label={label}
           aria-invalid={error || undefined}
           autoComplete="off"
           className={clsx(
-            "w-full border bg-surface text-ink shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-4",
-            large ? "rounded-2xl py-4 pl-14 pr-32 text-base" : "rounded-full py-2.5 pl-10 pr-4 text-sm",
-            error ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/15" : "border-slate-300 hover:border-slate-400 focus:border-brand-500 focus:ring-brand-500/15"
+            "w-full border-0 text-ink transition duration-200 placeholder:text-slate-400 focus:outline-none focus:ring-4",
+            large ? "rounded-full bg-surface py-4 pl-14 pr-44 text-base shadow-float sm:py-5" : "rounded-full bg-slate-100 py-2.5 pl-10 pr-4 text-sm hover:bg-slate-200/70 focus:bg-surface",
+            error ? "ring-2 ring-rose-400 focus:ring-rose-500/30" : "focus:ring-brand-500/15"
           )}
-        />
+          />
         {large && (
-          <button type="submit" className="btn-primary absolute right-2 top-1/2 -translate-y-1/2 rounded-xl px-5 py-2.5">
-            Compare prices
+          <button type="submit" className="btn-primary absolute right-2 top-1/2 !-translate-y-1/2 px-5 py-2.5 sm:px-6 sm:py-3">
+            {buttonLabel}
           </button>
         )}
       </div>

@@ -4,12 +4,12 @@ import { PLATFORM_COLOR, PLATFORM_LABEL, formatPercent } from "@/lib/format";
 import type { DataSource, Platform } from "@/lib/types";
 
 export function PlatformDot({ platform, className }: { platform: Platform; className?: string }) {
-  return <span aria-hidden className={clsx("inline-block h-2.5 w-2.5 shrink-0 rounded-full", className)} style={{ backgroundColor: PLATFORM_COLOR[platform] }} />;
+  return <span aria-hidden className={clsx("inline-block h-2 w-2 shrink-0 rounded-full", className)} style={{ backgroundColor: PLATFORM_COLOR[platform] }} />;
 }
 
 export function PlatformBadge({ platform, className }: { platform: Platform; className?: string }) {
   return (
-    <span className={clsx("inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-2.5 py-0.5 text-xs font-medium text-slate-700", className)}>
+    <span className={clsx("inline-flex items-center gap-1.5 rounded-full bg-surface px-2.5 py-0.5 text-xs font-semibold text-slate-700 ring-1 ring-slate-200", className)}>
       <PlatformDot platform={platform} />
       {PLATFORM_LABEL[platform]}
     </span>
@@ -38,7 +38,7 @@ export function PriceChange({ percent, className, label }: { percent: number; cl
   const down = percent < 0;
   const Icon = down ? ArrowDownRight : ArrowUpRight;
   return (
-    <span className={clsx("inline-flex items-center gap-0.5 rounded-full px-2 py-0.5 text-xs font-semibold", down ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700", className)}>
+    <span className={clsx("inline-flex items-center gap-0.5 rounded-full px-2.5 py-0.5 text-xs font-bold", down ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700", className)}>
       <Icon className="h-3.5 w-3.5" aria-hidden />
       {formatPercent(Math.abs(percent), 1).replace("+", "")}
       {label && <span className="font-medium opacity-80">{label}</span>}
@@ -48,12 +48,12 @@ export function PriceChange({ percent, className, label }: { percent: number; cl
 }
 
 export function Rating({ value, count, className }: { value: number | null; count?: number; className?: string }) {
-  if (!value) return <span className={clsx("text-xs text-slate-400", className)}>No ratings yet</span>;
+  if (!value) return <span className={clsx("text-xs text-slate-500", className)}>No ratings yet</span>;
   return (
     <span className={clsx("inline-flex items-center gap-1 text-xs text-slate-600", className)} aria-label={`Rated ${value} out of 5${count ? ` from ${count} reviews` : ""}`}>
       <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" aria-hidden />
       <span className="font-semibold text-ink">{value.toFixed(1)}</span>
-      {count ? <span className="text-slate-400">({count.toLocaleString("en-PK")})</span> : null}
+      {count ? <span className="text-slate-500">({count.toLocaleString("en-PK")})</span> : null}
     </span>
   );
 }

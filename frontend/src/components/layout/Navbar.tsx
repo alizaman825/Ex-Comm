@@ -9,6 +9,7 @@ import { useAuth } from "@/lib/auth";
 import { useUnreadCount } from "@/lib/hooks";
 import { Logo } from "./Logo";
 import { SearchBar } from "./SearchBar";
+import { ThemeToggle } from "./ThemeToggle";
 
 const PUBLIC_LINKS = [
   { href: "/categories", label: "Categories", icon: LayoutGrid },
@@ -33,8 +34,8 @@ function NavLink({ href, label, icon: Icon, onClick }: { href: string; label: st
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium transition",
-        active ? "bg-brand-50 text-brand-700" : "text-slate-600 hover:bg-slate-100 hover:text-ink"
+        "inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200",
+        active ? "bg-slate-100 text-ink" : "text-slate-600 hover:bg-slate-100 hover:text-ink"
       )}
     >
       <Icon className="h-4 w-4" aria-hidden />
@@ -64,7 +65,7 @@ function UserMenu() {
   }, [open]);
 
   if (!user) return null;
-  const item = "flex w-full items-center gap-2.5 rounded-lg px-3 py-2 text-sm text-slate-700 hover:bg-slate-100";
+  const item = "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-sm text-slate-700 hover:bg-slate-100";
   return (
     <div className="relative" ref={ref}>
       <button
@@ -72,14 +73,14 @@ function UserMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-full border border-slate-200 bg-surface py-1 pl-1 pr-2.5 shadow-sm transition hover:border-slate-300"
+        className="flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-2.5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300"
       >
         <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-onbrand">{initials(user.name)}</span>
         <span className="hidden max-w-[7rem] truncate text-sm font-medium text-ink lg:block">{user.name.split(" ")[0]}</span>
         <ChevronDown className={clsx("h-4 w-4 text-slate-400 transition", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 z-50 mt-2 w-60 animate-fade-up rounded-xl border border-slate-200 bg-surface p-1.5 shadow-lift">
+        <div role="menu" className="absolute right-0 z-50 mt-3 w-64 animate-fade-up rounded-3xl bg-surface p-2 shadow-lift">
           <div className="border-b border-slate-100 px-3 pb-2.5 pt-2">
             <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
             <p className="truncate text-xs text-slate-500">{user.email}</p>
@@ -125,12 +126,13 @@ export function Navbar() {
   const closeMobile = () => setMobileOpenAt(null);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-surface/85 backdrop-blur-md">
-      <div className="container flex h-16 items-center gap-3 lg:gap-6">
+    <header className="sticky top-3 z-40 px-3 sm:px-4">
+      <div className="mx-auto max-w-[78rem] rounded-[28px] bg-surface/75 shadow-card backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]">
+      <div className="flex h-14 items-center gap-3 pl-4 pr-2 lg:gap-5">
         <Logo />
 
-        <div className="mx-2 hidden max-w-xl flex-1 md:block">
-          <Suspense fallback={<div className="h-10 rounded-full border border-slate-200 bg-surface" />}>
+        <div className="mx-2 hidden max-w-md flex-1 md:block">
+          <Suspense fallback={<div className="h-10 rounded-full bg-slate-100" />}>
             <SearchBar />
           </Suspense>
         </div>
@@ -154,9 +156,10 @@ export function Navbar() {
               </Link>
             </>
           )}
-          <div className="ml-2 flex items-center gap-2">
+          <ThemeToggle />
+          <div className="ml-1 flex items-center gap-1.5">
             {loading ? (
-              <div className="skeleton h-9 w-24 rounded-lg" />
+              <div className="skeleton h-9 w-24 rounded-full" />
             ) : user ? (
               <UserMenu />
             ) : (
@@ -172,9 +175,10 @@ export function Navbar() {
           </div>
         </nav>
 
+        <ThemeToggle className="btn-ghost ml-auto p-2.5 md:hidden" />
         <button
           type="button"
-          className="btn-ghost ml-auto p-2.5 md:hidden"
+          className="btn-ghost p-2.5 md:hidden"
           aria-label={mobileOpen ? "Close menu" : "Open menu"}
           aria-expanded={mobileOpen}
           onClick={() => setMobileOpenAt(mobileOpen ? null : pathname)}
@@ -184,8 +188,8 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="animate-fade-up border-t border-slate-100 bg-surface md:hidden">
-          <div className="container space-y-4 py-4">
+        <div className="animate-fade-up border-t border-slate-200/70 md:hidden">
+          <div className="space-y-4 px-4 py-4">
             <Suspense fallback={null}>
               <SearchBar />
             </Suspense>
@@ -228,6 +232,7 @@ export function Navbar() {
           </div>
         </div>
       )}
+      </div>
     </header>
   );
 }

@@ -28,11 +28,11 @@ export function Drawer({ open, onClose, title, children }: { open: boolean; onCl
   if (!open) return null;
   return (
     <div className="fixed inset-0 z-[55]" role="dialog" aria-modal="true" aria-label={title}>
-      <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
+      <div className="absolute inset-0 bg-black/40 backdrop-blur-sm" onClick={onClose} aria-hidden />
       <div ref={panelRef} tabIndex={-1} className="absolute inset-y-0 left-0 flex w-full max-w-sm animate-fade-up flex-col bg-surface shadow-lift outline-none">
-        <div className="flex items-center justify-between border-b border-slate-100 px-5 py-4">
+        <div className="flex items-center justify-between border-b border-slate-200/70 px-5 py-4">
           <h2 className="t-h3">{title}</h2>
-          <button type="button" onClick={onClose} className="rounded-lg p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">
+          <button type="button" onClick={onClose} className="rounded-full p-2 text-slate-500 hover:bg-slate-100" aria-label="Close">
             <X className="h-5 w-5" />
           </button>
         </div>

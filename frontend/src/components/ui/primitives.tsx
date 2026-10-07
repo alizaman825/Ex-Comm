@@ -98,9 +98,9 @@ interface StateProps {
 
 export function EmptyState({ icon: Icon, title, description, action, className }: StateProps) {
   return (
-    <div className={clsx("card flex flex-col items-center px-6 py-14 text-center", className)} data-state="empty">
+    <div className={clsx("card flex animate-fade-up flex-col items-center px-6 py-16 text-center", className)} data-state="empty">
       {Icon && (
-        <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-brand-50 text-brand-600">
+        <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-amber-100 text-onyellow animate-pop-in">
           <Icon className="h-6 w-6" aria-hidden />
         </div>
       )}
@@ -123,8 +123,8 @@ export function ErrorState({
   className?: string;
 }) {
   return (
-    <div className={clsx("card flex flex-col items-center px-6 py-14 text-center", className)} role="alert" data-state="error">
-      <div className="mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-rose-50 text-rose-600">
+    <div className={clsx("card flex animate-fade-up flex-col items-center px-6 py-16 text-center", className)} role="alert" data-state="error">
+      <div className="mb-5 flex h-16 w-16 items-center justify-center rounded-full bg-rose-50 text-rose-600 animate-pop-in">
         <AlertTriangle className="h-6 w-6" aria-hidden />
       </div>
       <h3 className="t-h3">{title}</h3>
