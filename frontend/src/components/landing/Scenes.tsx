@@ -4,12 +4,12 @@ import { Bell, TrendingDown, Sparkles } from "lucide-react";
 import { PlatformDot } from "@/components/product/badges";
 import { CategoryTile, ProductImage } from "@/components/product/ProductImage";
 import { PLATFORM_LABEL, formatPrice } from "@/lib/format";
-import type { Platform } from "@/lib/types";
 import { GiantWord } from "./bits";
 import { useShowcase } from "./showcase";
 
-const STORES: Platform[] = ["daraz", "priceoye", "aliexpress"];
-const FALLBACK_PRICES: Record<Platform, number> = { daraz: 121_500, priceoye: 117_999, aliexpress: 126_400 };
+// Fixed three-column illustration for the landing animation; not meant to grow with every store added.
+const STORES = ["daraz", "priceoye", "aliexpress"] as const;
+const FALLBACK_PRICES: Record<(typeof STORES)[number], number> = { daraz: 121_500, priceoye: 117_999, aliexpress: 126_400 };
 
 const kicker = "mb-4 inline-flex rounded-full bg-surface/70 px-4 py-1.5 text-xs font-bold uppercase tracking-[0.18em] text-slate-700 backdrop-blur";
 
@@ -17,7 +17,7 @@ const kicker = "mb-4 inline-flex rounded-full bg-surface/70 px-4 py-1.5 text-xs 
 export function CompareScene() {
   const showcase = useShowcase();
   const product = showcase?.compare ?? null;
-  const prices = Object.fromEntries(STORES.map((s) => [s, product?.offers.find((o) => o.platform === s)?.price ?? FALLBACK_PRICES[s]])) as Record<Platform, number>;
+  const prices = Object.fromEntries(STORES.map((s) => [s, product?.offers.find((o) => o.platform === s)?.price ?? FALLBACK_PRICES[s]])) as Record<(typeof STORES)[number], number>;
   // The AliExpress supplier price is shown but never counts as the lowest retail price.
   const retail = STORES.filter((s) => s !== "aliexpress");
   const best = retail.reduce((a, b) => (prices[b] < prices[a] ? b : a));

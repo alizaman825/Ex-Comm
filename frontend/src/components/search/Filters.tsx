@@ -3,8 +3,8 @@
 import { useState, type FormEvent } from "react";
 import { RotateCcw } from "lucide-react";
 import clsx from "clsx";
-import { PLATFORM_LABEL } from "@/lib/format";
-import { PLATFORMS, activeFilterCount, priceRangeError, type SearchState } from "@/lib/search";
+import { PLATFORM_LABEL, PLATFORM_ROLE } from "@/lib/format";
+import { PLATFORMS, SUPPLIER_PLATFORMS, activeFilterCount, priceRangeError, type SearchState } from "@/lib/search";
 import type { Category, Platform } from "@/lib/types";
 import { PlatformDot } from "@/components/product/badges";
 
@@ -13,8 +13,8 @@ interface Props {
   categories: Category[];
   onChange: (patch: Partial<SearchState>) => void;
   onReset: () => void;
-  /** list AliExpress as a store filter (only after AliExpress has been checked for this search) */
-  showAliExpress?: boolean;
+  /** supplier platforms (AliExpress, eBay) to list as a store filter: only once checked for this search */
+  checkedSuppliers?: Platform[];
 }
 
 const RATINGS = [
@@ -77,7 +77,7 @@ function PriceRange({ state, onChange }: Pick<Props, "state" | "onChange">) {
   );
 }
 
-export function Filters({ state, categories, onChange, onReset, showAliExpress = false }: Props) {
+export function Filters({ state, categories, onChange, onReset, checkedSuppliers = [] }: Props) {
   const count = activeFilterCount(state);
 
   function togglePlatform(p: Platform) {
@@ -120,12 +120,12 @@ export function Filters({ state, categories, onChange, onReset, showAliExpress =
 
       <Section title="Store">
         <div className="space-y-2.5">
-          {PLATFORMS.filter((p) => p !== "aliexpress" || showAliExpress || state.platform.includes(p)).map((p) => (
+          {PLATFORMS.filter((p) => !SUPPLIER_PLATFORMS.includes(p) || checkedSuppliers.includes(p) || state.platform.includes(p)).map((p) => (
             <label key={p} className="flex cursor-pointer items-center gap-3 text-sm text-slate-700">
               <input type="checkbox" checked={state.platform.includes(p)} onChange={() => togglePlatform(p)} className="h-4 w-4 rounded border-slate-300 text-brand-600 focus:ring-brand-500" />
               <PlatformDot platform={p} />
               {PLATFORM_LABEL[p]}
-              {p === "aliexpress" && <span className="text-xs text-slate-400">(supplier)</span>}
+              {PLATFORM_ROLE[p] === "supplier" && <span className="text-xs text-slate-400">(supplier)</span>}
             </label>
           ))}
         </div>

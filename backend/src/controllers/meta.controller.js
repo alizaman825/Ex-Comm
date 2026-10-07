@@ -24,6 +24,7 @@ const PLATFORM_META = [
   { id: 'daraz', label: 'Daraz', role: 'retail', site: 'https://www.daraz.pk' },
   { id: 'priceoye', label: 'PriceOye', role: 'retail', site: 'https://priceoye.pk' },
   { id: 'aliexpress', label: 'AliExpress', role: 'supplier', site: 'https://www.aliexpress.com' },
+  { id: 'ebay', label: 'eBay', role: 'supplier', site: 'https://www.ebay.com' },
 ];
 
 // GET /api/platforms: supported stores and whether each can be scraped live right now.

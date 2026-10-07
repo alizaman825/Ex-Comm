@@ -16,7 +16,7 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
         <h2 id="offers-heading" className="t-h2">
           Compare stores
         </h2>
-        <p className="mt-1 text-sm text-slate-600">Prices for this product, lowest first. AliExpress is shown as the supplier price for sellers.</p>
+        <p className="mt-1 text-sm text-slate-600">Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers.</p>
       </div>
       <ul className="space-y-2.5">
         {ordered.map((l) => {

@@ -47,6 +47,7 @@ const listingFields = (l, now) => ({
   image: l.image || undefined,
   price: l.price,
   originalPrice: l.originalPrice || undefined,
+  priceUsd: l.priceUsd || undefined,
   currency: l.currency || 'PKR',
   rating: l.rating || undefined,
   reviewCount: l.reviewCount || 0,

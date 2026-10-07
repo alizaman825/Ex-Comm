@@ -28,3 +28,7 @@ services:
         value: "true"
       - key: LIVE_PLATFORMS
         value: daraz,priceoye
+      - key: EBAY_CLIENT_ID
+        sync: false # optional: free keys at developer.ebay.com; leave unset to disable "Check on eBay"
+      - key: EBAY_CLIENT_SECRET
+        sync: false
