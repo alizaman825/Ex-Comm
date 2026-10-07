@@ -58,7 +58,7 @@ export function ProductImage({ src, alt, category, className, fit = "contain" }:
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src as string)}
-      className={clsx("bg-white", fit === "contain" ? "object-contain" : "object-cover", className)}
+      className={clsx("bg-surface", fit === "contain" ? "object-contain" : "object-cover", className)}
     />
   );
 }

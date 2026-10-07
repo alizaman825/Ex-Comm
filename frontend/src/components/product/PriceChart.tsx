@@ -34,7 +34,7 @@ interface TooltipEntry {
 function ChartTooltip({ active, payload, label }: { active?: boolean; payload?: readonly TooltipEntry[]; label?: string | number }) {
   if (!active || !payload?.length || typeof label !== "string") return null;
   return (
-    <div className="rounded-xl border border-slate-200 bg-white px-3.5 py-2.5 text-xs shadow-lift">
+    <div className="rounded-xl border border-slate-200 bg-surface px-3.5 py-2.5 text-xs shadow-lift">
       <p className="mb-1.5 font-semibold text-ink">{formatDate(label)}</p>
       {payload.map((p) => (
         <p key={String(p.dataKey)} className="flex items-center justify-between gap-6 py-0.5 text-slate-600">
@@ -82,7 +82,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
         </h2>
         <div className="inline-flex rounded-lg bg-slate-100 p-1" role="group" aria-label="History range">
           {RANGES.map((r) => (
-            <button key={r} type="button" onClick={() => setDays(r)} aria-pressed={days === r} className={clsx("rounded-md px-3.5 py-1.5 text-sm font-medium transition", days === r ? "bg-white text-ink shadow-sm" : "text-slate-500 hover:text-ink")}>
+            <button key={r} type="button" onClick={() => setDays(r)} aria-pressed={days === r} className={clsx("rounded-md px-3.5 py-1.5 text-sm font-medium transition", days === r ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}>
               {r} days
             </button>
           ))}
@@ -131,7 +131,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Chart legend">
               {data.series.map((s) => (
                 <li key={s.platform}>
-                  <button type="button" onClick={() => toggle(s.platform)} aria-pressed={!hidden.has(s.platform)} className={clsx("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition", hidden.has(s.platform) ? "border-slate-200 bg-white text-slate-400 line-through" : "border-slate-200 bg-slate-50 text-slate-700")}>
+                  <button type="button" onClick={() => toggle(s.platform)} aria-pressed={!hidden.has(s.platform)} className={clsx("inline-flex items-center gap-2 rounded-full border px-3 py-1 text-xs font-medium transition", hidden.has(s.platform) ? "border-slate-200 bg-surface text-slate-400 line-through" : "border-slate-200 bg-slate-50 text-slate-700")}>
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PLATFORM_COLOR[s.platform] }} />
                     {PLATFORM_LABEL[s.platform]}
                     {s.role === "supplier" && <span className="text-slate-400">(supplier, dashed)</span>}

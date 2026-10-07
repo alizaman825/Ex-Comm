@@ -21,7 +21,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
 
   return (
     <article className="card card-hover group relative flex h-full flex-col overflow-hidden" data-testid="product-card">
-      <div className="relative aspect-[4/3] overflow-hidden border-b border-slate-100 bg-white">
+      <div className="relative aspect-[4/3] overflow-hidden border-b border-slate-100 bg-surface">
         <ProductImage
           src={product.image}
           alt={product.title}
@@ -74,7 +74,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
             aria-pressed={selected}
             className={clsx(
               "relative z-10 inline-flex w-full items-center justify-center gap-1.5 rounded-lg border px-3 py-2 text-xs font-semibold transition",
-              selected ? "border-brand-300 bg-brand-50 text-brand-700" : "border-slate-200 bg-white text-slate-600 hover:border-brand-300 hover:text-brand-700"
+              selected ? "border-brand-300 bg-brand-50 text-brand-700" : "border-slate-200 bg-surface text-slate-600 hover:border-brand-300 hover:text-brand-700"
             )}
           >
             {selected ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}

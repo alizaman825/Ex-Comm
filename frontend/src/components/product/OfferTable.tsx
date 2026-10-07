@@ -34,7 +34,7 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
               <div className="flex items-center gap-2.5">
                 <PlatformDot platform={l.platform} className="h-3 w-3" />
                 <span className="font-semibold text-ink">{PLATFORM_LABEL[l.platform]}</span>
-                {isLowest && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-white">Lowest</span>}
+                {isLowest && <span className="rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-onaccent">Lowest</span>}
                 {l.role === "supplier" && <span className="badge-neutral">Supplier</span>}
               </div>
               <div>

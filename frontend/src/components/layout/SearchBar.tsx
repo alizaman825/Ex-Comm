@@ -52,7 +52,7 @@ export function SearchBar({ size = "md", autoFocus, className, placeholder = 'Se
           aria-invalid={error || undefined}
           autoComplete="off"
           className={clsx(
-            "w-full border bg-white text-ink shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-4",
+            "w-full border bg-surface text-ink shadow-sm transition placeholder:text-slate-400 focus:outline-none focus:ring-4",
             large ? "rounded-2xl py-4 pl-14 pr-32 text-base" : "rounded-full py-2.5 pl-10 pr-4 text-sm",
             error ? "border-rose-400 focus:border-rose-500 focus:ring-rose-500/15" : "border-slate-300 hover:border-slate-400 focus:border-brand-500 focus:ring-brand-500/15"
           )}

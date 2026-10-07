@@ -32,12 +32,12 @@ export default function HomePage() {
         </div>
       </section>
 
-      <div className="border-y border-slate-200/70 bg-white">
+      <div className="border-y border-slate-200/70 bg-surface">
         <ProductRail title="Biggest price drops this week" description="Products whose lowest price fell the most over the last 7 days." endpoint="/products/drops" limit={4} />
       </div>
       <ProductRail title="Trending now" description="What shoppers are comparing most." endpoint="/products/trending" limit={4} href="/categories" linkLabel="Browse all products" />
 
-      <section className="section border-t border-slate-200/70 bg-white" aria-labelledby="how-it-works">
+      <section className="section border-t border-slate-200/70 bg-surface" aria-labelledby="how-it-works">
         <div className="container">
           <h2 id="how-it-works" className="t-h2 text-center">
             How Ex-Comm works
@@ -46,7 +46,7 @@ export default function HomePage() {
             {STEPS.map(({ icon: Icon, title, text }, i) => (
               <li key={title} className="relative rounded-card border border-slate-200 bg-slate-50/60 p-6">
                 <span className="absolute -top-3 left-6 rounded-full bg-brand-600 px-2.5 py-0.5 text-xs font-bold text-white">Step {i + 1}</span>
-                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-white text-brand-600 shadow-card">
+                <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-surface text-brand-600 shadow-card">
                   <Icon className="h-5 w-5" aria-hidden />
                 </span>
                 <h3 className="mt-4 t-h3">{title}</h3>
@@ -67,10 +67,10 @@ export default function HomePage() {
             </h2>
             <p className="relative mx-auto mt-3 max-w-xl text-brand-100">Set a target price on any product and get a notification the moment it is reached.</p>
             <div className="relative mt-8 flex flex-wrap items-center justify-center gap-3">
-              <Link href="/register" className="btn-lg inline-flex items-center justify-center rounded-lg bg-white px-6 py-3 text-base font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50">
+              <Link href="/register" className="btn-lg inline-flex items-center justify-center rounded-lg bg-surface px-6 py-3 text-base font-semibold text-brand-700 shadow-sm transition hover:bg-brand-50">
                 Create a free account
               </Link>
-              <Link href="/categories" className="btn-lg inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white transition hover:bg-white/10">
+              <Link href="/categories" className="btn-lg inline-flex items-center justify-center rounded-lg border border-white/30 px-6 py-3 text-base font-semibold text-white transition hover:bg-surface/10">
                 Browse products
               </Link>
             </div>

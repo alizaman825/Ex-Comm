@@ -222,7 +222,7 @@ export function AlertsView() {
         <>
           <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Filter alerts">
             {TABS.map((t) => (
-              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={clsx("rounded-full border px-4 py-1.5 text-sm font-medium transition", tab === t.id ? "border-brand-600 bg-brand-600 text-white" : "border-slate-200 bg-white text-slate-600 hover:border-slate-300")}>
+              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={clsx("rounded-full border px-4 py-1.5 text-sm font-medium transition", tab === t.id ? "border-brand-600 bg-brand-600 text-onbrand" : "border-slate-200 bg-surface text-slate-600 hover:border-slate-300")}>
                 {t.label} <span className={clsx("ml-1 tabular-nums", tab === t.id ? "text-brand-100" : "text-slate-400")}>{counts[t.id]}</span>
               </button>
             ))}

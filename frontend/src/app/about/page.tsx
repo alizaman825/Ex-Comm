@@ -66,7 +66,7 @@ export default function AboutPage() {
             </p>
           </div>
         </div>
-        <div className="mt-5 flex gap-3 rounded-xl border border-slate-200 bg-white p-4 text-sm text-slate-600">
+        <div className="mt-5 flex gap-3 rounded-xl border border-slate-200 bg-surface p-4 text-sm text-slate-600">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" aria-hidden />
           <p>
             <strong className="text-ink">Known limits.</strong> Matching products across stores is fuzzy and can miss or mix up items. Prices change often, and sample-data price history is generated for demonstration. Always confirm the price on the store before you buy.
@@ -76,7 +76,7 @@ export default function AboutPage() {
 
       <section className="mb-14">
         <h2 className="t-h2">Frequently asked questions</h2>
-        <div className="mt-5 divide-y divide-slate-200 rounded-card border border-slate-200 bg-white">
+        <div className="mt-5 divide-y divide-slate-200 rounded-card border border-slate-200 bg-surface">
           {FAQ.map((f) => (
             <details key={f.q} className="group p-5">
               <summary className="flex cursor-pointer list-none items-center justify-between gap-4 font-semibold text-ink [&::-webkit-details-marker]:hidden">

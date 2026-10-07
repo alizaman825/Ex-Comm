@@ -105,7 +105,7 @@ export function SearchView() {
         </div>
         <div className="flex items-center gap-3">
           <button type="button" className="btn-secondary lg:hidden" onClick={() => setFiltersOpen(true)}>
-            <SlidersHorizontal className="h-4 w-4" aria-hidden /> Filters{filterCount > 0 && <span className="rounded-full bg-brand-600 px-1.5 text-xs text-white">{filterCount}</span>}
+            <SlidersHorizontal className="h-4 w-4" aria-hidden /> Filters{filterCount > 0 && <span className="rounded-full bg-brand-600 px-1.5 text-xs text-onbrand">{filterCount}</span>}
           </button>
           <div className="flex items-center gap-2">
             <label htmlFor="sort" className="hidden text-sm text-slate-500 sm:block">
@@ -136,7 +136,7 @@ export function SearchView() {
             <ErrorState title="We could not load results" description="The search service did not respond. Check your connection and try again." onRetry={() => mutate()} />
           ) : isLoading && !data ? (
             <div className="space-y-4">
-              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600" role="status">
+              <div className="flex items-center gap-2.5 rounded-xl border border-slate-200 bg-surface px-4 py-3 text-sm text-slate-600" role="status">
                 <Loader2 className="h-4 w-4 animate-spin text-brand-600" aria-hidden /> Checking Daraz and PriceOye for the latest prices. This can take up to 30 seconds if a store is slow.
               </div>
               <ProductGridSkeleton count={PAGE_SIZE} />

@@ -7,9 +7,9 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
 };
 
 export const PLATFORM_COLOR: Record<Platform, string> = {
-  daraz: "#f57224",
-  priceoye: "#0ea5e9",
-  aliexpress: "#e62e04",
+  daraz: "#F57224",
+  priceoye: "#1E88E5",
+  aliexpress: "#E5322D",
 };
 
 /** 129999 -> "Rs 129,999" */

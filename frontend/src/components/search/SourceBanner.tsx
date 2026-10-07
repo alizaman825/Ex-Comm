@@ -58,7 +58,7 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
         {!data.demoMode && data.source !== "fallback" && stores.length > 0 && (
           <ul className="flex flex-wrap gap-2" aria-label="Store status">
             {stores.map(([platform, s]) => (
-              <li key={platform} className="inline-flex items-center gap-1.5 rounded-full bg-white/80 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-black/5">
+              <li key={platform} className="inline-flex items-center gap-1.5 rounded-full bg-surface/80 px-2.5 py-1 text-xs font-medium text-slate-700 ring-1 ring-black/5">
                 <PlatformDot platform={platform} />
                 {PLATFORM_LABEL[platform]}
                 <span className={s.status === "success" ? "text-emerald-700" : "text-rose-700"}>{s.status === "success" ? (s.total ? `${s.loaded ?? s.relevant ?? 0} of ${s.approximate ? "about " : ""}${s.total.toLocaleString("en-PK")}` : `${s.relevant ?? 0} found`) : "unavailable"}</span>
@@ -67,7 +67,7 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
           </ul>
         )}
         {canRefresh && (
-          <button type="button" onClick={onRefresh} disabled={refreshing} className="btn-secondary btn-sm bg-white" data-testid="refresh-results">
+          <button type="button" onClick={onRefresh} disabled={refreshing} className="btn-secondary btn-sm bg-surface" data-testid="refresh-results">
             {refreshing ? <Loader2 className="h-3.5 w-3.5 animate-spin" aria-hidden /> : <RefreshCw className="h-3.5 w-3.5" aria-hidden />}
             {refreshing ? "Checking the stores…" : data.source === "fallback" ? "Try the stores again" : "Refresh from stores"}
           </button>

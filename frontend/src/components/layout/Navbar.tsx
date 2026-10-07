@@ -72,14 +72,14 @@ function UserMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-full border border-slate-200 bg-white py-1 pl-1 pr-2.5 shadow-sm transition hover:border-slate-300"
+        className="flex items-center gap-2 rounded-full border border-slate-200 bg-surface py-1 pl-1 pr-2.5 shadow-sm transition hover:border-slate-300"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-white">{initials(user.name)}</span>
+        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-onbrand">{initials(user.name)}</span>
         <span className="hidden max-w-[7rem] truncate text-sm font-medium text-ink lg:block">{user.name.split(" ")[0]}</span>
         <ChevronDown className={clsx("h-4 w-4 text-slate-400 transition", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
-        <div role="menu" className="absolute right-0 z-50 mt-2 w-60 animate-fade-up rounded-xl border border-slate-200 bg-white p-1.5 shadow-lift">
+        <div role="menu" className="absolute right-0 z-50 mt-2 w-60 animate-fade-up rounded-xl border border-slate-200 bg-surface p-1.5 shadow-lift">
           <div className="border-b border-slate-100 px-3 pb-2.5 pt-2">
             <p className="truncate text-sm font-semibold text-ink">{user.name}</p>
             <p className="truncate text-xs text-slate-500">{user.email}</p>
@@ -125,12 +125,12 @@ export function Navbar() {
   const closeMobile = () => setMobileOpenAt(null);
 
   return (
-    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-white/85 backdrop-blur-md">
+    <header className="sticky top-0 z-40 border-b border-slate-200/80 bg-surface/85 backdrop-blur-md">
       <div className="container flex h-16 items-center gap-3 lg:gap-6">
         <Logo />
 
         <div className="mx-2 hidden max-w-xl flex-1 md:block">
-          <Suspense fallback={<div className="h-10 rounded-full border border-slate-200 bg-white" />}>
+          <Suspense fallback={<div className="h-10 rounded-full border border-slate-200 bg-surface" />}>
             <SearchBar />
           </Suspense>
         </div>
@@ -147,7 +147,7 @@ export function Navbar() {
               <Link href="/notifications" className="btn-ghost relative p-2.5" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"} title="Notifications">
                 <Bell className="h-5 w-5" aria-hidden />
                 {unread > 0 && (
-                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-white" data-testid="unread-badge">
+                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-canvas" data-testid="unread-badge">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
@@ -184,7 +184,7 @@ export function Navbar() {
       </div>
 
       {mobileOpen && (
-        <div className="animate-fade-up border-t border-slate-100 bg-white md:hidden">
+        <div className="animate-fade-up border-t border-slate-100 bg-surface md:hidden">
           <div className="container space-y-4 py-4">
             <Suspense fallback={null}>
               <SearchBar />

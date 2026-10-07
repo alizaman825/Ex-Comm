@@ -79,7 +79,7 @@ function ExampleCard() {
 
 export function Hero() {
   return (
-    <section className="relative overflow-hidden border-b border-slate-200/70 bg-gradient-to-b from-white via-white to-brand-50/60">
+    <section className="relative overflow-hidden border-b border-slate-200/70 bg-gradient-to-b from-surface via-surface to-brand-50/60">
       <div className="pointer-events-none absolute -left-32 -top-32 h-96 w-96 rounded-full bg-brand-100/70 blur-3xl" aria-hidden />
       <div className="container relative grid items-center gap-12 py-14 sm:py-20 lg:grid-cols-[1.15fr_1fr] lg:py-24">
         <div className="animate-fade-up">
@@ -89,7 +89,7 @@ export function Hero() {
           </h1>
           <p className="t-lead mt-5 max-w-xl">Search once. Compare prices side by side, see how they have moved over time, and get alerted when a product drops to the price you want.</p>
           <div className="mt-8 max-w-2xl">
-            <Suspense fallback={<div className="h-14 rounded-2xl border border-slate-200 bg-white" />}>
+            <Suspense fallback={<div className="h-14 rounded-2xl border border-slate-200 bg-surface" />}>
               <SearchBar size="lg" />
             </Suspense>
           </div>

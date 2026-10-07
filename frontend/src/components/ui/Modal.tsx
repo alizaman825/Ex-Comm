@@ -29,7 +29,7 @@ export function Modal({ open, onClose, title, description, children }: { open: b
   return (
     <div className="fixed inset-0 z-[55] flex items-end justify-center p-0 sm:items-center sm:p-4" role="dialog" aria-modal="true" aria-label={title}>
       <div className="absolute inset-0 bg-slate-900/45 backdrop-blur-[2px]" onClick={onClose} aria-hidden />
-      <div ref={ref} tabIndex={-1} className="relative w-full max-w-md animate-fade-up rounded-t-2xl bg-white p-6 shadow-lift outline-none sm:rounded-2xl">
+      <div ref={ref} tabIndex={-1} className="relative w-full max-w-md animate-fade-up rounded-t-2xl bg-surface p-6 shadow-lift outline-none sm:rounded-2xl">
         <button type="button" onClick={onClose} className="absolute right-4 top-4 rounded-lg p-1.5 text-slate-400 hover:bg-slate-100 hover:text-slate-700" aria-label="Close">
           <X className="h-5 w-5" />
         </button>

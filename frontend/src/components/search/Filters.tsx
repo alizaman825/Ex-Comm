@@ -87,7 +87,7 @@ export function Filters({ state, categories, onChange, onReset }: Props) {
     <div>
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-base font-semibold text-ink">
-          Filters{count > 0 && <span className="ml-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-white">{count}</span>}
+          Filters{count > 0 && <span className="ml-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-onbrand">{count}</span>}
         </h2>
         {count > 0 && (
           <button type="button" onClick={onReset} className="inline-flex items-center gap-1 text-xs font-medium text-brand-600 hover:underline">

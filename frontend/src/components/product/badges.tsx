@@ -9,7 +9,7 @@ export function PlatformDot({ platform, className }: { platform: Platform; class
 
 export function PlatformBadge({ platform, className }: { platform: Platform; className?: string }) {
   return (
-    <span className={clsx("inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-2.5 py-0.5 text-xs font-medium text-slate-700", className)}>
+    <span className={clsx("inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-surface px-2.5 py-0.5 text-xs font-medium text-slate-700", className)}>
       <PlatformDot platform={platform} />
       {PLATFORM_LABEL[platform]}
     </span>

@@ -20,7 +20,7 @@ export function AuthShell({ title, subtitle, children, footer }: { title: string
           <ul className="mt-10 space-y-6">
             {POINTS.map(({ icon: Icon, title: t, text }) => (
               <li key={t} className="flex gap-4">
-                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-white/10 ring-1 ring-white/15">
+                <span className="flex h-10 w-10 shrink-0 items-center justify-center rounded-xl bg-surface/10 ring-1 ring-surface/15">
                   <Icon className="h-5 w-5 text-brand-100" aria-hidden />
                 </span>
                 <div>

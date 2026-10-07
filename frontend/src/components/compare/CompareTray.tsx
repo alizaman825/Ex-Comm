@@ -10,7 +10,7 @@ export function CompareTray() {
   if (ids.length === 0) return null;
   return (
     <div className="pointer-events-none fixed inset-x-0 bottom-4 z-50 flex justify-center px-4" data-testid="compare-tray">
-      <div className="pointer-events-auto flex max-w-full animate-fade-up items-center gap-3 rounded-2xl border border-slate-200 bg-white py-2.5 pl-4 pr-2.5 shadow-lift">
+      <div className="pointer-events-auto flex max-w-full animate-fade-up items-center gap-3 rounded-2xl border border-slate-200 bg-surface py-2.5 pl-4 pr-2.5 shadow-lift">
         <Scale className="h-5 w-5 shrink-0 text-brand-600" aria-hidden />
         <p className="text-sm font-medium text-ink">
           {ids.length} of {MAX_COMPARE} selected

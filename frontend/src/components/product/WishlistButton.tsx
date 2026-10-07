@@ -36,7 +36,7 @@ export function WishlistButton({ productId, title, className, variant = "icon" }
       aria-pressed={saved}
       aria-label={label}
       title={saved ? "Remove from wishlist" : "Save to wishlist"}
-      className={clsx("flex h-9 w-9 items-center justify-center rounded-full border bg-white/95 shadow-sm backdrop-blur transition hover:scale-105", saved ? "border-rose-200 text-rose-500" : "border-slate-200 text-slate-400 hover:text-rose-500", className)}
+      className={clsx("flex h-9 w-9 items-center justify-center rounded-full border bg-surface/95 shadow-sm backdrop-blur transition hover:scale-105", saved ? "border-rose-200 text-rose-500" : "border-slate-200 text-slate-400 hover:text-rose-500", className)}
     >
       <Heart className={clsx("h-[18px] w-[18px]", saved && "fill-current")} aria-hidden />
     </button>

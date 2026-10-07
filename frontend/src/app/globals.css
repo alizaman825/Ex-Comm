@@ -1,8 +1,159 @@
-@import "@fontsource-variable/inter";
-
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* ------------------------------------------------------------------
+   Design tokens. Colours are RGB channels so Tailwind can add opacity.
+   Light is the default; dark applies only when <html data-theme="dark">
+   (set by the navbar toggle, never by the OS setting).
+------------------------------------------------------------------- */
+:root {
+  color-scheme: light;
+  --bg: 251 248 243; /* cream #FBF8F3 */
+  --surface: 255 255 255;
+  --raised: 255 255 255;
+  --yellow: 255 216 77; /* #FFD84D */
+  --on-brand: 255 255 255;
+  --on-accent: 255 255 255;
+
+  /* warm neutrals; 900 = ink #17140F, 500 = muted #6B645B */
+  --slate-50: 246 242 234;
+  --slate-100: 240 234 223;
+  --slate-200: 230 223 210;
+  --slate-300: 209 201 186;
+  --slate-400: 118 110 98;
+  --slate-500: 107 100 91;
+  --slate-600: 85 80 72;
+  --slate-700: 58 53 46;
+  --slate-800: 38 34 28;
+  --slate-900: 23 20 15;
+
+  /* brand = ink scale (primary buttons, links, focus) */
+  --brand-50: 243 238 229;
+  --brand-100: 234 227 214;
+  --brand-200: 221 211 193;
+  --brand-300: 189 178 160;
+  --brand-400: 143 133 119;
+  --brand-500: 74 68 59;
+  --brand-600: 23 20 15;
+  --brand-700: 43 38 31;
+  --brand-800: 58 52 43;
+  --brand-900: 23 20 15;
+
+  /* savings green: 500 #0FA968, tint 50 #DDF6EA */
+  --emerald-50: 221 246 234;
+  --emerald-100: 196 239 220;
+  --emerald-200: 157 227 196;
+  --emerald-500: 15 169 104;
+  --emerald-600: 11 138 85;
+  --emerald-700: 8 112 63;
+  --emerald-900: 6 77 44;
+
+  /* yellow highlight */
+  --amber-50: 255 246 214;
+  --amber-100: 255 239 176;
+  --amber-200: 255 226 122;
+  --amber-400: 255 216 77;
+  --amber-500: 242 183 5;
+  --amber-600: 166 111 0;
+  --amber-700: 122 82 0;
+  --amber-800: 107 71 0;
+  --amber-900: 79 53 0;
+
+  --rose-50: 253 236 234;
+  --rose-100: 250 218 213;
+  --rose-200: 243 184 176;
+  --rose-400: 229 101 90;
+  --rose-500: 214 64 59;
+  --rose-600: 198 47 47;
+  --rose-700: 168 36 36;
+  --rose-800: 138 28 28;
+
+  /* pastel landing sections */
+  --peach: 255 227 211;
+  --mint: 216 245 230;
+  --sky: 220 235 255;
+  --lilac: 233 225 255;
+  --butter: 255 241 184;
+
+  --shadow-card: 0 1px 2px rgb(60 40 10 / 0.04), 0 10px 32px -10px rgb(60 40 10 / 0.12);
+  --shadow-lift: 0 2px 4px rgb(60 40 10 / 0.05), 0 22px 48px -14px rgb(60 40 10 / 0.22);
+  --shadow-float: 0 30px 60px -20px rgb(60 40 10 / 0.35);
+  --tile: 243 238 229; /* image tile behind product photos */
+  --nav-bg: 255 255 255 / 0.72;
+  --blend: multiply;
+}
+
+:root[data-theme="dark"] {
+  color-scheme: dark;
+  --bg: 20 19 31; /* #14131F */
+  --surface: 30 28 43; /* #1E1C2B */
+  --raised: 40 38 58; /* #28263A */
+  --on-brand: 23 20 15;
+  --on-accent: 14 26 21;
+
+  --slate-50: 36 34 52;
+  --slate-100: 40 38 58;
+  --slate-200: 52 50 72;
+  --slate-300: 72 70 96;
+  --slate-400: 150 145 168;
+  --slate-500: 163 159 179; /* muted #A39FB3 */
+  --slate-600: 189 185 203;
+  --slate-700: 216 212 224;
+  --slate-800: 232 229 236;
+  --slate-900: 244 241 234; /* text #F4F1EA */
+
+  --brand-50: 40 38 58;
+  --brand-100: 52 50 72;
+  --brand-200: 72 70 96;
+  --brand-300: 110 107 138;
+  --brand-400: 150 145 168;
+  --brand-500: 189 185 203;
+  --brand-600: 244 241 234; /* primary button flips to cream */
+  --brand-700: 228 224 214;
+  --brand-800: 210 206 196;
+  --brand-900: 244 241 234;
+
+  --emerald-50: 23 50 42;
+  --emerald-100: 27 63 51;
+  --emerald-200: 37 82 63;
+  --emerald-500: 34 201 131; /* #22C983 */
+  --emerald-600: 34 201 131;
+  --emerald-700: 34 201 131;
+  --emerald-900: 168 240 208;
+
+  --amber-50: 58 51 25;
+  --amber-100: 74 65 32;
+  --amber-200: 101 88 41;
+  --amber-400: 255 216 77;
+  --amber-500: 255 216 77;
+  --amber-600: 255 216 77;
+  --amber-700: 245 208 90;
+  --amber-800: 245 213 110;
+  --amber-900: 248 225 153;
+
+  --rose-50: 58 32 36;
+  --rose-100: 74 37 41;
+  --rose-200: 107 51 56;
+  --rose-400: 240 122 114;
+  --rose-500: 240 96 90;
+  --rose-600: 229 72 77;
+  --rose-700: 245 154 148;
+  --rose-800: 248 180 175;
+
+  --peach: 58 38 32; /* #3A2620 */
+  --mint: 23 50 42; /* #17322A */
+  --sky: 26 40 64; /* #1A2840 */
+  --lilac: 43 36 66; /* #2B2442 */
+  --butter: 58 51 25; /* #3A3319 */
+
+  --shadow-card: 0 0 0 1px rgb(255 255 255 / 0.08), 0 12px 32px -12px rgb(0 0 0 / 0.5);
+  --shadow-lift: 0 0 0 1px rgb(255 255 255 / 0.1), 0 26px 50px -16px rgb(0 0 0 / 0.65);
+  --shadow-float: 0 30px 60px -20px rgb(0 0 0 / 0.7);
+  --tile: 244 241 234; /* soft light tile so product photos keep their white backgrounds */
+  --nav-bg: 30 28 43 / 0.72;
+  --blend: normal;
+}
 
 @layer base {
   html {
@@ -10,22 +161,20 @@
     scroll-behavior: smooth;
   }
   body {
-    @apply bg-slate-50 font-sans text-sm text-slate-600 antialiased;
-    font-feature-settings: "cv11", "ss01";
+    @apply bg-canvas font-sans text-[15px] leading-relaxed text-slate-600 antialiased;
   }
   h1, h2, h3, h4 {
-    @apply text-ink;
+    @apply font-display text-ink;
   }
-  /* Our own show/hide toggle replaces the browser reveal button */
   input::-ms-reveal,
   input::-ms-clear {
     display: none;
   }
   ::selection {
-    @apply bg-brand-200 text-brand-900;
+    @apply bg-highlight text-slate-900;
   }
   :focus-visible {
-    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-white;
+    @apply outline-none ring-2 ring-brand-500 ring-offset-2 ring-offset-canvas;
   }
   @media (prefers-reduced-motion: reduce) {
     * {
@@ -39,58 +188,102 @@
 
 @layer components {
   /* Typography */
-  .t-display { @apply text-display text-ink; }
+  .t-hero { @apply font-display text-hero text-ink; }
+  .t-display { @apply font-display text-display text-ink; }
   .t-h1 { @apply text-h1 text-ink; }
   .t-h2 { @apply text-h2 text-ink; }
-  .t-h3 { @apply text-h3 text-ink; }
-  .t-lead { @apply text-base leading-relaxed text-slate-600; }
+  .t-h3 { @apply font-display text-h3 text-ink; }
+  .t-lead { @apply text-base leading-relaxed text-slate-600 sm:text-lg; }
   .t-caption { @apply text-xs text-slate-500; }
-  .t-price { @apply font-semibold tabular-nums tracking-tight text-ink; }
+  .t-price { @apply font-display font-bold tabular-nums tracking-tight text-ink; }
+  .t-giant { @apply font-display text-giant uppercase text-ink/[0.07] select-none; }
 
   /* Layout */
-  .page { @apply container py-8 sm:py-10; }
-  .section { @apply py-10 sm:py-14; }
+  .page { @apply container py-8 sm:py-12; }
+  .section { @apply py-14 sm:py-20; }
+  .section-xl { @apply py-20 sm:py-28 lg:py-36; }
 
-  /* Surfaces */
-  .card { @apply rounded-card border border-slate-200/80 bg-white shadow-card; }
-  .card-hover { @apply transition duration-200 hover:-translate-y-0.5 hover:border-slate-300 hover:shadow-lift; }
-  .card-pad { @apply p-5 sm:p-6; }
+  /* Surfaces: white cards, soft large shadows, no heavy borders */
+  .card { @apply rounded-card bg-surface shadow-card; }
+  .card-hover { @apply transition duration-300 ease-soft hover:-translate-y-1 hover:shadow-lift; }
+  .card-pad { @apply p-5 sm:p-7; }
+  .tile { background-color: rgb(var(--tile)); }
+  .multiply { mix-blend-mode: var(--blend); }
 
-  /* Buttons */
+  /* Buttons: pill shaped, ink primary */
   .btn {
-    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-lg px-4 py-2.5 text-sm font-semibold transition duration-150 disabled:pointer-events-none disabled:opacity-50;
+    @apply inline-flex select-none items-center justify-center gap-2 whitespace-nowrap rounded-full px-5 py-2.5 text-sm font-semibold transition duration-200 ease-soft hover:-translate-y-px active:translate-y-0 active:scale-[0.97] disabled:pointer-events-none disabled:opacity-50;
   }
-  .btn-primary { @apply btn bg-brand-600 text-white shadow-sm hover:bg-brand-700 active:bg-brand-800; }
-  .btn-secondary { @apply btn border border-slate-300 bg-white text-slate-700 shadow-sm hover:border-slate-400 hover:bg-slate-50; }
+  .btn-primary { @apply btn bg-brand-600 text-onbrand shadow-sm hover:bg-brand-700 hover:shadow-card; }
+  .btn-secondary { @apply btn bg-surface text-ink shadow-sm ring-1 ring-slate-200 hover:bg-slate-50 hover:ring-slate-300; }
   .btn-ghost { @apply btn text-slate-600 hover:bg-slate-100 hover:text-ink; }
   .btn-danger { @apply btn bg-rose-600 text-white shadow-sm hover:bg-rose-700; }
-  .btn-sm { @apply px-3 py-1.5 text-xs; }
-  .btn-lg { @apply px-6 py-3 text-base; }
+  .btn-yellow { @apply btn bg-highlight text-slate-900 shadow-sm hover:shadow-card; }
+  .btn-sm { @apply px-3.5 py-1.5 text-xs; }
+  .btn-lg { @apply px-7 py-3.5 text-base; }
 
   /* Form controls */
-  .label { @apply mb-1.5 block text-sm font-medium text-slate-700; }
+  .label { @apply mb-1.5 block text-sm font-semibold text-slate-700; }
   .input {
-    @apply block w-full rounded-lg border border-slate-300 bg-white px-3.5 py-2.5 text-sm text-ink shadow-sm transition placeholder:text-slate-400 hover:border-slate-400 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-100;
+    @apply block w-full rounded-field border border-slate-200 bg-surface px-4 py-3 text-sm text-ink transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-100;
   }
   .input-error { @apply border-rose-400 focus:border-rose-500 focus:ring-rose-500/15; }
   .field-error { @apply mt-1.5 text-xs font-medium text-rose-600; }
   .field-hint { @apply mt-1.5 text-xs text-slate-500; }
 
   /* Badges and chips */
-  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium; }
+  .badge { @apply inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-semibold; }
   .badge-neutral { @apply badge bg-slate-100 text-slate-700; }
   .badge-brand { @apply badge bg-brand-50 text-brand-700; }
   .badge-success { @apply badge bg-emerald-50 text-emerald-700; }
   .badge-danger { @apply badge bg-rose-50 text-rose-700; }
-  .badge-warning { @apply badge bg-amber-50 text-amber-700; }
+  .badge-warning { @apply badge bg-amber-50 text-amber-800; }
+  .badge-best { @apply badge bg-emerald-600 text-onaccent; }
+  .badge-deal { @apply badge bg-highlight text-slate-900; }
   .chip {
-    @apply inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-white px-3.5 py-1.5 text-sm text-slate-700 shadow-sm transition hover:border-brand-300 hover:bg-brand-50 hover:text-brand-700;
+    @apply inline-flex items-center gap-1.5 rounded-full bg-surface px-4 py-1.5 text-sm font-medium text-slate-700 shadow-sm ring-1 ring-slate-200 transition duration-200 ease-soft hover:-translate-y-px hover:bg-highlight hover:text-slate-900 hover:ring-highlight;
   }
 
   /* Loading skeleton with shimmer */
-  .skeleton { @apply relative overflow-hidden rounded-md bg-slate-200/70; }
+  .skeleton { @apply relative overflow-hidden rounded-xl bg-slate-200/70; }
   .skeleton::after {
     content: "";
-    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/60 to-transparent animate-shimmer;
+    @apply absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-surface/60 to-transparent animate-shimmer;
   }
+
+  /* Yellow marker swash behind a word; draws in on load */
+  .swash {
+    position: relative;
+    display: inline-block;
+    z-index: 0;
+    white-space: nowrap;
+  }
+  .swash::before {
+    content: "";
+    position: absolute;
+    z-index: -1;
+    left: -0.06em;
+    right: -0.06em;
+    bottom: 0.06em;
+    height: 0.42em;
+    border-radius: 0.2em 0.5em 0.3em 0.55em;
+    background: rgb(var(--yellow));
+    transform: rotate(-1.2deg) scaleX(0);
+    transform-origin: left center;
+    animation: swash-in 0.9s 0.35s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  /* Staggered entrance for lists on functional pages (fades only) */
+  .stagger > * { animation: fade-up 0.55s cubic-bezier(0.22, 1, 0.36, 1) both; }
+  .stagger > *:nth-child(2) { animation-delay: 0.05s; }
+  .stagger > *:nth-child(3) { animation-delay: 0.1s; }
+  .stagger > *:nth-child(4) { animation-delay: 0.15s; }
+  .stagger > *:nth-child(n + 5) { animation-delay: 0.2s; }
+
+  /* Chart line that draws itself */
+  .draw-line { stroke-dasharray: var(--len, 1200); stroke-dashoffset: var(--len, 1200); animation: draw-line 1.4s 0.15s cubic-bezier(0.22, 1, 0.36, 1) forwards; }
+}
+
+@keyframes swash-in {
+  to { transform: rotate(-1.2deg) scaleX(1); }
 }
