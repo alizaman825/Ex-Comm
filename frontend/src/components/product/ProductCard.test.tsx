@@ -18,7 +18,7 @@ const product: ProductCardData = {
   category: "mobiles",
   image: null,
   minPrice: 117999,
-  maxPrice: 126400,
+  maxPrice: 121500,
   rating: 4.4,
   reviewCount: 320,
   priceChange7d: -6.2,
@@ -41,8 +41,8 @@ describe("ProductCard", () => {
     render(<ProductCard product={product} />);
     expect(screen.getByRole("link", { name: product.title })).toHaveAttribute("href", "/products/p1");
     expect(screen.getByText("Rs 117,999", { selector: "span.t-price" })).toBeInTheDocument();
-    expect(screen.getByText("up to Rs 126,400")).toBeInTheDocument();
-    expect(screen.getByText("Cheapest on PriceOye, save Rs 8,401")).toBeInTheDocument();
+    expect(screen.getByText("up to Rs 121,500")).toBeInTheDocument();
+    expect(screen.getByText("Cheapest on PriceOye, save Rs 3,501")).toBeInTheDocument();
     expect(screen.getByText(/6\.2%/)).toBeInTheDocument();
   });
 
@@ -55,6 +55,13 @@ describe("ProductCard", () => {
     expect(items[0]).toHaveTextContent("Rs 117,999");
     expect(items[1]).toHaveTextContent("saved");
     expect(items[2]).toHaveTextContent("out of stock");
+    expect(items[2]).toHaveTextContent("supplier");
+  });
+
+  it("never calls the supplier price the cheapest", () => {
+    const cheapSupplier = { ...product, minPrice: 50000, maxPrice: 60000, offers: [product.offers[0], { ...product.offers[2], price: 50000, inStock: true }] };
+    render(<ProductCard product={cheapSupplier} />);
+    expect(screen.queryByText(/Cheapest on/)).not.toBeInTheDocument();
   });
 
   it("hides the savings line for a single-store product", () => {

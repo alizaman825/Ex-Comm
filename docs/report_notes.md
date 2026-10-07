@@ -51,6 +51,9 @@ Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep
 - A listing the store no longer shows (item removed, page gone) is counted as "not found" and keeps its last price. **Sample (seeded) listings have no real store link, so the job does not re-fetch them**: they are reported as "unlinked" and stay as sample data until a live search finds the real item and adopts the listing. Real-store titles are noisy (warranty text, screen sizes, marketing words); normalization removes the common noise when grouping search results.
 - Demo "simulate" mode changes stored prices randomly; it exists only so alerts and notifications can be demonstrated offline, and its results are not real prices.
 
+### Which price is "the" price
+- The price shown as a product's headline (cards, search sort and price filters, wishlist, alerts, price chart summary) is the **retail** price a shopper pays locally (Daraz, PriceOye). AliExpress is listed on every product as the **supplier** price and labelled as such; it excludes shipping and customs, so it is never presented as the "cheapest" or the lowest price. Products with no retail listing fall back to the supplier price.
+
 ### Other
 - Prices are shown in PKR. AliExpress seed prices were converted from USD at a fixed rate, so they are approximate.
 - Email alerts are optional and need SMTP settings. In-app notifications always work.

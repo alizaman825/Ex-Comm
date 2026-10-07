@@ -2,49 +2,58 @@ const { Product, Listing, PriceHistory } = require('../models');
 
 const DAY = 24 * 60 * 60 * 1000;
 
-// Recompute denormalized product fields (min/max price, platforms, rating, 7-day change) from its listings.
+const isSupplier = (l) => l.role === 'supplier';
+
+// In-stock listings if there are any, otherwise all of them (so an out-of-stock product still shows a price).
+const preferInStock = (list) => {
+  const inStock = list.filter((l) => l.inStock);
+  return inStock.length ? inStock : list;
+};
+
+// Recompute denormalized product fields (prices, platforms, rating, 7-day change) from its listings.
+//
+// The headline price (minPrice / maxPrice / lowestPlatform / priceChange7d) is the *retail* price a shopper
+// pays locally (Daraz, PriceOye). The supplier price (AliExpress, before shipping and customs) is kept
+// separately in supplierMinPrice, and only becomes the headline for products with no retail listing.
 async function refreshProductStats(productId) {
   const listings = await Listing.find({ productId }).lean();
-  const inStock = listings.filter((l) => l.inStock);
-  const priced = inStock.length ? inStock : listings;
-  if (!priced.length) {
-    await Product.updateOne({ _id: productId }, { listingCount: 0, platforms: [], minPrice: null, maxPrice: null });
+  if (!listings.length) {
+    await Product.updateOne({ _id: productId }, { listingCount: 0, platforms: [], minPrice: null, maxPrice: null, retailMinPrice: null, supplierMinPrice: null });
     return;
   }
 
-  // Retail/supplier minimums prefer in-stock offers but still report a price when everything is out of stock.
-  const roleMin = (supplierRole) => {
-    const of = (list) => list.filter((l) => (l.role === 'supplier') === supplierRole);
-    const pool = of(inStock).length ? of(inStock) : of(listings);
-    return pool.length ? Math.min(...pool.map((l) => l.price)) : null;
-  };
-  const cheapest = priced.reduce((a, b) => (b.price < a.price ? b : a));
-  const prices = priced.map((l) => l.price);
-  const rated = listings.filter((l) => l.rating);
-  const reviewCount = listings.reduce((s, l) => s + (l.reviewCount || 0), 0);
-  const rating = rated.length
-    ? Math.round((rated.reduce((s, l) => s + l.rating * Math.max(l.reviewCount || 1, 1), 0) /
-        rated.reduce((s, l) => s + Math.max(l.reviewCount || 1, 1), 0)) * 10) / 10
-    : null;
+  const retail = listings.filter((l) => !isSupplier(l));
+  const supplier = listings.filter(isSupplier);
+  const headline = preferInStock(retail.length ? retail : supplier);
+  const retailPool = retail.length ? preferInStock(retail) : [];
+  const supplierPool = supplier.length ? preferInStock(supplier) : [];
 
-  // Lowest price per listing as of 7 days ago, compared with today's minimum.
+  const cheapest = headline.reduce((a, b) => (b.price < a.price ? b : a));
+  const prices = headline.map((l) => l.price);
+  const minPrice = Math.min(...prices);
+
+  const rated = listings.filter((l) => l.rating);
+  const weight = (l) => Math.max(l.reviewCount || 1, 1);
+  const rating = rated.length ? Math.round((rated.reduce((s, l) => s + l.rating * weight(l), 0) / rated.reduce((s, l) => s + weight(l), 0)) * 10) / 10 : null;
+  const reviewCount = listings.reduce((s, l) => s + (l.reviewCount || 0), 0);
+
+  // Each headline listing's latest price as of 7 days ago, compared with today's minimum.
   const weekAgo = new Date(Date.now() - 7 * DAY);
   const past = await PriceHistory.aggregate([
-    { $match: { productId: cheapest.productId, scrapedAt: { $lte: weekAgo } } },
+    { $match: { listingId: { $in: headline.map((l) => l._id) }, scrapedAt: { $lte: weekAgo } } },
     { $sort: { scrapedAt: -1 } },
     { $group: { _id: '$listingId', price: { $first: '$price' } } },
   ]);
   const pastMin = past.length ? Math.min(...past.map((p) => p.price)) : null;
-  const minPrice = Math.min(...prices);
   const priceChange7d = pastMin ? Math.round(((minPrice - pastMin) / pastMin) * 1000) / 10 : 0;
 
   const product = await Product.findById(productId);
   if (!product) return;
   Object.assign(product, {
     minPrice,
-    retailMinPrice: roleMin(false),
-    supplierMinPrice: roleMin(true),
     maxPrice: Math.max(...prices),
+    retailMinPrice: retailPool.length ? Math.min(...retailPool.map((l) => l.price)) : null,
+    supplierMinPrice: supplierPool.length ? Math.min(...supplierPool.map((l) => l.price)) : null,
     lowestPlatform: cheapest.platform,
     platforms: [...new Set(listings.map((l) => l.platform))].sort(),
     listingCount: listings.length,

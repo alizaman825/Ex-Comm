@@ -173,8 +173,11 @@ async function search(params) {
     if (!listings.length) continue;
     const card = toCard(p, listings);
     if (wanted || minPrice !== undefined || maxPrice !== undefined || minRating !== undefined) {
-      card.minPrice = Math.min(...listings.map((l) => l.price));
-      card.maxPrice = Math.max(...listings.map((l) => l.price));
+      // Headline price = the retail listings that matched (supplier prices only headline when nothing else matched).
+      const retail = listings.filter((l) => l.role !== 'supplier');
+      const headline = retail.length ? retail : listings;
+      card.minPrice = Math.min(...headline.map((l) => l.price));
+      card.maxPrice = Math.max(...headline.map((l) => l.price));
     }
     cards.push(card);
   }

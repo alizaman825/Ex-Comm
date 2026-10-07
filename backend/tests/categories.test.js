@@ -121,3 +121,29 @@ describe('trending and platforms', () => {
     expect(res.body.platforms.find((p) => p.id === 'aliexpress').live).toBe(false);
   });
 });
+
+describe('headline price is the retail price', () => {
+  test('a product with a cheaper supplier listing still headlines the retail minimum', async () => {
+    const p = await Product.findOne({ title: 'Samsung Galaxy A55 5G 8GB 256GB' }).lean();
+    expect(p.supplierMinPrice).toBeLessThan(p.retailMinPrice);
+    expect(p.minPrice).toBe(p.retailMinPrice);
+    expect(['daraz', 'priceoye']).toContain(p.lowestPlatform);
+    expect(p.maxPrice).toBeGreaterThanOrEqual(p.minPrice);
+    const res = await request(app).get('/api/search?q=galaxy a55&live=false');
+    const card = res.body.results[0];
+    expect(card.minPrice).toBe(p.retailMinPrice);
+    expect(card.offers.some((o) => o.platform === 'aliexpress' && o.price < card.minPrice)).toBe(true); // supplier still listed, but not the headline
+  });
+
+  test('a supplier-only product (no retail listing) headlines the supplier price', async () => {
+    const { Listing, Product: P } = require('../src/models');
+    const { refreshProductStats } = require('../src/services/productStats');
+    const prod = await P.findOne({ title: 'Apple iPhone 15 128GB' });
+    await Listing.deleteMany({ productId: prod._id, role: 'retail' });
+    await refreshProductStats(prod._id);
+    const after = await P.findById(prod._id).lean();
+    expect(after.retailMinPrice).toBeNull();
+    expect(after.minPrice).toBe(after.supplierMinPrice);
+    expect(after.lowestPlatform).toBe('aliexpress');
+  });
+});

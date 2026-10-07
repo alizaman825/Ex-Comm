@@ -19,8 +19,8 @@ export default defineConfig({
     screenshot: "only-on-failure",
   },
   projects: [
-    { name: "desktop", testIgnore: /responsive[.]spec/, use: { ...devices["Desktop Chrome"], channel: "msedge", viewport: { width: 1440, height: 900 } } },
-    { name: "mobile", testMatch: /responsive\.spec\.ts/, use: { ...devices["Pixel 7"], channel: "msedge" } },
+    { name: "desktop", testIgnore: /(responsive|screens-mobile)[.]spec/, use: { ...devices["Desktop Chrome"], channel: "msedge", viewport: { width: 1440, height: 900 } } },
+    { name: "mobile", testMatch: /(responsive|screens-mobile)[.]spec/, use: { ...devices["Pixel 7"], channel: "msedge" } },
   ],
   webServer: [
     {

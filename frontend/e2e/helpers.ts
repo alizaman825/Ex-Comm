@@ -14,3 +14,31 @@ export async function imagesSettled(page: Page, timeout = 6000) {
     .catch(() => undefined); // offline: images fail to load and fall back to placeholders
   await page.waitForTimeout(250);
 }
+
+import { expect, type APIRequestContext } from "@playwright/test";
+
+/** Id of the first stored product matching a query (no live scraping). */
+export async function firstId(request: APIRequestContext, query: string): Promise<string> {
+  const res = await request.get(`/api/search?q=${encodeURIComponent(query)}&live=false`);
+  return ((await res.json()) as { results: { id: string }[] }).results[0].id;
+}
+
+export const uniqueEmail = (prefix = "user") => `${prefix}${Date.now()}${Math.floor(Math.random() * 10000)}@example.com`;
+
+/** Registers a brand-new user through the UI and waits until the home page shows them signed in. */
+export async function registerUser(page: Page, name = "Test Shopper", password = "password1") {
+  const email = uniqueEmail();
+  await page.goto("/register");
+  await page.getByLabel("Full name").fill(name);
+  await page.getByLabel("Email").fill(email);
+  await page.getByLabel("Password", { exact: true }).fill(password);
+  await page.getByRole("button", { name: "Create account" }).click();
+  await expect(page).toHaveURL("/");
+  return { email, password, name };
+}
+
+export async function loginDemoUser(page: Page) {
+  await page.goto("/login");
+  await page.getByRole("button", { name: /try the demo account/i }).click();
+  await expect(page).toHaveURL("/");
+}

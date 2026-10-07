@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — T11 (product detail + chart, compare) done_
+_Last updated: 2026-10-07 — T12 done: CHECKPOINT 2 (frontend end to end)_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -25,7 +25,9 @@ _Last updated: 2026-10-07 — T11 (product detail + chart, compare) done_
 - T10: landing page (hero with example comparison card, popular-search chips, category grid, price-drop and trending rails, how-it-works, alerts CTA), `/categories` (presets per category), `/search` (URL-driven filters: category, store, price range with validation, rating; sort; pagination; mobile filter drawer; banner stating live/cache/saved source and per-store status; skeleton loading, empty and error-with-retry states), `/about` (live vs saved data, FAQ), 404 and global error pages. Product card with per-store prices, saved/out-of-stock labels, 7-day change, wishlist heart and compare selection (tray persists for the tab, max 4). Fixes found by tests: login redirect now keeps the query string; Back button works after filtering/paging.
 - T11: `/products/[id]` (breadcrumb, image, lowest price with savings and 7-day change, link to the cheapest store, wishlist, compare, price-alert dialog with validation and "already reached" handling, store table with Lowest/Supplier/Live/Saved labels, Recharts price-history chart with 7/30/90-day ranges, summary stats, legend toggles and a sample-data notice, similar products) and `/compare` (one product: stores as columns; 2–4 products side by side with best values highlighted, summary, remove, add a suggested product; empty/invalid/oversized selections handled).
 - Bugs found by the new tests and fixed: modal/drawer stole focus on every keystroke (only one character could be typed in the alert dialog); target price "-5" was parsed as 5; "sony wh-1000xm5" found nothing in stored data (added a compact `searchKey` with startup backfill); compare "best rated" ranked by review count instead of rating; chart showed the previous range's data after a failed range change.
-- Tests: backend 197 (Jest), frontend 52 (Vitest + Testing Library) and 78 end-to-end (Playwright on Edge: desktop + Pixel 7), all passing; lint and typecheck clean.
+- T12: `/wishlist` (sort, remove, price vs when saved), `/alerts` (tabs, create via product search, edit, pause/resume, delete with confirmation; bell refreshes), `/notifications` (unread filter, open, mark all read, pagination), `/profile` (name, email-alert preference, change password, delete account). All guarded by `AuthGate` (redirect to login and back). Loading, empty and error-with-retry states on all four pages.
+- Consistency fix found while reviewing screenshots: the headline price everywhere is now the retail price; the AliExpress supplier price is listed and labelled but never "cheapest" (backend `productStats`, search filters; cards and wishlist). Seeded notification wording fixed.
+- Tests: backend 199 (Jest), frontend 60 (Vitest + Testing Library) and 118 end-to-end (Playwright on Edge, desktop + Pixel 7), all passing; lint and typecheck clean; `npm audit --omit=dev` 0 vulnerabilities in both apps.
 - Screenshots: `docs/screenshots/01-login.png`, `02-register.png`; checklist in `docs/screenshots_checklist.md`.
 
 ## Working
@@ -37,4 +39,4 @@ _Last updated: 2026-10-07 — T11 (product detail + chart, compare) done_
 - Legacy AliExpress scraper parked in `backend/src/scrapers/legacy` (not mounted); AliExpress is the last, optional task.
 
 ## Next
-- T12: wishlist, alerts (list, edit, pause, delete), notifications, profile & settings → **Checkpoint 2: end to end**.
+- Checkpoint 2 reached. Next (per the revised plan): seller module T14 (margin calculator + opportunities API), T16 (seller UI), optional T15; then closing T17–T19; NICE last.

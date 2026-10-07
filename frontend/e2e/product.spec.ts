@@ -110,7 +110,12 @@ test.describe("wishlist and price alerts on the product page", () => {
     await page.goto(`/products/${id}`);
     await page.getByRole("button", { name: "Set price alert" }).click();
     await expect(page).toHaveURL(new RegExp(`/login\\?next=%2Fproducts%2F${id}`));
-    await loginDemo(page, new RegExp(`/products/${id}`));
+    await page.getByRole("link", { name: "Create an account" }).click();
+    await page.getByLabel("Full name").fill("Alert Tester");
+    await page.getByLabel("Email").fill(email());
+    await page.getByLabel("Password", { exact: true }).fill("password1");
+    await page.getByRole("button", { name: "Create account" }).click();
+    await expect(page).toHaveURL(new RegExp(`/products/${id}`));
 
     await page.getByRole("button", { name: "Set price alert" }).click();
     const dialog = page.getByRole("dialog", { name: "Set a price alert" });

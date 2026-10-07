@@ -34,6 +34,7 @@ function rng(seed) {
   };
 }
 
+const LABEL = { daraz: 'Daraz', priceoye: 'PriceOye', aliexpress: 'AliExpress' };
 const PLATFORM_OF = { d: 'daraz', p: 'priceoye', a: 'aliexpress' };
 
 const PROFILE = {
@@ -232,12 +233,12 @@ async function seedDatabase({ reset = true, log = console.log } = {}) {
   await Notification.insertMany([
     {
       userId: user._id, alertId: alerts[0]._id, productId: a55._id, price: a55.minPrice, platform: a55.lowestPlatform,
-      message: `Price drop: ${a55.title} is now Rs ${a55.minPrice.toLocaleString('en-PK')} on ${a55.lowestPlatform}, below your target.`,
+      message: `Price drop: ${a55.title} is now Rs ${a55.minPrice.toLocaleString('en-PK')} on ${LABEL[a55.lowestPlatform]}, below your target.`,
       createdAt: triggeredAt,
     },
     {
       userId: user._id, alertId: alerts[1]._id, productId: airpods._id, price: roundPrice(airpods.minPrice * 0.89), platform: 'daraz', read: true,
-      message: `Price drop: ${airpods.title} reached your target on daraz during a sale.`,
+      message: `Price drop: ${airpods.title} reached your target on Daraz during a sale.`,
       createdAt: new Date(Date.now() - 9 * DAY),
     },
   ]);

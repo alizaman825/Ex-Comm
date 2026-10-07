@@ -3,6 +3,7 @@
 import { useState, type FormEvent } from "react";
 import Link from "next/link";
 import { BellRing, CheckCircle2, Info } from "lucide-react";
+import { useSWRConfig } from "swr";
 import { api, errorMessage, ApiError } from "@/lib/api";
 import { PLATFORM_LABEL, formatPrice } from "@/lib/format";
 import type { AlertItem, Platform } from "@/lib/types";
@@ -38,6 +39,7 @@ export function validateTarget(input: string): string | undefined {
 
 export function AlertDialog({ open, onClose, productId, title, currentPrice, platforms, onSaved }: Props) {
   const toast = useToast();
+  const { mutate: globalMutate } = useSWRConfig();
   const suggested = currentPrice ? Math.max(1, Math.floor((currentPrice * 0.9) / 100) * 100) : 0;
   const [target, setTarget] = useState(suggested ? String(suggested) : "");
   const [platform, setPlatform] = useState<"" | Platform>("");
@@ -71,6 +73,7 @@ export function AlertDialog({ open, onClose, productId, title, currentPrice, pla
       setDone({ updated: res.updated, triggeredNow: res.triggeredNow });
       toast.success(res.updated ? "Price alert updated" : "Price alert created");
       onSaved?.();
+      void globalMutate(["/notifications/unread-count"]); // an already-met target creates a notification right away
     } catch (err) {
       if (err instanceof ApiError && err.fieldError("targetPrice")) setError(err.fieldError("targetPrice"));
       else setFormError(errorMessage(err));

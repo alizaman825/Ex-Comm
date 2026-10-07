@@ -13,9 +13,11 @@ import { WishlistButton } from "./WishlistButton";
 export function ProductCard({ product, priority = false }: { product: ProductCardData; priority?: boolean }) {
   const compare = useCompare();
   const selected = compare.has(product.id);
-  const offers = product.offers.slice(0, 3);
-  const spread = product.maxPrice - product.minPrice;
-  const lowest = product.offers[0];
+  // Retail stores come first; the AliExpress supplier price is listed but never counts as "cheapest".
+  const retail = product.offers.filter((o) => o.role !== "supplier");
+  const offers = [...retail, ...product.offers.filter((o) => o.role === "supplier")].slice(0, 3);
+  const lowest = retail[0];
+  const spread = retail.length > 1 ? retail[retail.length - 1].price - retail[0].price : 0;
 
   return (
     <article className="card card-hover group relative flex h-full flex-col overflow-hidden" data-testid="product-card">
@@ -41,24 +43,25 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
 
         <div className="mt-3 flex items-baseline gap-2">
           <span className="t-price text-xl">{formatPrice(product.minPrice)}</span>
-          {offers.length > 1 && spread > 0 && <span className="text-xs text-slate-500">up to {formatPrice(product.maxPrice)}</span>}
+          {spread > 0 && <span className="text-xs text-slate-500">up to {formatPrice(product.maxPrice)}</span>}
         </div>
-        {lowest && offers.length > 1 && spread > 0 && (
+        {lowest && spread > 0 && (
           <p className="mt-0.5 text-xs font-medium text-emerald-700">
             Cheapest on {PLATFORM_LABEL[lowest.platform]}, save {formatPrice(spread)}
           </p>
         )}
 
         <ul className="mt-3 space-y-1.5 border-t border-slate-100 pt-3" aria-label="Prices by store">
-          {offers.map((o, i) => (
+          {offers.map((o) => (
             <li key={o.listingId} className="flex items-center justify-between gap-2 text-xs">
               <span className="flex min-w-0 items-center gap-2 text-slate-600">
                 <PlatformDot platform={o.platform} />
                 <span className="truncate">{PLATFORM_LABEL[o.platform]}</span>
+                {o.role === "supplier" && <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-600">supplier</span>}
                 {o.dataSource === "saved" && <span className="rounded bg-amber-50 px-1 py-px text-[10px] font-medium text-amber-700">saved</span>}
                 {!o.inStock && <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500">out of stock</span>}
               </span>
-              <span className={clsx("tabular-nums", i === 0 && offers.length > 1 ? "font-semibold text-emerald-700" : "text-slate-600")}>{formatPrice(o.price)}</span>
+              <span className={clsx("tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-700" : "text-slate-600")}>{formatPrice(o.price)}</span>
             </li>
           ))}
         </ul>
