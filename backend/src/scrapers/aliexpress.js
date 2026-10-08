@@ -3,9 +3,7 @@
 // It is NOT part of the default live search: it only runs when the user asks ("Check on AliExpress"),
 // because AliExpress is slow and can block automated requests at any time.
 const axios = require('axios');
-const { config } = require('../config/env');
 const { ScrapeError, USER_AGENT } = require('./http');
-const { unlockHtml } = require('./brightdata');
 
 const BASE = 'https://www.aliexpress.com';
 const TIMEOUT_MS = 25000;
@@ -82,15 +80,11 @@ function parse(html) {
   return out;
 }
 
-function searchUrl(query) {
-  return `${BASE}/wholesale?${new URLSearchParams({ SearchText: query }).toString()}`;
-}
-
-// Direct request (works until AliExpress blocks this IP, which it can do at any time).
-async function fetchDirect(query) {
+async function search(query) {
   let res;
   try {
-    res = await axios.get(searchUrl(query), {
+    res = await axios.get(`${BASE}/wholesale`, {
+      params: { SearchText: query },
       headers: { 'User-Agent': USER_AGENT, 'Accept-Language': 'en-US,en;q=0.9' },
       timeout: TIMEOUT_MS,
       maxRedirects: 3,
@@ -102,14 +96,7 @@ async function fetchDirect(query) {
   }
   if (res.status === 403 || res.status === 429) throw new ScrapeError(`Blocked by AliExpress (HTTP ${res.status})`, { code: 'BLOCKED', status: res.status });
   if (res.status >= 400) throw new ScrapeError(`HTTP ${res.status}`, { code: 'HTTP', status: res.status });
-  return res.data;
-}
-
-async function search(query) {
-  // Routed through Bright Data's Web Unlocker when configured (BRIGHTDATA_API_KEY + BRIGHTDATA_ZONE),
-  // so a block only changes how the page is fetched - the parser below is unchanged either way.
-  const html = config.brightdata.apiKey && config.brightdata.zone ? await unlockHtml(searchUrl(query)) : await fetchDirect(query);
-  const out = parse(html);
+  const out = parse(res.data);
   out.meta = { total: out.length, pageSize: out.length };
   return out;
 }

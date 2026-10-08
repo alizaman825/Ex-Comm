@@ -20,7 +20,6 @@ import { Filters } from "./Filters";
 import { SourceBanner } from "./SourceBanner";
 import { AliExpressCheck } from "./AliExpressCheck";
 import { EbayCheck } from "./EbayCheck";
-import { AmazonCheck } from "./AmazonCheck";
 
 const PAGE_SIZE = 12;
 
@@ -139,7 +138,6 @@ export function SearchView() {
             <>
               <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />
               <EbayCheck query={state.q} checkedCount={data.platformStatus.ebay?.loaded} onChecked={() => mutate()} />
-              <AmazonCheck query={state.q} checkedCount={data.platformStatus.amazon?.loaded} onChecked={() => mutate()} />
             </>
           )}
 

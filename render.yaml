@@ -32,7 +32,3 @@ services:
         sync: false # optional: free keys at developer.ebay.com; leave unset to disable "Check on eBay"
       - key: EBAY_CLIENT_SECRET
         sync: false
-      - key: BRIGHTDATA_API_KEY
-        sync: false # optional: free trial at brightdata.com; enables "Check on Amazon" and routes AliExpress through it
-      - key: BRIGHTDATA_ZONE
-        sync: false # optional: a Web Unlocker zone name; needed only for the AliExpress routing above

@@ -26,7 +26,7 @@ export default function AboutPage() {
         <h2 className="t-h2">How it works</h2>
         <ol className="mt-6 grid gap-5 sm:grid-cols-3">
           {[
-            { icon: Search, t: "1. Search", d: "Search by product name. Results are gathered from Daraz and PriceOye, plus AliExpress, eBay and Amazon supplier prices checked on demand." },
+            { icon: Search, t: "1. Search", d: "Search by product name. Results are gathered from Daraz and PriceOye, plus AliExpress and eBay supplier prices checked on demand." },
             { icon: Scale, t: "2. Compare", d: "The same product from different stores is grouped, so you can see every price, rating and stock status side by side." },
             { icon: LineChart, t: "3. Track", d: "Save products, view price history, and set a target price. You get a notification when it is reached." },
           ].map(({ icon: Icon, t, d }) => (
@@ -62,7 +62,7 @@ export default function AboutPage() {
               <DataSourceBadge source="saved" className="ml-auto" />
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              Stored sample data, used for <strong>AliExpress</strong> supplier prices and as a fallback when a store cannot be reached. <strong>eBay</strong> and <strong>Amazon</strong> supplier prices are always checked live (converted from USD) rather than saved. Prices shown as saved may be out of date.
+              Stored sample data, used for <strong>AliExpress</strong> supplier prices and as a fallback when a store cannot be reached. <strong>eBay</strong> supplier prices are always checked live (converted from USD) rather than saved. Prices shown as saved may be out of date.
             </p>
           </div>
         </div>
