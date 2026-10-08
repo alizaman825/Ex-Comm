@@ -110,11 +110,53 @@ describe('nothing is filtered: the results are what the store returns', () => {
 });
 
 describe('same store never merged; different stores grouped for comparison', () => {
-  test('two listings of the same store with the same title are separate results', async () => {
-    stores({ daraz: () => withMeta([listing('daraz', 'Apple iPhone 16 Pro Max 256GB', 540000), listing('daraz', 'Apple iPhone 16 Pro Max 256GB', 555000), listing('daraz', 'Apple iPhone 16 Pro Max 256GB', 560000)]) });
+  test('two listings of the same (non-marketplace) store with the same title are separate results', async () => {
+    // PriceOye is not in MULTI_SELLER_PLATFORMS, so the plain "one listing per store per product" rule
+    // still applies there. Daraz's own version of this rule is covered separately below, now that it
+    // allows several sellers (see docs/MULTI_SELLER_PLAN.md).
+    stores({ priceoye: () => withMeta([listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 540000), listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 555000), listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 560000)]) });
     const res = await search('iphone 16 pro max');
     expect(res.body.total).toBe(3);
-    res.body.results.forEach((c) => expect(storesOf(c)).toEqual(['daraz']));
+    res.body.results.forEach((c) => expect(storesOf(c)).toEqual(['priceoye']));
+  });
+
+  test('several different Daraz sellers for the same item attach to one product, as separate offers', async () => {
+    stores({
+      daraz: () =>
+        withMeta([
+          listing('daraz', 'Samsung Galaxy A55 5G 8GB 256GB', 127000, { sellerId: 'seller-1', sellerName: 'Smart Phone Line', sellerLocation: 'Punjab' }),
+          listing('daraz', 'Samsung Galaxy A55 5G 8GB 256GB', 172999, { sellerId: 'seller-2', sellerName: 'Combine Communication', sellerLocation: 'Punjab' }),
+        ]),
+    });
+    const res = await search('samsung galaxy a55');
+    expect(res.body.total).toBe(1); // one product, not two
+    const daraz = await Listing.find({ platform: 'daraz', title: 'Samsung Galaxy A55 5G 8GB 256GB' }).lean();
+    expect(daraz).toHaveLength(2);
+    expect(daraz.map((l) => l.sellerName).sort()).toEqual(['Combine Communication', 'Smart Phone Line']);
+    expect(res.body.results[0].minPrice).toBe(127000); // the true minimum across both sellers
+  });
+
+  test('a second Daraz seller does not attach to a genuinely different variant', async () => {
+    stores({
+      daraz: () =>
+        withMeta([
+          listing('daraz', 'Samsung Galaxy A55 5G 128GB', 110000, { sellerId: 'seller-1', sellerName: 'Seller One' }),
+          listing('daraz', 'Samsung Galaxy A55 5G 256GB', 135000, { sellerId: 'seller-2', sellerName: 'Seller Two' }),
+        ]),
+    });
+    const res = await search('samsung galaxy a55');
+    expect(res.body.total).toBe(2); // different storage: two separate products, not merged as "two sellers"
+  });
+
+  test('re-scraping the same Daraz seller updates that listing instead of adding another offer', async () => {
+    const item = { ...listing('daraz', 'Restock Gadget Pro', 5000, { sellerId: 'seller-1', sellerName: 'Original Seller' }), externalId: 'dz-reseller-1' };
+    stores({ daraz: () => withMeta([item]) });
+    await search('restock gadget');
+    stores({ daraz: () => withMeta([{ ...item, price: 4500 }]) });
+    await request(app).get('/api/search?q=restock gadget&refresh=true&limit=100');
+    const daraz = await Listing.find({ platform: 'daraz', externalId: 'dz-reseller-1' }).lean();
+    expect(daraz).toHaveLength(1);
+    expect(daraz[0].price).toBe(4500);
   });
 
   test('the same product on both stores is one result with two offers', async () => {

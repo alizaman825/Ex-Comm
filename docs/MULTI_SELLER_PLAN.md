@@ -1,5 +1,11 @@
 # Multi-seller price comparison — plan
 
+## Status (2026-10-08)
+
+**Daraz (Phases 1–7): implemented.** `models/Listing.js` has `sellerId`/`sellerName`/`sellerLocation`; `scrapers/daraz.js` captures them; `services/ingest.js`'s `MULTI_SELLER_PLATFORMS` allows several Daraz sellers to attach to one product; `OfferTable.tsx` groups them into one expandable "N sellers on Daraz, from Rs X" row. Tests added (backend: parser + ingestion; frontend: grouping). Backend tests not executed this session (sandbox network policy blocks `mongodb-memory-server`'s binary download, as in every prior session) — run `cd backend && npm test` to confirm.
+
+**eBay (Phase 0 spike + Phase 6 eBay half): blocked on one script run.** Production keys are in hand. `scripts/ebay-field-check.js` is ready — once `EBAY_CLIENT_ID`/`EBAY_CLIENT_SECRET` are in `backend/.env`, run `node scripts/ebay-field-check.js "iphone 15"` and share the output (the `seller`/`itemLocation` fields it prints). `ebay.js`'s seller-capturing code and `'ebay'` joining `MULTI_SELLER_PLATFORMS` both wait on that, deliberately — see the "Risks" section below on not guessing field names.
+
 ## Why
 
 Daraz (and eBay) are not "one store, one price" — they're marketplaces where many independent sellers list the same item at different prices. Ex-Comm currently throws that away: `services/ingest.js` enforces "one listing per store per product," so when two different sellers list the same phone, only one of them ever gets attached to the product; the other is silently misread as a different product. Verified against a real Daraz fixture (`tests/fixtures/daraz-galaxy-a55.json`): 40 search results, **36 distinct sellers** (`sellerId`/`sellerName`/`location` are already in the scraped JSON — currently parsed and discarded by `scrapers/daraz.js`). Two listings in that same fixture plausibly describe the identical phone at Rs 127,000 vs Rs 172,999 from two different sellers — exactly the case this plan fixes.

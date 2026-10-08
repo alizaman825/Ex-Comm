@@ -62,6 +62,8 @@ const fullListing = (l) => ({
   inStock: l.inStock,
   dataSource: l.dataSource,
   lastScrapedAt: l.lastScrapedAt,
+  sellerName: l.sellerName || null,
+  sellerLocation: l.sellerLocation || null,
 });
 
 // GET /api/products/trending: most popular products.

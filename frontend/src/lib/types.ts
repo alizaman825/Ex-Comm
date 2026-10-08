@@ -59,6 +59,9 @@ export interface Listing {
   inStock: boolean;
   dataSource: DataSource;
   lastScrapedAt: string | null;
+  /** Set on marketplace platforms (Daraz) where several sellers can list the same product. */
+  sellerName: string | null;
+  sellerLocation: string | null;
 }
 
 export interface ProductDetail extends ProductCard {

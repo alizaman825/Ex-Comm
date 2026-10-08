@@ -98,7 +98,7 @@ describe("AlertDialog", () => {
 
 const listing = (over: Partial<Listing>): Listing => ({
   id: "l", platform: "daraz", role: "retail", title: "T", url: "https://x", image: null, price: 100000, priceUsd: null, originalPrice: null, discountPct: 0,
-  currency: "PKR", rating: 4.5, reviewCount: 10, inStock: true, dataSource: "live", lastScrapedAt: null, ...over,
+  currency: "PKR", rating: 4.5, reviewCount: 10, inStock: true, dataSource: "live", lastScrapedAt: null, sellerName: null, sellerLocation: null, ...over,
 });
 
 describe("OfferTable", () => {
@@ -136,5 +136,38 @@ describe("OfferTable", () => {
     const link = screen.getByRole("link", { name: /Go to Daraz/ });
     expect(link).toHaveAttribute("target", "_blank");
     expect(link).toHaveAttribute("rel", "noopener noreferrer");
+  });
+
+  it("groups several Daraz sellers into one expandable row instead of one row per seller", async () => {
+    render(
+      <OfferTable
+        listings={[
+          listing({ id: "a", platform: "daraz", price: 127000, sellerName: "Smart Phone Line", sellerLocation: "Punjab" }),
+          listing({ id: "b", platform: "daraz", price: 172999, sellerName: "Combine Communication", sellerLocation: "Punjab" }),
+          listing({ id: "c", platform: "priceoye", price: 150000 }),
+        ]}
+      />
+    );
+    // one summary row for Daraz (not two separate rows), plus the ordinary PriceOye row
+    expect(screen.queryAllByTestId("offer-row").map((r) => r.getAttribute("data-platform"))).toEqual(["priceoye"]);
+    const group = screen.getByTestId("offer-group");
+    expect(group.getAttribute("data-platform")).toBe("daraz");
+    expect(within(group).getByText("2 sellers")).toBeInTheDocument();
+    expect(within(group).getByText(/from Rs 127,000/)).toBeInTheDocument();
+    expect(screen.queryByTestId("seller-list")).not.toBeInTheDocument(); // collapsed by default
+
+    await userEvent.click(within(group).getByRole("button"));
+    const sellerRows = screen.getAllByTestId("seller-row");
+    expect(sellerRows).toHaveLength(2);
+    expect(within(sellerRows[0]).getByText("Smart Phone Line")).toBeInTheDocument();
+    expect(within(sellerRows[0]).getByText("Punjab")).toBeInTheDocument();
+    expect(within(sellerRows[1]).getByText("Combine Communication")).toBeInTheDocument();
+  });
+
+  it("renders a single-seller Daraz listing exactly like before (no grouping regression)", () => {
+    render(<OfferTable listings={[listing({ id: "a", platform: "daraz", price: 100000, sellerName: "Solo Seller" })]} />);
+    expect(screen.getByTestId("offer-row")).toBeInTheDocument();
+    expect(screen.queryByTestId("offer-group")).not.toBeInTheDocument();
+    expect(screen.getByText(/Sold by Solo Seller/)).toBeInTheDocument();
   });
 });
