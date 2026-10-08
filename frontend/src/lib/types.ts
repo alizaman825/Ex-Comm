@@ -1,6 +1,6 @@
 // Shapes returned by the Ex-Comm API (see docs/PLAN.md section 4).
 
-export type Platform = "daraz" | "priceoye" | "aliexpress";
+export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay";
 export type DataSource = "live" | "saved";
 export type SearchSource = "live" | "cache" | "fallback";
 
@@ -59,6 +59,9 @@ export interface Listing {
   inStock: boolean;
   dataSource: DataSource;
   lastScrapedAt: string | null;
+  /** Set on marketplace platforms (Daraz) where several sellers can list the same product. */
+  sellerName: string | null;
+  sellerLocation: string | null;
 }
 
 export interface ProductDetail extends ProductCard {

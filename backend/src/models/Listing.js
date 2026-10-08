@@ -21,6 +21,11 @@ const listingSchema = new mongoose.Schema(
     seeded: { type: Boolean, default: false }, // true = sample data, not scraped
     dataSource: { type: String, enum: ['live', 'saved'], default: 'live' }, // shown as a badge in the UI
     lastScrapedAt: Date,
+    // Marketplace platforms (Daraz, and eBay once confirmed) can have several sellers listing the same
+    // product at different prices - see docs/MULTI_SELLER_PLAN.md. Unset on platforms with one seller.
+    sellerId: String,
+    sellerName: String,
+    sellerLocation: String,
   },
   { timestamps: true }
 );

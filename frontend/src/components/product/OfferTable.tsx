@@ -1,14 +1,38 @@
-import { ExternalLink, PackageX } from "lucide-react";
+"use client";
+
+import { useState } from "react";
+import { ChevronDown, ExternalLink, PackageX } from "lucide-react";
 import clsx from "clsx";
 import { PLATFORM_LABEL, formatPrice, formatUsd, timeAgo } from "@/lib/format";
-import type { Listing } from "@/lib/types";
+import type { Listing, Platform } from "@/lib/types";
 import { DataSourceBadge, PlatformDot, Rating } from "./badges";
 
-/** One row per store listing: price, discount, rating, stock, data label and a link to the store. */
+interface SellerGroup {
+  platform: Platform;
+  role: "retail" | "supplier";
+  /** sorted by price, ascending */
+  listings: Listing[];
+}
+
+/** Daraz (and in future, other marketplaces) can list the same product from several different sellers;
+ * everything else has at most one listing per platform per product. Group so each store is one row
+ * unless it has more than one seller, in which case it becomes one expandable row. */
+function groupByPlatform(listings: Listing[]): SellerGroup[] {
+  const byPlatform = new Map<Platform, Listing[]>();
+  for (const l of listings) {
+    if (!byPlatform.has(l.platform)) byPlatform.set(l.platform, []);
+    byPlatform.get(l.platform)!.push(l);
+  }
+  return [...byPlatform.entries()]
+    .map(([platform, group]) => ({ platform, role: group[0].role, listings: [...group].sort((a, b) => a.price - b.price) }))
+    .sort((a, b) => Number(a.role === "supplier") - Number(b.role === "supplier") || a.listings[0].price - b.listings[0].price);
+}
+
+/** One row per store, lowest price first; a store with several sellers becomes one expandable row. */
 export function OfferTable({ listings }: { listings: Listing[] }) {
   const retailInStock = listings.filter((l) => l.role !== "supplier" && l.inStock);
   const lowestId = retailInStock.length ? retailInStock.reduce((a, b) => (b.price < a.price ? b : a)).id : null;
-  const ordered = [...listings].sort((a, b) => Number(a.role === "supplier") - Number(b.role === "supplier") || a.price - b.price);
+  const groups = groupByPlatform(listings);
 
   return (
     <section className="card p-3 sm:p-4" aria-labelledby="offers-heading" data-testid="offer-table">
@@ -16,44 +40,112 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
         <h2 id="offers-heading" className="t-h2">
           Compare stores
         </h2>
-        <p className="mt-1 text-sm text-slate-600">Prices for this product, lowest first. AliExpress is shown as the supplier price for sellers.</p>
+        <p className="mt-1 text-sm text-slate-600">Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers.</p>
       </div>
       <ul className="space-y-2.5">
-        {ordered.map((l) => {
-          const isLowest = l.id === lowestId;
-          return (
-            <li
-              key={l.id}
-              className={clsx("rounded-[1.25rem] p-4 transition duration-200 ease-soft sm:p-5", isLowest ? "bg-emerald-50 ring-2 ring-emerald-500/70" : "bg-slate-50 hover:bg-slate-100")}
-              data-testid="offer-row"
-              data-platform={l.platform}
-            >
-              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        {groups.map((g) =>
+          g.listings.length > 1 ? (
+            <SellerGroupRow key={g.platform} group={g} isLowest={g.listings[0].id === lowestId} />
+          ) : (
+            <OfferRow key={g.listings[0].id} l={g.listings[0]} isLowest={g.listings[0].id === lowestId} />
+          )
+        )}
+      </ul>
+    </section>
+  );
+}
+
+function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
+  return (
+    <li
+      className={clsx("rounded-[1.25rem] p-4 transition duration-200 ease-soft sm:p-5", isLowest ? "bg-emerald-50 ring-2 ring-emerald-500/70" : "bg-slate-50 hover:bg-slate-100")}
+      data-testid="offer-row"
+      data-platform={l.platform}
+    >
+      <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-3">
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <PlatformDot platform={l.platform} className="!h-2.5 !w-2.5" />
+            <span className="font-display font-bold text-ink">{PLATFORM_LABEL[l.platform]}</span>
+            {isLowest && <span className="badge-best !px-2 !py-0.5 !text-[10px] uppercase tracking-wide">Lowest</span>}
+            {l.role === "supplier" && <span className="badge-neutral">Supplier</span>}
+          </div>
+          {l.sellerName && (
+            <p className="mt-0.5 text-xs text-slate-500">
+              Sold by {l.sellerName}
+              {l.sellerLocation ? ` · ${l.sellerLocation}` : ""}
+            </p>
+          )}
+          <p className={clsx("mt-2 font-display text-2xl font-extrabold tabular-nums tracking-tight", isLowest ? "text-emerald-700" : "text-ink")}>{formatPrice(l.price)}</p>
+          <p className="mt-0.5 text-xs text-slate-600">
+            {l.role === "supplier" && l.priceUsd ? <span>{formatUsd(l.priceUsd)} at the saved exchange rate · </span> : null}
+            {l.discountPct > 0 ? (
+              <>
+                <span className="line-through">{formatPrice(l.originalPrice)}</span> <span className="font-semibold text-emerald-700">{l.discountPct}% off</span>
+              </>
+            ) : (
+              l.role !== "supplier" && "No discount listed"
+            )}
+          </p>
+        </div>
+        <a href={l.url} target="_blank" rel="noopener noreferrer" className={clsx(isLowest ? "btn-primary" : "btn-secondary", "btn-sm !py-2.5")}>
+          {l.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[l.platform]} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+          <span className="sr-only">(opens in a new tab)</span>
+        </a>
+      </div>
+      <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+        <Rating value={l.rating} count={l.reviewCount} />
+        {l.inStock ? (
+          <span className="badge-success">In stock</span>
+        ) : (
+          <span className="badge-neutral inline-flex items-center gap-1">
+            <PackageX className="h-3 w-3" aria-hidden /> Out of stock
+          </span>
+        )}
+        <DataSourceBadge source={l.dataSource} />
+        <span className="text-xs text-slate-500">Updated {timeAgo(l.lastScrapedAt)}</span>
+      </div>
+    </li>
+  );
+}
+
+/** A store with several sellers: one summary row ("4 sellers on Daraz, from Rs X") that expands into
+ * one row per seller. */
+function SellerGroupRow({ group, isLowest }: { group: SellerGroup; isLowest: boolean }) {
+  const [open, setOpen] = useState(false);
+  const cheapest = group.listings[0];
+
+  return (
+    <li className={clsx("rounded-[1.25rem] transition duration-200 ease-soft", isLowest ? "bg-emerald-50 ring-2 ring-emerald-500/70" : "bg-slate-50")} data-testid="offer-group" data-platform={group.platform}>
+      <button type="button" onClick={() => setOpen((o) => !o)} className="flex w-full items-center justify-between gap-3 p-4 text-left sm:p-5" aria-expanded={open}>
+        <div className="min-w-0">
+          <div className="flex flex-wrap items-center gap-2">
+            <PlatformDot platform={group.platform} className="!h-2.5 !w-2.5" />
+            <span className="font-display font-bold text-ink">{PLATFORM_LABEL[group.platform]}</span>
+            {isLowest && <span className="badge-best !px-2 !py-0.5 !text-[10px] uppercase tracking-wide">Lowest</span>}
+            {group.role === "supplier" && <span className="badge-neutral">Supplier</span>}
+            <span className="text-xs text-slate-500">{group.listings.length} sellers</span>
+          </div>
+          <p className={clsx("mt-2 font-display text-2xl font-extrabold tabular-nums tracking-tight", isLowest ? "text-emerald-700" : "text-ink")}>from {formatPrice(cheapest.price)}</p>
+        </div>
+        <ChevronDown className={clsx("h-5 w-5 shrink-0 text-slate-400 transition-transform", open && "rotate-180")} aria-hidden />
+      </button>
+      {open && (
+        <ul className="space-y-2 border-t border-slate-200/70 p-3 pt-3 sm:p-4" data-testid="seller-list">
+          {group.listings.map((l) => (
+            <li key={l.id} className="rounded-2xl bg-surface p-3.5" data-testid="seller-row">
+              <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div className="min-w-0">
-                  <div className="flex flex-wrap items-center gap-2">
-                    <PlatformDot platform={l.platform} className="!h-2.5 !w-2.5" />
-                    <span className="font-display font-bold text-ink">{PLATFORM_LABEL[l.platform]}</span>
-                    {isLowest && <span className="badge-best !px-2 !py-0.5 !text-[10px] uppercase tracking-wide">Lowest</span>}
-                    {l.role === "supplier" && <span className="badge-neutral">Supplier</span>}
-                  </div>
-                  <p className={clsx("mt-2 font-display text-2xl font-extrabold tabular-nums tracking-tight", isLowest ? "text-emerald-700" : "text-ink")}>{formatPrice(l.price)}</p>
-                  <p className="mt-0.5 text-xs text-slate-600">
-                    {l.role === "supplier" && l.priceUsd ? <span>{formatUsd(l.priceUsd)} at the saved exchange rate · </span> : null}
-                    {l.discountPct > 0 ? (
-                      <>
-                        <span className="line-through">{formatPrice(l.originalPrice)}</span> <span className="font-semibold text-emerald-700">{l.discountPct}% off</span>
-                      </>
-                    ) : (
-                      l.role !== "supplier" && "No discount listed"
-                    )}
-                  </p>
+                  <p className="text-sm font-semibold text-ink">{l.sellerName || PLATFORM_LABEL[l.platform]}</p>
+                  {l.sellerLocation && <p className="text-xs text-slate-500">{l.sellerLocation}</p>}
+                  <p className="mt-1 font-display text-lg font-bold tabular-nums text-ink">{formatPrice(l.price)}</p>
                 </div>
-                <a href={l.url} target="_blank" rel="noopener noreferrer" className={clsx(isLowest ? "btn-primary" : "btn-secondary", "btn-sm !py-2.5")}>
-                  {l.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[l.platform]} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
+                <a href={l.url} target="_blank" rel="noopener noreferrer" className="btn-secondary btn-sm !py-2">
+                  Go to store <ExternalLink className="h-3.5 w-3.5" aria-hidden />
                   <span className="sr-only">(opens in a new tab)</span>
                 </a>
               </div>
-              <div className="mt-3 flex flex-wrap items-center gap-x-3 gap-y-2">
+              <div className="mt-2 flex flex-wrap items-center gap-x-3 gap-y-1.5">
                 <Rating value={l.rating} count={l.reviewCount} />
                 {l.inStock ? (
                   <span className="badge-success">In stock</span>
@@ -62,13 +154,11 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
                     <PackageX className="h-3 w-3" aria-hidden /> Out of stock
                   </span>
                 )}
-                <DataSourceBadge source={l.dataSource} />
-                <span className="text-xs text-slate-500">Updated {timeAgo(l.lastScrapedAt)}</span>
               </div>
             </li>
-          );
-        })}
-      </ul>
-    </section>
+          ))}
+        </ul>
+      )}
+    </li>
   );
 }

@@ -52,6 +52,13 @@ const config = {
     maxDelayMs: Number(process.env.SCRAPER_MAX_DELAY_MS ?? 3000),
     circuitCooldownMs: Number(process.env.SCRAPER_COOLDOWN_MS) || 10 * 60 * 1000,
   },
+  // eBay Browse API (OAuth2 client credentials; not scraping). Free keys: developer.ebay.com. On-demand
+  // only (like AliExpress), so a missing key just disables the "Check on eBay" button, nothing else.
+  ebay: {
+    clientId: process.env.EBAY_CLIENT_ID || '',
+    clientSecret: process.env.EBAY_CLIENT_SECRET || '',
+    marketplaceId: process.env.EBAY_MARKETPLACE_ID || 'EBAY_US',
+  },
   corsOrigin: (process.env.CORS_ORIGIN || 'http://localhost:3000').split(',').map((s) => s.trim()),
   rateLimit: {
     windowMs: 15 * 60 * 1000,

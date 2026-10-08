@@ -39,6 +39,13 @@ describe('Daraz parser', () => {
     expect(listings[0].url).toBe('https://www.daraz.pk/products/a55-5g-8gb-256gb-66-mah-pta-1-i550702491.html');
   });
 
+  test('captures seller identity (Daraz is a marketplace of many sellers - docs/MULTI_SELLER_PLAN.md)', () => {
+    const listings = daraz.parse(JSON.parse(fixture('daraz-galaxy-a55.json')));
+    expect(listings[0]).toMatchObject({ sellerId: '6005273856532', sellerName: 'Smart Phone Line', sellerLocation: 'Punjab' });
+    const sellers = new Set(listings.map((l) => l.sellerId));
+    expect(sellers.size).toBeGreaterThan(30); // this fixture has 36 distinct sellers across 40 listings
+  });
+
   test('parses ratings and review counts when present', () => {
     const listings = daraz.parse(JSON.parse(fixture('daraz-airpods-pro.json')));
     expect(listings.length).toBeGreaterThan(30);

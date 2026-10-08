@@ -7,15 +7,15 @@ import useSWR from "swr";
 import { Crown, ExternalLink, Plus, Scale, Star, X } from "lucide-react";
 import clsx from "clsx";
 import { ApiError, fetcher } from "@/lib/api";
-import { PLATFORM_LABEL, formatPrice, timeAgo } from "@/lib/format";
-import type { CompareResponse, Listing, Platform, ProductCard as ProductCardData } from "@/lib/types";
+import { PLATFORM_LABEL, PLATFORM_ROLE, formatPrice, timeAgo } from "@/lib/format";
+import type { CompareResponse, Listing, ProductCard as ProductCardData } from "@/lib/types";
+import { PLATFORMS } from "@/lib/search";
 import { Button, EmptyState, ErrorState, PageHeader, Skeleton } from "@/components/ui/primitives";
 import { DataSourceBadge, PlatformDot, PriceChange, Rating } from "@/components/product/badges";
 import { ProductImage } from "@/components/product/ProductImage";
 import { MAX_COMPARE, useCompare } from "./CompareProvider";
 
 const ID_RE = /^[a-f0-9]{24}$/i;
-const PLATFORMS: Platform[] = ["daraz", "priceoye", "aliexpress"];
 
 /** Marks the best value(s) in a row so the table highlights them. */
 function bestIndexes(values: (number | null)[], mode: "min" | "max"): Set<number> {
@@ -198,10 +198,11 @@ function ProductsTable({ data, onRemove }: { data: CompareResponse; onRemove: (i
               return own.length ? Math.min(...own.map((l) => l.price)) : null;
             });
             if (prices.every((x) => x === null)) return null;
-            const best = platform === "aliexpress" ? new Set<number>() : bestIndexes(prices, "min");
+            const isSupplier = PLATFORM_ROLE[platform] === "supplier";
+            const best = isSupplier ? new Set<number>() : bestIndexes(prices, "min");
             return (
               <tr key={platform}>
-                <RowLabel sub={platform === "aliexpress" ? "supplier, saved" : undefined}>
+                <RowLabel sub={platform === "aliexpress" ? "supplier, saved" : isSupplier ? "supplier" : undefined}>
                   <span className="inline-flex items-center gap-2">
                     <PlatformDot platform={platform} />
                     {PLATFORM_LABEL[platform]}

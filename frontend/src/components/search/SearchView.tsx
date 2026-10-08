@@ -10,7 +10,7 @@ import { api, errorMessage, fetcher } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { problemsSentence, storeProblems } from "@/lib/stores";
 import { useCategories, useTrendingSearches } from "@/lib/hooks";
-import { SHOW_MAX, SHOW_STEP, SORTS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
+import { SHOW_MAX, SHOW_STEP, SORTS, SUPPLIER_PLATFORMS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
 import type { SearchResponse } from "@/lib/types";
 import { ErrorState, EmptyState } from "@/components/ui/primitives";
 import { Drawer } from "@/components/ui/Drawer";
@@ -19,6 +19,7 @@ import { ProductCard, ProductGridSkeleton } from "@/components/product/ProductCa
 import { Filters } from "./Filters";
 import { SourceBanner } from "./SourceBanner";
 import { AliExpressCheck } from "./AliExpressCheck";
+import { EbayCheck } from "./EbayCheck";
 
 const PAGE_SIZE = 12;
 
@@ -63,6 +64,7 @@ export function SearchView() {
   );
   const reset = useCallback(() => update({ category: "", platform: [], minPrice: undefined, maxPrice: undefined, minRating: undefined }), [update]);
   const filterCount = activeFilterCount(state);
+  const checkedSuppliers = SUPPLIER_PLATFORMS.filter((p) => Boolean(data?.platformStatus[p]));
 
   const heading = state.q ? (
     <>
@@ -126,13 +128,18 @@ export function SearchView() {
       <div className="grid gap-8 lg:grid-cols-[16.5rem_minmax(0,1fr)]">
         <aside className="hidden lg:block" aria-label="Filters">
           <div className="card sticky top-24 p-5">
-            <Filters state={state} showAliExpress={Boolean(data?.platformStatus.aliexpress)} categories={categories} onChange={(p) => update(p)} onReset={reset} />
+            <Filters state={state} checkedSuppliers={checkedSuppliers} categories={categories} onChange={(p) => update(p)} onReset={reset} />
           </div>
         </aside>
 
         <section aria-label="Search results" className="min-w-0">
           {data && <SourceBanner data={data} onRefresh={refresh} refreshing={refreshing} />}
-          {data && !data.demoMode && state.q && !tooShort && <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />}
+          {data && !data.demoMode && state.q && !tooShort && (
+            <>
+              <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />
+              <EbayCheck query={state.q} checkedCount={data.platformStatus.ebay?.loaded} onChecked={() => mutate()} />
+            </>
+          )}
 
           {error && !data ? (
             <ErrorState title="We could not load results" description="The search service did not respond. Check your connection and try again." onRetry={() => mutate()} />
@@ -179,7 +186,7 @@ export function SearchView() {
       </div>
 
       <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
-        <Filters state={state} showAliExpress={Boolean(data?.platformStatus.aliexpress)} categories={categories} onChange={(p) => update(p)} onReset={reset} />
+        <Filters state={state} checkedSuppliers={checkedSuppliers} categories={categories} onChange={(p) => update(p)} onReset={reset} />
         <button type="button" className="btn-primary mt-6 w-full" onClick={() => setFiltersOpen(false)}>
           Show {data ? data.total : ""} results
         </button>

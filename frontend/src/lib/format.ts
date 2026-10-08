@@ -4,12 +4,22 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   daraz: "Daraz",
   priceoye: "PriceOye",
   aliexpress: "AliExpress",
+  ebay: "eBay",
 };
 
 export const PLATFORM_COLOR: Record<Platform, string> = {
   daraz: "#F57224",
   priceoye: "#1E88E5",
   aliexpress: "#E5322D",
+  ebay: "#0064D2",
+};
+
+/** retail: local stores, searched live. supplier: international reference price (checked on demand). */
+export const PLATFORM_ROLE: Record<Platform, "retail" | "supplier"> = {
+  daraz: "retail",
+  priceoye: "retail",
+  aliexpress: "supplier",
+  ebay: "supplier",
 };
 
 /** 129999 -> "Rs 129,999" */

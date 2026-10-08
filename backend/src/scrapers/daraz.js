@@ -35,6 +35,11 @@ function parse(json) {
         inStock: it.inStock !== false,
         brand: it.brandName && it.brandName !== 'No Brand' ? it.brandName : null,
         sponsored: Boolean(it.isSponsored),
+        // Daraz is a marketplace: many sellers can list the same item at different prices
+        // (docs/MULTI_SELLER_PLAN.md). sellerId distinguishes each seller's own listing.
+        sellerId: it.sellerId ? String(it.sellerId) : null,
+        sellerName: it.sellerName ? String(it.sellerName).trim() : null,
+        sellerLocation: it.location || null,
       };
     })
     .filter(Boolean);

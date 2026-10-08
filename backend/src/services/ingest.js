@@ -4,7 +4,10 @@
 // Grouping rules:
 //  - The same product on DIFFERENT stores is grouped into one product (title normalization + fuzzy match),
 //    so it can be compared.
-//  - Two listings on the SAME store are never merged: a store that shows 40 results gives 40 results.
+//  - Two listings on the SAME store are never merged into one listing: a store that shows 40 results
+//    gives 40 listing rows. On most stores, only one of those rows can attach to a given product (one
+//    listing per store per product). On a MULTI_SELLER_PLATFORMS store (Daraz), several different
+//    sellers' rows can all attach to the same product as separate offers - see docs/MULTI_SELLER_PLAN.md.
 //  - A listing that is already stored keeps its product (its identity does not depend on re-matching).
 const mongoose = require('mongoose');
 const { Product, Listing, PriceHistory } = require('../models');
@@ -47,14 +50,23 @@ const listingFields = (l, now) => ({
   image: l.image || undefined,
   price: l.price,
   originalPrice: l.originalPrice || undefined,
+  priceUsd: l.priceUsd || undefined,
   currency: l.currency || 'PKR',
   rating: l.rating || undefined,
   reviewCount: l.reviewCount || 0,
   inStock: l.inStock !== false,
+  sellerId: l.sellerId || undefined,
+  sellerName: l.sellerName || undefined,
+  sellerLocation: l.sellerLocation || undefined,
   seeded: false,
   dataSource: 'live',
   lastScrapedAt: now,
 });
+
+// Platforms where several sellers can list the same product at different prices (docs/MULTI_SELLER_PLAN.md).
+// A different seller is allowed to attach as another offer; only the SAME seller's own listing (a
+// re-scrape) still counts as "already have this store". Everywhere else, one listing per store stands.
+const MULTI_SELLER_PLATFORMS = new Set(['daraz']);
 
 // listings: normalized scraper output. Returns
 //   { productIds, productIdByListing, listingCount }
@@ -105,17 +117,24 @@ async function ingestListings(listings) {
   };
   [...exactProducts, ...brandGroups.flat()].forEach(register);
 
-  // the listings those candidates already have (to enforce "one listing per store per product")
+  // the listings those candidates already have (to enforce "one listing per store per product", except
+  // where several sellers can legitimately share a store - MULTI_SELLER_PLATFORMS)
   const listingsByProduct = new Map();
   if (products.size) {
-    const have = await Listing.find({ productId: { $in: [...products.keys()] } }).select('productId platform seeded').lean();
+    const have = await Listing.find({ productId: { $in: [...products.keys()] } }).select('productId platform externalId seeded').lean();
     for (const h of have) {
       const k = String(h.productId);
       if (!listingsByProduct.has(k)) listingsByProduct.set(k, []);
-      listingsByProduct.get(k).push({ platform: h.platform, seeded: Boolean(h.seeded), _id: h._id });
+      listingsByProduct.get(k).push({ platform: h.platform, externalId: h.externalId, seeded: Boolean(h.seeded), _id: h._id });
     }
   }
-  const sameStoreTaken = (pid, platform) => (listingsByProduct.get(pid) || []).some((x) => x.platform === platform && !x.seeded);
+  const sameStoreTaken = (pid, platform, externalId) => {
+    const have = listingsByProduct.get(pid) || [];
+    if (MULTI_SELLER_PLATFORMS.has(platform)) {
+      return have.some((x) => x.platform === platform && !x.seeded && x.externalId === externalId);
+    }
+    return have.some((x) => x.platform === platform && !x.seeded);
+  };
 
   // 3. decide the product of every new listing, in memory
   const newProducts = [];
@@ -124,9 +143,9 @@ async function ingestListings(listings) {
     const a = analyzed.get(keyOf(l));
     let pid = null;
     const exactId = byKey.get(a.key);
-    if (exactId && !sameStoreTaken(exactId, l.platform)) pid = exactId;
+    if (exactId && !sameStoreTaken(exactId, l.platform, l.externalId)) pid = exactId;
     if (!pid) {
-      const pool = (byBrand.get((a.brand || '_').toLowerCase()) || []).filter((id) => !sameStoreTaken(id, l.platform));
+      const pool = (byBrand.get((a.brand || '_').toLowerCase()) || []).filter((id) => !sameStoreTaken(id, l.platform, l.externalId));
       const best = findBestMatch(a, pool.map((id) => products.get(id)));
       if (best) pid = best.candidate._id;
     }
@@ -147,7 +166,7 @@ async function ingestListings(listings) {
       pid = id;
     }
     if (!listingsByProduct.has(pid)) listingsByProduct.set(pid, []);
-    listingsByProduct.get(pid).push({ platform: l.platform, seeded: false });
+    listingsByProduct.get(pid).push({ platform: l.platform, externalId: l.externalId, seeded: false });
     resolved.set(keyOf(l), pid);
   }
 
