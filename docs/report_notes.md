@@ -82,3 +82,5 @@ Full results: `docs/search_sweep.md` (regenerate with `node scripts/search-sweep
 ### Other
 - Prices are shown in PKR. AliExpress seed prices were converted from USD at a fixed rate, so they are approximate.
 - Email alerts are optional and need SMTP settings. In-app notifications always work.
+- Store links on offer rows go to the real listing (`listings.url`), with a "last checked" time from `lastScrapedAt`. They are plain links, not affiliate/referral links: no affiliate program exists with Daraz, PriceOye or AliExpress for this project, so there is nothing to attach tracking parameters to without faking it.
+- Out-of-stock listings never lead the home page's Trending/Price drops rails (filtered server-side); they can still appear on a product's own page and in search results, each labelled "out of stock" with when it was last checked.
