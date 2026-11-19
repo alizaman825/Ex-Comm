@@ -3,10 +3,11 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BellRing, ChevronDown, Heart, LayoutGrid, LogOut, Menu, Scale, Settings, X } from "lucide-react";
+import { Bell, BellRing, ChevronDown, Heart, LayoutGrid, LogOut, Menu, Scale, Search, Settings, X } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth";
 import { useUnreadCount } from "@/lib/hooks";
+import { useUiTheme } from "@/lib/useUiTheme";
 import { Logo } from "./Logo";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
@@ -118,6 +119,12 @@ function UserMenu() {
 }
 
 export function Navbar() {
+  const uiTheme = useUiTheme();
+  if (uiTheme === "cinematic") return <CinematicNavbar />;
+  return <ClassicNavbar />;
+}
+
+function ClassicNavbar() {
   const { user, loading, logout } = useAuth();
   const unread = useUnreadCount();
   const router = useRouter();
@@ -236,6 +243,164 @@ export function Navbar() {
         </div>
       )}
       </div>
+    </header>
+  );
+}
+
+/**
+ * Cinematic-only navbar: ported from the approved concept board (Main-Desktop.dc.html /
+ * Main.dc.html — see docs/report_notes.md for the artifact link) rather than a recolor of the
+ * classic bar. Real values carried over from the board source: the pill is a true 9999px radius
+ * (not a fixed-px rounded rect), 22px blur, 1px rgba(255,255,255,.26-.28) border, the
+ * inset-highlight + drop-shadow pair, and — the structural change — the primary nav links sit
+ * between the logo and the search/auth cluster (the board's actual flex order: logo | links |
+ * search+auth), not clustered against the right edge next to sign-in. The pill also gets real
+ * clearance from the page content below it (nav-shell-cine in globals.css), instead of touching
+ * the hero immediately. On mobile the pill holds only the logo and icon triggers (as the board's
+ * mobile nav does); opening the menu reveals a second, separate floating glass panel below it with
+ * a real gap — not a dropdown welded to the pill's bottom edge.
+ */
+function CinematicNavbar() {
+  const { user, loading, logout } = useAuth();
+  const unread = useUnreadCount();
+  const router = useRouter();
+  const pathname = usePathname();
+  const [mobileOpenAt, setMobileOpenAt] = useState<string | null>(null);
+  const mobileOpen = mobileOpenAt === pathname;
+  const closeMobile = () => setMobileOpenAt(null);
+
+  return (
+    <header className="nav-shell-cine sticky top-2 z-40 px-3 sm:px-0">
+      <div className="nav-pill-cine mx-auto flex max-w-[85rem] items-center gap-3 md:gap-6">
+        <Logo className="nav-wordmark shrink-0" />
+
+        <nav className="hidden items-center gap-7 md:flex" aria-label="Main">
+          {PUBLIC_LINKS.map((l) => (
+            <NavLink key={l.href} {...l} />
+          ))}
+        </nav>
+
+        <div className="ml-auto flex items-center gap-2 md:ml-0 md:gap-3">
+          <div className="nav-search-cine hidden w-[160px] md:block lg:w-[220px]">
+            <Suspense fallback={<div className="h-9 rounded-full bg-white/10" />}>
+              <SearchBar />
+            </Suspense>
+          </div>
+
+          {user && (
+            <>
+              <Link href="/wishlist" className="hidden h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20 md:flex" aria-label="Wishlist" title="Wishlist">
+                <Heart className="h-4 w-4" aria-hidden />
+              </Link>
+              <Link
+                href="/notifications"
+                className="relative hidden h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20 md:flex"
+                aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+                title="Notifications"
+              >
+                <Bell className="h-4 w-4" aria-hidden />
+                {unread > 0 && (
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white" data-testid="unread-badge">
+                    {unread > 9 ? "9+" : unread}
+                  </span>
+                )}
+              </Link>
+            </>
+          )}
+
+          <div className="hidden items-center gap-1 md:flex">
+            <ThemeToggle className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20" />
+            <UiThemeToggle className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20" />
+          </div>
+
+          <div className="hidden items-center gap-2 md:flex">
+            {loading ? (
+              <div className="skeleton h-9 w-24 rounded-full" />
+            ) : user ? (
+              <UserMenu />
+            ) : (
+              <>
+                <Link href={`/login${pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `?next=${encodeURIComponent(pathname)}` : ""}`} className="btn-ghost">
+                  Log in
+                </Link>
+                <Link href="/register" className="btn-primary">
+                  Sign up
+                </Link>
+              </>
+            )}
+          </div>
+
+          <button
+            type="button"
+            aria-label="Search"
+            onClick={() => setMobileOpenAt(mobileOpen ? null : pathname)}
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.14] text-white/85 md:hidden"
+          >
+            <Search className="h-4 w-4" aria-hidden />
+          </button>
+          <button
+            type="button"
+            className="flex h-9 w-9 items-center justify-center rounded-full bg-white text-ink md:hidden"
+            aria-label={mobileOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileOpen}
+            onClick={() => setMobileOpenAt(mobileOpen ? null : pathname)}
+          >
+            {mobileOpen ? <X className="h-4 w-4" /> : <Menu className="h-4 w-4" />}
+          </button>
+        </div>
+      </div>
+
+      {/* A second, separate floating glass panel — not welded to the pill above it — with its own
+          gap, border and shadow, shown only while the mobile menu is open. */}
+      {mobileOpen && (
+        <div className="mobile-panel-cine animate-fade-up mx-auto mt-3 max-w-[78rem] md:hidden">
+          <div className="space-y-4 p-4">
+            <Suspense fallback={null}>
+              <SearchBar />
+            </Suspense>
+            <nav className="flex flex-col gap-1" aria-label="Mobile">
+              {PUBLIC_LINKS.map((l) => (
+                <NavLink key={l.href} {...l} onClick={closeMobile} />
+              ))}
+              {user && (
+                <>
+                  <NavLink href="/wishlist" label="Wishlist" icon={Heart} onClick={closeMobile} />
+                  <NavLink href="/alerts" label="Price alerts" icon={BellRing} onClick={closeMobile} />
+                  <NavLink href="/notifications" label={unread ? `Notifications (${unread})` : "Notifications"} icon={Bell} onClick={closeMobile} />
+                  <NavLink href="/profile" label="Profile & settings" icon={Settings} onClick={closeMobile} />
+                </>
+              )}
+            </nav>
+            <div className="flex items-center gap-2">
+              <ThemeToggle className="btn-ghost p-2.5" />
+              <UiThemeToggle className="btn-ghost p-2.5" />
+            </div>
+            {!loading &&
+              (user ? (
+                <button
+                  type="button"
+                  className="btn-secondary w-full"
+                  onClick={async () => {
+                    closeMobile();
+                    await logout();
+                    router.push("/");
+                  }}
+                >
+                  <LogOut className="h-4 w-4" aria-hidden /> Log out ({user.name.split(" ")[0]})
+                </button>
+              ) : (
+                <div className="grid grid-cols-2 gap-3">
+                  <Link href="/login" className="btn-secondary" onClick={closeMobile}>
+                    Log in
+                  </Link>
+                  <Link href="/register" className="btn-primary" onClick={closeMobile}>
+                    Sign up
+                  </Link>
+                </div>
+              ))}
+          </div>
+        </div>
+      )}
     </header>
   );
 }

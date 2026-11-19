@@ -21,3 +21,4 @@ export const DEFAULT_UI_THEME: UiTheme = process.env.NEXT_PUBLIC_UI_THEME === "c
 export function isUiTheme(value: unknown): value is UiTheme {
   return value === "classic" || value === "cinematic";
 }
+
