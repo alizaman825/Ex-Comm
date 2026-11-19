@@ -47,6 +47,9 @@ function normalizeText(title) {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, ' and ')
+    // "8GB-256GB" -> "8gb 256gb" (RAM-storage shorthand with an explicit unit before the hyphen; must run
+    // before the general hyphen-join below, which would otherwise glue it into one unmatchable token)
+    .replace(/\b(\d{1,2})gb-(\d{2,4})(gb|tb)?\b/g, (_m, r, s, u) => `${r}gb ${s}${u || 'gb'}`)
     // 'wh-1000xm5' -> 'wh1000xm5', 'usb-c' / 'usb c' / 'type c' -> 'usbc' / 'typec'
     .replace(/([a-z0-9])-(?=[a-z0-9])/g, '$1')
     .replace(/\b(usb|type)\s+c\b/g, '$1c')
@@ -165,17 +168,36 @@ function isSameProduct(titleA, titleB) {
 }
 
 // Pick the best candidate (with .title) for an analyzed title, or null.
+//
+// A store sometimes sells a phone in several storage/RAM configs but doesn't say which one a given
+// listing title is ("Apple iPhone 16" with no "128GB"/"256GB"). similarity() lets that listing match a
+// stored product that does name a size (needed for the normal case: cross-store titles with one side
+// more specific than the other). But if the listing's own title names no size and more than one
+// candidate product - of a *different* size from each other - would equally match it, which one it
+// really is is genuinely unknown; picking the first by iteration order would silently show that
+// listing's price as if it were a specific variant it may not be. Treat that as no confident match
+// instead (the UI's manual "pick the right product" fallback covers it).
 function findBestMatch(analyzed, candidates) {
+  const queryHasStorage = analyzed.tokens.some(isStorage);
   let best = null;
   let bestScore = 0;
+  const scored = [];
   for (const c of candidates) {
-    const score = similarity(analyzed, c.analyzed || analyzeTitle(c.title));
+    const cAnalyzed = c.analyzed || analyzeTitle(c.title);
+    const score = similarity(analyzed, cAnalyzed);
+    scored.push({ cAnalyzed, score });
     if (score > bestScore) {
       best = c;
       bestScore = score;
     }
   }
-  return bestScore >= MATCH_THRESHOLD ? { candidate: best, score: bestScore } : null;
+  if (bestScore < MATCH_THRESHOLD) return null;
+  if (!queryHasStorage) {
+    const bestStorage = setOf((best.analyzed || analyzeTitle(best.title)).tokens, isStorage);
+    const conflicting = scored.some(({ cAnalyzed, score }) => score >= MATCH_THRESHOLD && !sameSet(setOf(cAnalyzed.tokens, isStorage), bestStorage));
+    if (conflicting) return null;
+  }
+  return { candidate: best, score: bestScore };
 }
 
 // Spaces, hyphens and dots removed: "Sony WH-1000XM5" -> "sonywh1000xm5". Used to find stored products
