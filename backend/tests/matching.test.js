@@ -77,6 +77,14 @@ describe('real store titles with spec noise', () => {
     expect(isSameProduct('Apple Watch Series 10 46mm', 'Apple Watch Series 11 46mm')).toBe(false);
     expect(isSameProduct('Apple AirPods Pro 2', 'Apple AirPods Pro 3')).toBe(false);
   });
+
+  test('a laptop CPU generation ordinal or revision code named on only one side does not block the match', () => {
+    // real PriceOye style: "<model> G5 13th Gen Core i5 1335u" vs a plainer title for the same SKU
+    expect(isSameProduct('Lenovo ThinkPad E14 G5 13th Gen Core i5 1335u 16GB 512GB', 'Lenovo ThinkPad E14 Core i5 1335U 16GB 512GB')).toBe(true);
+    expect(isSameProduct('HP Victus 15 12th Gen Core i5 12450H 16GB 512GB', 'HP Victus 15 Core i5 12450H 16GB 512GB')).toBe(true);
+    // the CPU model itself (the real distinguishing spec) must still agree
+    expect(isSameProduct('HP Victus 15 12th Gen Core i5 12450H 16GB 512GB', 'HP Victus 15 Core i7 13700H 16GB 512GB')).toBe(false);
+  });
 });
 
 describe('findBestMatch: storage-less listings and variant ambiguity', () => {

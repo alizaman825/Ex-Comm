@@ -6,8 +6,16 @@ a an and the with for of by in on to new latest original genuine authentic offic
 pta approved non nonpta warranty year years month months local stock sealed box packed pack
 free delivery shipping fast cod sale deal offer discount best quality premium hot top
 global version international edition smartphone smart phone mobile cellphone cell dual sim
-ram rom storage memory gb_ram internal colour color variant model series device
+ram rom storage memory gb_ram internal colour color variant model series device gen generation
 `.trim().split(/\s+/));
+
+// CPU/laptop generation markers ("13th Gen", "ThinkPad E14 G5"): one store's title often states a
+// generation, revision code or processor family that the same listing on another store just leaves out.
+// Unlike a storage size or "Pro"/"Max", the generation never changes which physical product it is for a
+// given specific CPU/model number (already present as its own token), so treating it as a hard-reject
+// token like VARIANT_WORDS does produced false negatives (same laptop, one title says "13th Gen"/"G5",
+// the other doesn't). Dropped like a colour instead of compared.
+const isGenerationNoise = (t) => /^[0-9]{1,2}(st|nd|rd|th)$/.test(t) || /^g[0-9]{1,2}$/.test(t);
 
 const COLOURS = new Set(`
 black white blue red green yellow pink purple violet grey gray silver gold golden rose orange
@@ -88,7 +96,7 @@ function analyzeTitle(title) {
   const raw = normalizeText(title).split(' ').filter(Boolean);
   const tokens = [];
   for (const t of raw) {
-    if (STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
     if (t.length === 1 && !/\d/.test(t)) continue;
     if (!tokens.includes(t)) tokens.push(t);
   }
@@ -102,7 +110,7 @@ function analyzeTitle(title) {
 function significantTokens(text) {
   const out = [];
   for (const t of normalizeText(text).split(' ')) {
-    if (!t || STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (!t || STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
     if (t.length === 1 && !/\d/.test(t)) continue;
     if (!out.includes(t)) out.push(t);
   }
