@@ -44,7 +44,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
       </div>
 
       <div className="flex flex-1 flex-col px-5 pb-5 pt-2">
-        <p className="truncate text-[11px] font-bold uppercase tracking-wider text-slate-500">{product.brand ?? product.category ?? "Product"}</p>
+        <p className="spec-label truncate text-[11px] font-bold uppercase tracking-wider text-slate-500">{product.brand ?? product.category ?? "Product"}</p>
         <h3 className="mt-1 line-clamp-2 min-h-[2.5rem] font-display text-[15px] font-bold leading-5 text-ink">
           <Link href={`/products/${product.id}`} className="outline-none after:absolute after:inset-0 after:z-0 focus-visible:after:rounded-card focus-visible:after:ring-2 focus-visible:after:ring-brand-500">
             {product.title}

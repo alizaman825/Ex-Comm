@@ -138,7 +138,12 @@ export function ProductView({ id }: { id: string }) {
 
         <div>
           <p className="spec-label text-xs font-bold uppercase tracking-wider text-slate-500">{product.brand ?? categoryName}</p>
-          <h1 className="t-h1 mt-1.5">{product.title}</h1>
+          <h1 className="heading-numeral t-h1 mt-1.5">
+            <span className="t-numeral pointer-events-none select-none" aria-hidden="true">
+              01
+            </span>
+            {product.title}
+          </h1>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Rating value={product.rating} count={product.reviewCount} />
             <span className="text-slate-300" aria-hidden>

@@ -37,7 +37,10 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
   return (
     <section className="card p-3 sm:p-4" aria-labelledby="offers-heading" data-testid="offer-table">
       <div className="px-3 pb-3 pt-2 sm:px-4">
-        <h2 id="offers-heading" className="t-h2">
+        <h2 id="offers-heading" className="heading-numeral t-h2">
+          <span className="t-numeral pointer-events-none select-none" aria-hidden="true">
+            02
+          </span>
           Compare stores
         </h2>
         <p className="mt-1 text-sm text-slate-600">

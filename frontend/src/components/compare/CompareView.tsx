@@ -38,7 +38,7 @@ function RowLabel({ children, sub }: { children: React.ReactNode; sub?: string }
   return (
     <th scope="row" className="sticky left-0 z-10 w-36 min-w-[9rem] bg-surface px-4 py-3.5 text-left align-middle text-sm font-medium text-slate-600 shadow-[1px_0_0_0_#e2e8f0]">
       {children}
-      {sub && <span className="block text-xs font-normal text-slate-400">{sub}</span>}
+      {sub && <span className="spec-label block text-xs font-normal text-slate-400">{sub}</span>}
     </th>
   );
 }
@@ -415,7 +415,7 @@ export function CompareView() {
           )}
           {data.mode === "platforms" ? (
             <Fragment>
-              <div className="mb-5 flex items-center gap-4 rounded-card border border-slate-200 bg-surface p-4">
+              <div className="card mb-5 flex items-center gap-4 rounded-card border border-slate-200 bg-surface p-4">
                 <ProductImage src={data.products[0].image} alt="" category={data.products[0].category} className="h-16 w-16 shrink-0 rounded-2xl p-1" />
                 <div className="min-w-0 flex-1">
                   <Link href={`/products/${data.products[0].id}`} className="line-clamp-2 text-base font-semibold text-ink hover:text-brand-700">

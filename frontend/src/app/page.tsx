@@ -17,7 +17,7 @@ export default function HomePage() {
       <TrackScene />
 
       {/* Section 4 (sky): categories rise in */}
-      <section className="relative z-[3] -mt-10 rounded-t-[3rem] bg-sky py-24 sm:py-32" aria-labelledby="home-categories">
+      <section className="cine-section relative z-[3] -mt-10 rounded-t-[3rem] bg-sky py-24 sm:py-32" aria-labelledby="home-categories">
         <div className="container">
           <div className="mb-12 flex flex-col items-start justify-between gap-4 sm:flex-row sm:items-end">
             <div>
@@ -37,9 +37,9 @@ export default function HomePage() {
       <SellScene />
 
       {/* Section 6 (butter): biggest drops carousel, trending, and the closing search */}
-      <section className="relative z-[5] -mt-10 overflow-x-clip rounded-t-[3rem] bg-butter pb-24 pt-16 sm:pb-36 sm:pt-24" aria-label="Deals and trending">
-        <ProductRail title="Biggest price drops this week" description="Products whose lowest price fell the most over the last 7 days." endpoint="/products/drops" limit={4} href="/categories" linkLabel="Browse all products" />
-        <ProductRail title="Trending now" description="What shoppers are comparing most." endpoint="/products/trending" limit={4} />
+      <section className="cine-section relative z-[5] -mt-10 overflow-x-clip rounded-t-[3rem] bg-butter pb-24 pt-16 sm:pb-36 sm:pt-24" aria-label="Deals and trending">
+        <ProductRail numeral="02" title="Biggest price drops this week" description="Products whose lowest price fell the most over the last 7 days." endpoint="/products/drops" limit={4} href="/categories" linkLabel="Browse all products" />
+        <ProductRail numeral="03" title="Trending now" description="What shoppers are comparing most." endpoint="/products/trending" limit={4} />
 
         <div className="container relative mt-20 text-center sm:mt-32">
           <GiantWord className="!top-[40%]">FIND IT</GiantWord>

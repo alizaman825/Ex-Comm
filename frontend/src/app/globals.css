@@ -464,12 +464,71 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 :root[data-ui-theme="cinematic"] .tile,
 :root[data-ui-theme="cinematic"] [class*="tint-"] { background-color: rgb(var(--glass-bg-strong)); }
 
-/* Pill-shaped glass nav bar */
+/* Pill-shaped glass nav bar: translucent + blurred, with a thin bright top inset highlight so it
+   visibly reads as glass sitting above the atmosphere. */
 :root[data-ui-theme="cinematic"] .nav-pill {
   background: rgb(var(--nav-bg));
   -webkit-backdrop-filter: blur(26px) saturate(150%);
   backdrop-filter: blur(26px) saturate(150%);
   border: 1px solid rgb(var(--glass-border));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset, 0 20px 44px -18px rgb(0 0 0 / 0.55);
+}
+
+/* Full-bleed section backgrounds (the pastel-tinted scenes on the home page: compare/track/categories/
+   sell/deals) go transparent in cinematic so the fixed .atmo gradient behind the page shows through,
+   instead of a solid colour block hiding it. Classic theme keeps its pastel background untouched. */
+:root[data-ui-theme="cinematic"] .cine-section { background-color: transparent; }
+
+/* Additive panel wrapper for sections that have no glass container of their own in the classic theme
+   (e.g. the home page's product rails): invisible/no-op in classic, a real glass panel in cinematic,
+   with room at the top-left for a leading .t-numeral. */
+.rail-panel { position: relative; }
+:root[data-ui-theme="cinematic"] .rail-panel {
+  padding: 3.25rem 1.25rem 1.75rem;
+  border-radius: 1.75rem;
+  background: rgb(var(--glass-bg));
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgb(var(--glass-border));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 18px 44px -18px rgb(0 0 0 / 0.55);
+}
+@media (min-width: 640px) {
+  :root[data-ui-theme="cinematic"] .rail-panel { padding: 3.75rem 2rem 2.25rem; }
+}
+.rail-panel > .t-numeral {
+  position: absolute;
+  left: 1.25rem;
+  top: 0.9rem;
+  z-index: 10;
+  font-size: clamp(2rem, 1.4rem + 2.5vw, 3.25rem);
+  opacity: 0.7;
+}
+@media (min-width: 640px) {
+  .rail-panel > .t-numeral { left: 2rem; top: 1.1rem; }
+}
+
+/* Section numerals on the product page (OfferTable "Compare stores", PriceChart "Price history")
+   sit inline beside the heading instead of absolutely positioned, since those headings are not full
+   hero-style stage. */
+.heading-numeral {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+.heading-numeral > .t-numeral { font-size: clamp(1.75rem, 1.4rem + 1.5vw, 2.5rem); opacity: 0.7; }
+
+/* Compare page: make each row/column of the comparison tables read as its own glass strip, not just
+   the single outer .card panel. */
+:root[data-ui-theme="cinematic"] [data-testid="compare-table"] thead th,
+:root[data-ui-theme="cinematic"] [data-testid="compare-table"] tbody tr:nth-child(even) td,
+:root[data-ui-theme="cinematic"] [data-testid="compare-table"] tbody tr:nth-child(even) th {
+  background: rgb(var(--glass-bg));
+}
+:root[data-ui-theme="cinematic"] [data-testid="compare-table"] th[scope="row"],
+:root[data-ui-theme="cinematic"] [data-testid="compare-table"] thead th:first-child {
+  background: rgb(var(--glass-bg-strong));
+  -webkit-backdrop-filter: blur(16px);
+  backdrop-filter: blur(16px);
 }
 
 /* Big condensed numeral (Bebas Neue), e.g. the "01" beside the hero heading. Hidden in classic. */

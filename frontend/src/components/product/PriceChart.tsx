@@ -77,7 +77,10 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
   return (
     <section className="card card-pad" aria-labelledby="history-heading" data-testid="price-chart">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="history-heading" className="t-h2">
+        <h2 id="history-heading" className="heading-numeral t-h2">
+          <span className="t-numeral pointer-events-none select-none" aria-hidden="true">
+            03
+          </span>
           Price history
         </h2>
         <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="History range">

@@ -23,8 +23,8 @@ export function CompareScene() {
   const best = retail.reduce((a, b) => (prices[b] < prices[a] ? b : a));
 
   return (
-    <section data-scene="compare" className="scene relative z-[1] -mt-10 rounded-t-[3rem] bg-peach" aria-labelledby="scene-compare">
-      <div className="scene-inner relative flex flex-col items-center justify-center overflow-x-clip rounded-t-[3rem] bg-peach px-4">
+    <section data-scene="compare" className="cine-section scene relative z-[1] -mt-10 rounded-t-[3rem] bg-peach" aria-labelledby="scene-compare">
+      <div className="cine-section scene-inner relative flex flex-col items-center justify-center overflow-x-clip rounded-t-[3rem] bg-peach px-4">
         <GiantWord>COMPARE</GiantWord>
         <div className="relative w-full max-w-4xl text-center">
           <p className={kicker} data-reveal>
@@ -45,7 +45,7 @@ export function CompareScene() {
             {STORES.map((s, i) => {
               const isBest = s === best;
               return (
-                <div key={s} data-cmp-card data-from={i === 1 ? 1 : i === 0 ? -1 : 0} className="relative rounded-2xl bg-surface p-3 text-left shadow-card sm:rounded-3xl sm:p-5" {...(isBest ? { "data-cmp-best": true } : {})}>
+                <div key={s} data-cmp-card data-from={i === 1 ? 1 : i === 0 ? -1 : 0} className="card relative rounded-2xl bg-surface p-3 text-left shadow-card sm:rounded-3xl sm:p-5" {...(isBest ? { "data-cmp-best": true } : {})}>
                   {isBest && <span data-cmp-ring aria-hidden className="pointer-events-none absolute inset-0 rounded-[inherit] bg-emerald-50 ring-2 ring-emerald-500" />}
                   <div className="relative">
                     <p className="flex items-center gap-1.5 text-[11px] font-bold text-slate-600 sm:text-sm">
@@ -72,8 +72,8 @@ const CHART = "M0 40 C40 32 70 70 120 60 S190 20 240 54 S320 110 370 96 S450 150
 /** Section 3 (mint): the price chart draws as you scroll, then a green drop badge pops in and an alert is sent. */
 export function TrackScene() {
   return (
-    <section data-scene="track" className="scene relative z-[2] -mt-10 rounded-t-[3rem] bg-mint" aria-labelledby="scene-track">
-      <div className="scene-inner relative flex flex-col items-center justify-center overflow-x-clip rounded-t-[3rem] bg-mint px-4">
+    <section data-scene="track" className="cine-section scene relative z-[2] -mt-10 rounded-t-[3rem] bg-mint" aria-labelledby="scene-track">
+      <div className="cine-section scene-inner relative flex flex-col items-center justify-center overflow-x-clip rounded-t-[3rem] bg-mint px-4">
         <GiantWord>TRACK</GiantWord>
         <div className="relative w-full max-w-3xl text-center">
           <p className={kicker} data-reveal>
@@ -82,7 +82,7 @@ export function TrackScene() {
           <h2 id="scene-track" className="t-display" data-reveal>
             Watch it fall. <span className="swash">Get told.</span>
           </h2>
-          <div className="relative mx-auto mt-10 rounded-[2rem] bg-surface p-5 shadow-float sm:p-8">
+          <div className="card relative mx-auto mt-10 rounded-[2rem] bg-surface p-5 shadow-float sm:p-8">
             <div className="flex items-end justify-between text-left">
               <div>
                 <p className="text-xs font-bold uppercase tracking-wider text-slate-500">Price, last 90 days</p>
@@ -126,7 +126,7 @@ export function TrackScene() {
 /** Section 5 (lilac): "SELL SMARTER" teaser with a margin number that counts up beside a mini profit card. */
 export function SellScene() {
   return (
-    <section data-scene="sell" className="relative z-[4] -mt-10 overflow-x-clip rounded-t-[3rem] bg-lilac py-24 sm:py-36" aria-labelledby="scene-sell">
+    <section data-scene="sell" className="cine-section relative z-[4] -mt-10 overflow-x-clip rounded-t-[3rem] bg-lilac py-24 sm:py-36" aria-labelledby="scene-sell">
       <GiantWord className="!top-[46%]">SELL SMARTER</GiantWord>
       <div className="container relative z-10 text-center">
         <p className={kicker} data-reveal>
@@ -145,7 +145,7 @@ export function SellScene() {
             </p>
             <p className="mt-1 text-sm font-bold uppercase tracking-wider text-slate-600">Estimated margin</p>
           </div>
-          <div data-sell-card className="rounded-[2rem] bg-surface p-6 text-left shadow-float">
+          <div data-sell-card className="card rounded-[2rem] bg-surface p-6 text-left shadow-float">
             <p className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-500">
               <Sparkles className="h-4 w-4" aria-hidden /> Example profit
             </p>
