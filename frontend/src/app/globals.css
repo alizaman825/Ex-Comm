@@ -525,6 +525,36 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 /* Hero tilt: a tiny pointer-driven 3D tilt on the hero visual, cinematic + motion-allowed only. */
 :root[data-ui-theme="cinematic"] [data-tilt] { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); transform-style: preserve-3d; }
 
+/* Floating hero product photos (Hero.tsx Floater) become glass "bubbles": plain wrapper in classic,
+   a frosted circular frame with an inset highlight in cinematic — otherwise they're the one thing on
+   the homepage that stayed literal product photography with no glass treatment at all. */
+:root[data-ui-theme="cinematic"] .floater-frame {
+  position: relative;
+  display: block;
+  border-radius: 9999px;
+  padding: 14%;
+  background: radial-gradient(60% 60% at 30% 25%, rgb(255 255 255 / 0.32), transparent 60%), rgb(var(--glass-bg-strong));
+  border: 1px solid rgb(var(--glass-border));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 20px 40px -14px rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+}
+
+/* A glass disc behind the hero price-tag visual (Hero.tsx [data-tag]) so the hero's one big product
+   moment reads as a glass sphere too, not only the small floating thumbnails. */
+:root[data-ui-theme="cinematic"] [data-tag]::before {
+  content: "";
+  position: absolute;
+  inset: -14%;
+  z-index: -1;
+  border-radius: 9999px;
+  background: radial-gradient(55% 55% at 30% 25%, rgb(255 255 255 / 0.22), transparent 60%), rgb(var(--glass-bg));
+  border: 1px solid rgb(var(--glass-border));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 30px 60px -20px rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(10px);
+  backdrop-filter: blur(10px);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .atmo-glow { animation: none; }
 }
