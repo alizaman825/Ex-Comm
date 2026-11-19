@@ -28,7 +28,7 @@ Render's free plan has no fixed outbound IP, so allow `0.0.0.0/0` under Atlas �
 
 ## 4. Keeping prices and stock fresh on the free plan
 
-Render's free instance sleeps after 15 minutes idle, and the scheduled catalog-sync/price-check jobs run as in-process timers - while the dyno is asleep, they don't fire, so listings can silently go stale (seen in practice: a month without a refresh). `.github/workflows/daily-refresh.yml` fixes this from outside Render: every 15 minutes it hits `/api/health` (wakes the dyno if needed) and calls `/api/jobs/catalog-sync` + `/api/jobs/price-check`, so the data keeps moving even if nobody visits the site.
+Render's free instance sleeps after 15 minutes idle, and the scheduled catalog-sync/price-check jobs run as in-process timers - while the dyno is asleep, they don't fire, so listings can silently go stale (seen in practice: a month without a refresh). `.github/workflows/daily-refresh.yml` fixes this from outside Render: every 30 minutes it hits `/api/health` (wakes the dyno if needed) and calls `/api/jobs/catalog-sync` + `/api/jobs/price-check`, so the data keeps moving even if nobody visits the site. (30 minutes, not 15, to stay well within a private repo's free 2,000 Actions minutes/month; the dyno can still fall back asleep between runs, costing about a minute to wake on the next one.)
 
 Add these repository secrets (GitHub → Settings → Secrets and variables → Actions) or the workflow has nothing to call:
 - `RENDER_API_URL`: the deployed API's base URL, e.g. `https://ex-comm-api.onrender.com`.
