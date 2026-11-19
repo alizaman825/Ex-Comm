@@ -35,7 +35,7 @@ function NavLink({ href, label, icon: Icon, onClick }: { href: string; label: st
       onClick={onClick}
       aria-current={active ? "page" : undefined}
       className={clsx(
-        "inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200",
+        "nav-chip inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200",
         active ? "bg-slate-100 text-ink" : "text-slate-600 hover:bg-slate-100 hover:text-ink"
       )}
     >
@@ -127,10 +127,10 @@ export function Navbar() {
   const closeMobile = () => setMobileOpenAt(null);
 
   return (
-    <header className="sticky top-3 z-40 px-3 sm:px-4">
+    <header className="nav-shell sticky top-3 z-40 px-3 sm:px-4">
       <div className="nav-pill mx-auto max-w-[78rem] rounded-[28px] bg-surface/75 shadow-card backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]">
       <div className="flex h-14 items-center gap-3 pl-4 pr-2 lg:gap-5">
-        <Logo />
+        <Logo className="nav-wordmark" />
 
         <div className="mx-2 hidden max-w-md flex-1 md:block">
           <Suspense fallback={<div className="h-10 rounded-full bg-slate-100" />}>
