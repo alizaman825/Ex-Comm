@@ -418,10 +418,12 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 .atmo-gradient {
   position: absolute;
   inset: 0;
+  /* Exact stops/angle from the approved board (Main.dc.html / Product.dc.html "sunset" mood):
+     linear-gradient(165deg, #1b1035 0%, #3a2350 26%, #8a4a55 54%, #d9794f 78%, #f3c667 100%). The
+     sun-glow radial sits on top, same as the board's ecDrift circle. */
   background:
-    radial-gradient(120% 90% at 15% 0%, rgb(var(--glow-a, 255 141 93) / 0.35), transparent 60%),
-    radial-gradient(120% 90% at 85% 10%, rgb(var(--glow-b, 255 94 133) / 0.28), transparent 60%),
-    linear-gradient(180deg, #1a1220 0%, #241527 35%, #2c1a2e 65%, #181022 100%);
+    radial-gradient(42% 32% at 62% 22%, rgb(255 214 140 / 0.55), transparent 70%),
+    linear-gradient(165deg, #1b1035 0%, #3a2350 26%, #8a4a55 54%, #d9794f 78%, #f3c667 100%);
 }
 .atmo-glow {
   position: absolute;
