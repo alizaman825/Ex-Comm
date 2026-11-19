@@ -31,6 +31,12 @@ const config = {
     refreshHours: Number(process.env.CATALOG_SYNC_REFRESH_HOURS) || 24,
     retryHours: Number(process.env.CATALOG_SYNC_RETRY_HOURS) || 168,
   },
+  // How recently a product needs to have been checked to lead a home-page rail (trending/drops). A product
+  // whose freshest offer is older than this is left off rather than risk showing stock/price that an idle
+  // sync never caught up to - see jobs/catalogSync.js and the daily GitHub Actions trigger in docs/DEPLOY.md.
+  home: {
+    freshnessHours: Number(process.env.HOME_FRESHNESS_HOURS) || 48,
+  },
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: Number(process.env.SMTP_PORT) || 587,

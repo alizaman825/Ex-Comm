@@ -6,8 +6,16 @@ a an and the with for of by in on to new latest original genuine authentic offic
 pta approved non nonpta warranty year years month months local stock sealed box packed pack
 free delivery shipping fast cod sale deal offer discount best quality premium hot top
 global version international edition smartphone smart phone mobile cellphone cell dual sim
-ram rom storage memory gb_ram internal colour color variant model series device
+ram rom storage memory gb_ram internal colour color variant model series device gen generation
 `.trim().split(/\s+/));
+
+// CPU/laptop generation markers ("13th Gen", "ThinkPad E14 G5"): one store's title often states a
+// generation, revision code or processor family that the same listing on another store just leaves out.
+// Unlike a storage size or "Pro"/"Max", the generation never changes which physical product it is for a
+// given specific CPU/model number (already present as its own token), so treating it as a hard-reject
+// token like VARIANT_WORDS does produced false negatives (same laptop, one title says "13th Gen"/"G5",
+// the other doesn't). Dropped like a colour instead of compared.
+const isGenerationNoise = (t) => /^[0-9]{1,2}(st|nd|rd|th)$/.test(t) || /^g[0-9]{1,2}$/.test(t);
 
 const COLOURS = new Set(`
 black white blue red green yellow pink purple violet grey gray silver gold golden rose orange
@@ -47,6 +55,9 @@ function normalizeText(title) {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, ' and ')
+    // "8GB-256GB" -> "8gb 256gb" (RAM-storage shorthand with an explicit unit before the hyphen; must run
+    // before the general hyphen-join below, which would otherwise glue it into one unmatchable token)
+    .replace(/\b(\d{1,2})gb-(\d{2,4})(gb|tb)?\b/g, (_m, r, s, u) => `${r}gb ${s}${u || 'gb'}`)
     // 'wh-1000xm5' -> 'wh1000xm5', 'usb-c' / 'usb c' / 'type c' -> 'usbc' / 'typec'
     .replace(/([a-z0-9])-(?=[a-z0-9])/g, '$1')
     .replace(/\b(usb|type)\s+c\b/g, '$1c')
@@ -85,7 +96,7 @@ function analyzeTitle(title) {
   const raw = normalizeText(title).split(' ').filter(Boolean);
   const tokens = [];
   for (const t of raw) {
-    if (STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
     if (t.length === 1 && !/\d/.test(t)) continue;
     if (!tokens.includes(t)) tokens.push(t);
   }
@@ -99,7 +110,7 @@ function analyzeTitle(title) {
 function significantTokens(text) {
   const out = [];
   for (const t of normalizeText(text).split(' ')) {
-    if (!t || STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (!t || STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
     if (t.length === 1 && !/\d/.test(t)) continue;
     if (!out.includes(t)) out.push(t);
   }
@@ -165,17 +176,36 @@ function isSameProduct(titleA, titleB) {
 }
 
 // Pick the best candidate (with .title) for an analyzed title, or null.
+//
+// A store sometimes sells a phone in several storage/RAM configs but doesn't say which one a given
+// listing title is ("Apple iPhone 16" with no "128GB"/"256GB"). similarity() lets that listing match a
+// stored product that does name a size (needed for the normal case: cross-store titles with one side
+// more specific than the other). But if the listing's own title names no size and more than one
+// candidate product - of a *different* size from each other - would equally match it, which one it
+// really is is genuinely unknown; picking the first by iteration order would silently show that
+// listing's price as if it were a specific variant it may not be. Treat that as no confident match
+// instead (the UI's manual "pick the right product" fallback covers it).
 function findBestMatch(analyzed, candidates) {
+  const queryHasStorage = analyzed.tokens.some(isStorage);
   let best = null;
   let bestScore = 0;
+  const scored = [];
   for (const c of candidates) {
-    const score = similarity(analyzed, c.analyzed || analyzeTitle(c.title));
+    const cAnalyzed = c.analyzed || analyzeTitle(c.title);
+    const score = similarity(analyzed, cAnalyzed);
+    scored.push({ cAnalyzed, score });
     if (score > bestScore) {
       best = c;
       bestScore = score;
     }
   }
-  return bestScore >= MATCH_THRESHOLD ? { candidate: best, score: bestScore } : null;
+  if (bestScore < MATCH_THRESHOLD) return null;
+  if (!queryHasStorage) {
+    const bestStorage = setOf((best.analyzed || analyzeTitle(best.title)).tokens, isStorage);
+    const conflicting = scored.some(({ cAnalyzed, score }) => score >= MATCH_THRESHOLD && !sameSet(setOf(cAnalyzed.tokens, isStorage), bestStorage));
+    if (conflicting) return null;
+  }
+  return { candidate: best, score: bestScore };
 }
 
 // Spaces, hyphens and dots removed: "Sony WH-1000XM5" -> "sonywh1000xm5". Used to find stored products

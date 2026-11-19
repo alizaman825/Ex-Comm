@@ -5,6 +5,7 @@ const search = require('../services/search');
 const { parseQuery } = require('../services/relevance');
 const { significantTokens } = require('../services/matching');
 const { resolveCategory } = require('../services/categories');
+const { config } = require('../config/env');
 
 const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
 const idParams = z.object({ id: objectId });
@@ -69,11 +70,25 @@ const fullListing = (l) => ({
   multiVariant: Boolean(l.multiVariant),
 });
 
-// A product with nothing currently in stock anywhere shouldn't lead a promotional rail (home page
-// trending/drops) even though it still has a storable price; fetch extra candidates and drop them.
+// A product whose freshest in-stock retail offer was last checked within the freshness window.
+// Nothing recent enough to trust is treated the same as out of stock for the home page's sake: if the
+// background sync stalls (e.g. the host spun down), a rail should go quiet rather than keep showing a
+// price/availability nobody has confirmed in days.
+function isFreshEnough(card) {
+  const retail = card.offers.filter((o) => o.role !== 'supplier' && o.inStock && o.lastScrapedAt);
+  if (!retail.length) return false;
+  const newest = Math.max(...retail.map((o) => new Date(o.lastScrapedAt).getTime()));
+  return Date.now() - newest <= config.home.freshnessHours * 60 * 60 * 1000;
+}
+
+// A product with nothing currently in stock anywhere, or nothing checked recently enough to trust,
+// shouldn't lead a promotional rail (home page trending/drops); fetch extra candidates and drop them.
 async function availableCardsFor(pool, limit) {
   const cards = await cardsFor(pool);
-  return cards.filter((c) => c.offers.some((o) => o.inStock)).slice(0, limit);
+  return cards
+    .filter((c) => c.offers.some((o) => o.inStock))
+    .filter(isFreshEnough)
+    .slice(0, limit);
 }
 
 // GET /api/products/trending: most popular, in-stock products.
