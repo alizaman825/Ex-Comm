@@ -301,7 +301,13 @@
 :root[data-theme="dark"] .tint-sky,
 :root[data-theme="dark"] .tint-lilac,
 :root[data-theme="dark"] .tint-butter,
-:root[data-theme="dark"] .photo { background-color: rgb(var(--tile)); }
+:root[data-theme="dark"] .photo,
+:root[data-ui-theme="cinematic"] .tint-peach,
+:root[data-ui-theme="cinematic"] .tint-mint,
+:root[data-ui-theme="cinematic"] .tint-sky,
+:root[data-ui-theme="cinematic"] .tint-lilac,
+:root[data-ui-theme="cinematic"] .tint-butter,
+:root[data-ui-theme="cinematic"] .photo { background-color: rgb(var(--tile)); }
 
 /* Landing scenes: plain stacked sections by default; pinned (sticky) scroll scenes only when motion is enabled */
 .scene-inner { padding-top: 7rem; padding-bottom: 6rem; min-height: 38rem; }
@@ -316,4 +322,209 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 @keyframes chart-reveal {
   from { clip-path: inset(0 100% 0 0); }
   to { clip-path: inset(0 0 0 0); }
+}
+
+/* ------------------------------------------------------------------
+   Cinematic glass theme (feature flag: NEXT_PUBLIC_UI_THEME=cinematic,
+   or the in-app toggle in the navbar — see src/lib/ui-theme.ts).
+
+   The theme is applied by overriding the SAME design tokens and shared
+   classes the whole app already uses (.card, .btn-*, .chip, the navbar
+   pill, .skeleton, …) under the `[data-ui-theme="cinematic"]` attribute,
+   plus a handful of new, additive classes (prefixed `atmo-`, `glass-`,
+   `t-numeral`, `spec-label`, `cta-bar`) for pieces that do not exist in
+   the classic theme (the drifting gradient backdrop, glass spheres, the
+   condensed numeral). Nothing here runs or renders when the attribute
+   is absent or set to "classic", so the classic theme is untouched.
+
+   The cinematic theme is always atmospheric/dark regardless of the
+   separate light/dark toggle (`data-theme`): it defines its own token
+   values below and, because it is declared after the `[data-theme="dark"]`
+   block above and has equal CSS specificity, it wins when both are set.
+------------------------------------------------------------------- */
+:root[data-ui-theme="cinematic"] {
+  color-scheme: dark;
+  --bg: 20 14 22;
+  --surface: 34 24 34;
+  --raised: 44 32 46;
+  --on-brand: 26 18 16;
+  --on-accent: 15 12 10;
+
+  --slate-50: 46 34 44;
+  --slate-100: 54 40 52;
+  --slate-200: 72 54 66;
+  --slate-300: 108 86 98;
+  --slate-400: 176 158 168;
+  --slate-500: 198 182 190;
+  --slate-600: 214 200 206;
+  --slate-700: 228 216 220;
+  --slate-800: 238 228 230;
+  --slate-900: 250 243 238;
+
+  --brand-50: 54 40 52;
+  --brand-100: 72 54 66;
+  --brand-500: 255 185 120;
+  --brand-600: 255 157 91;
+  --brand-700: 255 138 69;
+  --brand-900: 250 243 238;
+
+  --emerald-500: 60 214 150;
+  --emerald-600: 60 214 150;
+  --emerald-700: 60 214 150;
+
+  --amber-400: 255 196 90;
+  --amber-500: 255 177 56;
+
+  --rose-400: 255 128 112;
+  --rose-500: 255 104 96;
+  --rose-600: 255 90 90;
+
+  --shadow-card: 0 1px 0 rgb(255 255 255 / 0.08) inset, 0 16px 40px -16px rgb(0 0 0 / 0.55);
+  --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.1) inset, 0 28px 60px -20px rgb(0 0 0 / 0.65);
+  --shadow-float: 0 30px 70px -22px rgb(0 0 0 / 0.75);
+  --tile: 250 243 238;
+  --nav-bg: 40 28 40 / 0.55;
+  --blend: normal;
+
+  /* pastel landing-section backgrounds become dark, muted tones instead of solid pastels, so the
+     full-bleed sections (categories, deals, trending) sit on the atmosphere instead of fighting
+     it with a flat light colour block */
+  --peach: 42 28 36;
+  --mint: 28 36 40;
+  --sky: 26 30 46;
+  --lilac: 34 28 46;
+  --butter: 42 36 26;
+
+  /* glass + atmosphere specific tokens */
+  --glass-bg: 255 255 255 / 0.07;
+  --glass-bg-strong: 255 255 255 / 0.12;
+  --glass-border: 255 255 255 / 0.16;
+  --glow-a: 255 141 93; /* sunset orange */
+  --glow-b: 255 94 133; /* dusk pink */
+  --glow-c: 120 104 255; /* night violet */
+}
+
+/* Backdrop: full-bleed gradient + drifting glow circles. Hidden entirely in classic theme. */
+.atmo {
+  position: fixed;
+  inset: 0;
+  z-index: -10;
+  overflow: hidden;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+:root[data-ui-theme="cinematic"] .atmo { opacity: 1; }
+.atmo-gradient {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(120% 90% at 15% 0%, rgb(var(--glow-a, 255 141 93) / 0.35), transparent 60%),
+    radial-gradient(120% 90% at 85% 10%, rgb(var(--glow-b, 255 94 133) / 0.28), transparent 60%),
+    linear-gradient(180deg, #1a1220 0%, #241527 35%, #2c1a2e 65%, #181022 100%);
+}
+.atmo-glow {
+  position: absolute;
+  border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.55;
+  will-change: transform;
+  animation: atmo-drift 26s ease-in-out infinite;
+}
+.atmo-glow-a { left: -10%; top: 5%; width: 42vmax; height: 42vmax; background: rgb(var(--glow-a, 255 141 93) / 0.45); animation-duration: 28s; }
+.atmo-glow-b { right: -14%; top: 30%; width: 38vmax; height: 38vmax; background: rgb(var(--glow-b, 255 94 133) / 0.4); animation-duration: 34s; animation-delay: -6s; }
+.atmo-glow-c { left: 20%; bottom: -16%; width: 34vmax; height: 34vmax; background: rgb(var(--glow-c, 120 104 255) / 0.35); animation-duration: 30s; animation-delay: -12s; }
+@keyframes atmo-drift {
+  0%, 100% { transform: translate3d(0, 0, 0) scale(1); }
+  33% { transform: translate3d(3%, -4%, 0) scale(1.06); }
+  66% { transform: translate3d(-4%, 3%, 0) scale(0.97); }
+}
+
+/* Glass surfaces: reskin the shared primitives so every page that uses them (home, product,
+   compare, categories, search, wishlist, alerts) gets the frosted-glass look for free. */
+:root[data-ui-theme="cinematic"] body { background-color: transparent; color: rgb(var(--slate-600)); }
+:root[data-ui-theme="cinematic"] .card,
+:root[data-ui-theme="cinematic"] .btn-secondary,
+:root[data-ui-theme="cinematic"] .chip,
+:root[data-ui-theme="cinematic"] .input,
+:root[data-ui-theme="cinematic"] .nav-pill,
+:root[data-ui-theme="cinematic"] .glass-panel {
+  background: rgb(var(--glass-bg));
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+  border: 1px solid rgb(var(--glass-border));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 18px 44px -18px rgb(0 0 0 / 0.55);
+}
+:root[data-ui-theme="cinematic"] .btn-primary {
+  background: linear-gradient(135deg, rgb(var(--glow-a)), rgb(var(--glow-b)));
+  color: #1a1220;
+  box-shadow: 0 10px 28px -8px rgb(var(--glow-b) / 0.55);
+}
+:root[data-ui-theme="cinematic"] .skeleton { background: rgb(var(--glass-bg)); }
+:root[data-ui-theme="cinematic"] .tile,
+:root[data-ui-theme="cinematic"] [class*="tint-"] { background-color: rgb(var(--glass-bg-strong)); }
+
+/* Pill-shaped glass nav bar */
+:root[data-ui-theme="cinematic"] .nav-pill {
+  background: rgb(var(--nav-bg));
+  -webkit-backdrop-filter: blur(26px) saturate(150%);
+  backdrop-filter: blur(26px) saturate(150%);
+  border: 1px solid rgb(var(--glass-border));
+}
+
+/* Big condensed numeral (Bebas Neue), e.g. the "01" beside the hero heading. Hidden in classic. */
+.t-numeral {
+  display: none;
+  font-family: "Bebas Neue", var(--font-display), ui-sans-serif, sans-serif;
+  line-height: 0.8;
+  letter-spacing: 0.01em;
+  color: rgb(var(--glow-a, 255 141 93));
+  -webkit-text-stroke: 1px rgb(var(--glass-border, 255 255 255 / 0.3));
+}
+:root[data-ui-theme="cinematic"] .t-numeral { display: block; }
+
+/* Small uppercase spec-text blocks (brand/category labels, platform labels, etc.) */
+:root[data-ui-theme="cinematic"] .spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; }
+
+/* Product media turns into a glass "sphere": circular, with an inset highlight, like a soap bubble. */
+:root[data-ui-theme="cinematic"] .product-media {
+  border-radius: 50%;
+  background: radial-gradient(60% 60% at 30% 25%, rgb(255 255 255 / 0.3), transparent 60%), rgb(var(--glass-bg-strong));
+  border: 1px solid rgb(var(--glass-border));
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.25) inset, 0 20px 40px -16px rgb(0 0 0 / 0.5);
+}
+
+/* Bottom glass CTA bar + round arrow button */
+:root[data-ui-theme="cinematic"] .cta-bar {
+  background: rgb(var(--nav-bg));
+  -webkit-backdrop-filter: blur(24px) saturate(150%);
+  backdrop-filter: blur(24px) saturate(150%);
+  border: 1px solid rgb(var(--glass-border));
+}
+.btn-round-arrow {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  min-width: 44px;
+  min-height: 44px;
+  border-radius: 50%;
+  background: #fff;
+  color: #1a1220;
+  flex-shrink: 0;
+  transition: transform 0.2s ease;
+}
+.btn-round-arrow:hover { transform: translateX(2px) scale(1.04); }
+.cta-icon-btn { display: none; }
+@media (max-width: 639px) {
+  :root[data-ui-theme="cinematic"] .cta-bar .cta-full-btn { display: none; }
+  :root[data-ui-theme="cinematic"] .cta-bar .cta-icon-btn { display: inline-flex; }
+}
+
+/* Hero tilt: a tiny pointer-driven 3D tilt on the hero visual, cinematic + motion-allowed only. */
+:root[data-ui-theme="cinematic"] [data-tilt] { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); transform-style: preserve-3d; }
+
+@media (prefers-reduced-motion: reduce) {
+  .atmo-glow { animation: none; }
 }

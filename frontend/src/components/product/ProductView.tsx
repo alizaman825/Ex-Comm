@@ -131,13 +131,13 @@ export function ProductView({ id }: { id: string }) {
 
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
         <div className="card self-start p-3 lg:sticky lg:top-24">
-          <div className={clsx("overflow-hidden rounded-[1.25rem]", categoryTint(product.category))}>
+          <div data-tilt className={clsx("product-media overflow-hidden rounded-[1.25rem]", categoryTint(product.category))}>
             <ProductImage src={product.image ?? cheapest.image} alt={product.title} category={product.category} className="aspect-square w-full animate-fade-in p-8 sm:p-14" />
           </div>
         </div>
 
         <div>
-          <p className="text-xs font-bold uppercase tracking-wider text-slate-500">{product.brand ?? categoryName}</p>
+          <p className="spec-label text-xs font-bold uppercase tracking-wider text-slate-500">{product.brand ?? categoryName}</p>
           <h1 className="t-h1 mt-1.5">{product.title}</h1>
           <div className="mt-3 flex flex-wrap items-center gap-3">
             <Rating value={product.rating} count={product.reviewCount} />
@@ -183,14 +183,17 @@ export function ProductView({ id }: { id: string }) {
             </div>
           </div>
 
-          <div className="sticky top-[5.25rem] z-20 mt-4 flex items-center justify-between gap-3 rounded-full bg-surface/85 py-2 pl-5 pr-2 shadow-card backdrop-blur-xl" data-testid="alert-bar">
+          <div className="cta-bar sticky top-[5.25rem] z-20 mt-4 flex items-center justify-between gap-3 rounded-full bg-surface/85 py-2 pl-5 pr-2 shadow-card backdrop-blur-xl" data-testid="alert-bar">
             <p className="min-w-0 truncate text-sm font-semibold text-slate-700">
               <span className="hidden sm:inline">Waiting for a better price? </span>
               <span className="tabular-nums text-ink">{formatPrice(cheapest.price)}</span> now
             </p>
-            <Button size="md" onClick={openAlert}>
+            <Button size="md" onClick={openAlert} className="cta-full-btn">
               <BellRing className="h-4 w-4" aria-hidden /> Set price alert
             </Button>
+            <button type="button" onClick={openAlert} aria-label="Set price alert" className="btn-round-arrow cta-icon-btn">
+              <BellRing className="h-[18px] w-[18px]" aria-hidden />
+            </button>
           </div>
 
           <div className="mt-6">

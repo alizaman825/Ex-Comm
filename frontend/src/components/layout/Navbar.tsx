@@ -10,6 +10,7 @@ import { useUnreadCount } from "@/lib/hooks";
 import { Logo } from "./Logo";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
+import { UiThemeToggle } from "./UiThemeToggle";
 
 const PUBLIC_LINKS = [
   { href: "/categories", label: "Categories", icon: LayoutGrid },
@@ -127,7 +128,7 @@ export function Navbar() {
 
   return (
     <header className="sticky top-3 z-40 px-3 sm:px-4">
-      <div className="mx-auto max-w-[78rem] rounded-[28px] bg-surface/75 shadow-card backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]">
+      <div className="nav-pill mx-auto max-w-[78rem] rounded-[28px] bg-surface/75 shadow-card backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]">
       <div className="flex h-14 items-center gap-3 pl-4 pr-2 lg:gap-5">
         <Logo />
 
@@ -157,6 +158,7 @@ export function Navbar() {
             </>
           )}
           <ThemeToggle />
+          <UiThemeToggle />
           <div className="ml-1 flex items-center gap-1.5">
             {loading ? (
               <div className="skeleton h-9 w-24 rounded-full" />
@@ -175,7 +177,8 @@ export function Navbar() {
           </div>
         </nav>
 
-        <ThemeToggle className="btn-ghost ml-auto p-2.5 md:hidden" />
+        <UiThemeToggle className="btn-ghost ml-auto p-2.5 md:hidden" />
+        <ThemeToggle className="btn-ghost p-2.5 md:hidden" />
         <button
           type="button"
           className="btn-ghost p-2.5 md:hidden"

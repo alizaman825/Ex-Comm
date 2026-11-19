@@ -21,7 +21,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
 
   return (
     <article className="card card-hover group relative flex h-full flex-col overflow-hidden" data-testid="product-card">
-      <div className={clsx("relative m-2 aspect-[5/4] overflow-hidden rounded-[1.1rem]", categoryTint(product.category))}>
+      <div className={clsx("product-media relative m-2 aspect-[5/4] overflow-hidden rounded-[1.1rem]", categoryTint(product.category))}>
         <ProductImage
           src={product.image}
           alt={product.title}
