@@ -6,12 +6,11 @@ import { detectCaps } from "@/lib/motion";
 const MAX_DEG = 8;
 
 /**
- * A subtle pointer/touch tilt on any element marked `data-tilt`: the hero product visual, the
- * product-detail image stage, and — as the cheap fallback for devices that don't get the real R3F
- * treatment — every grid/rail product card. Cinematic theme only, and only when motion is allowed
+ * A subtle pointer/touch tilt on any element marked `data-tilt`: the product-detail image stage
+ * and every grid/rail product card. This is the only tilt treatment on product photos now (no R3F/
+ * WebGL — see ProductVisual.tsx). Cinematic theme only, and only when motion is allowed
  * (prefers-reduced-motion off, device capable). One pointermove listener for the whole document; the
- * work per move is a bounding-box check per target, which stays cheap even across a few dozen cards
- * (nothing here mounts a WebGL context — that's ProductStage3D's job, used far more sparingly).
+ * work per move is a bounding-box check per target, which stays cheap even across a few dozen cards.
  */
 export function TiltEffect() {
   useEffect(() => {

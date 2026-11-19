@@ -545,18 +545,16 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 /* Small uppercase spec-text blocks (brand/category labels, platform labels, etc.) */
 :root[data-ui-theme="cinematic"] .spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; }
 
-/* Product media: a flat glass STAGE behind the photo (a thin rounded-rect panel, like the photo is
-   resting on a sheet of frosted glass), never a ring wrapped around it. The photo itself stays a
-   plain, flatly-lit image (or the real 3D card in ProductVisual) — only the backing changes. */
+/* Product media: NO backing shape behind the photo at all — no panel, no gradient, no border, no
+   shadow. The product owner flagged the previous flat-panel backing itself as still reading as "a
+   shape around the image"; the photo now renders directly on the card, with only the card's own
+   corner radius (matched here so the image's corners line up with the card, nothing bespoke). */
 :root[data-ui-theme="cinematic"] .product-media {
   border-radius: 1.5rem;
-  background: linear-gradient(165deg, rgb(255 255 255 / 0.1), rgb(255 255 255 / 0.03) 60%), rgb(var(--glass-bg));
-  border: 1px solid rgb(var(--glass-border));
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.18) inset, 0 24px 50px -20px rgb(0 0 0 / 0.55);
+  background: transparent;
+  border: none;
+  box-shadow: none;
 }
-
-/* ProductVisual's stage wrapper (cinematic + classic both use it): just sizing/clipping, no ring. */
-.product-stage { display: block; overflow: hidden; border-radius: inherit; }
 
 
 /* Bottom glass CTA bar + round arrow button */
@@ -590,19 +588,15 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 /* Hero tilt: a tiny pointer-driven 3D tilt on the hero visual, cinematic + motion-allowed only. */
 :root[data-ui-theme="cinematic"] [data-tilt] { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); transform-style: preserve-3d; }
 
-/* Floating hero product photos (Hero.tsx Floater): plain wrapper in classic, a soft flat glass CARD
-   (rounded square, slight tilt handled by the parent's animate-float) in cinematic — product photos
-   stay flat images with soft lighting, never wrapped in a circular ring. */
+/* Floating hero product photos (Hero.tsx Floater): no backing shape at all, in either theme now —
+   the photo floats and tilts on its own, with no panel/gradient/border behind it. */
 :root[data-ui-theme="cinematic"] .floater-frame {
   position: relative;
   display: block;
-  border-radius: 1.4rem;
-  padding: 10%;
-  background: linear-gradient(165deg, rgb(255 255 255 / 0.16), rgb(255 255 255 / 0.04) 65%), rgb(var(--glass-bg-strong));
-  border: 1px solid rgb(var(--glass-border));
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 20px 40px -14px rgb(0 0 0 / 0.5);
-  -webkit-backdrop-filter: blur(6px);
-  backdrop-filter: blur(6px);
+  padding: 0;
+  background: none;
+  border: none;
+  box-shadow: none;
 }
 
 /* A soft glass panel behind the hero price-tag visual (Hero.tsx [data-tag]): a rounded-rect card, not
@@ -625,22 +619,33 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 }
 
 /* ------------------------------------------------------------------
-   Cinematic navbar: a genuinely distinct structure, not a recolor of the classic bar. The pill
-   floats with real clearance from the viewport edge and from the content below it, its nav links
-   render as their own small glass chips instead of plain underlined text, and the blur/depth read
-   noticeably deeper than any other glass surface on the page, so it reads as the one object
-   floating highest above the atmosphere.
+   Cinematic navbar — ported from the approved concept board (Main-Desktop.dc.html /
+   Main.dc.html), not a recolor of the classic bar. CinematicNavbar (Navbar.tsx) renders a
+   different element tree for this theme (links between the logo and the search/auth cluster,
+   not clustered to the right); these rules carry over the board's actual pixel values for the
+   pill itself: true 9999px radius, 22px blur, 1px rgba(255,255,255,.26-.28) border, and the
+   inset-highlight + drop-shadow pair, plus real clearance from the content below it instead of
+   the pill touching the hero immediately.
 ------------------------------------------------------------------- */
-:root[data-ui-theme="cinematic"] .nav-shell { padding-top: 1.5rem; padding-bottom: 0.5rem; }
+:root[data-ui-theme="cinematic"] .nav-shell-cine { padding-top: 0.875rem; padding-bottom: 0.75rem; }
 @media (min-width: 640px) {
-  :root[data-ui-theme="cinematic"] .nav-shell { padding-top: 2rem; }
+  :root[data-ui-theme="cinematic"] .nav-shell-cine { padding-top: 1.25rem; padding-bottom: 2.25rem; }
 }
-:root[data-ui-theme="cinematic"] .nav-pill {
-  padding-left: 0.4rem;
-  padding-right: 0.4rem;
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 24px 56px -20px rgb(0 0 0 / 0.65);
-  -webkit-backdrop-filter: blur(32px) saturate(165%);
-  backdrop-filter: blur(32px) saturate(165%);
+:root[data-ui-theme="cinematic"] .nav-pill-cine {
+  padding: 10px 10px 10px 18px;
+  border-radius: 9999px;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.28);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset, 0 12px 30px rgb(0 0 0 / 0.35);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+}
+@media (min-width: 768px) {
+  :root[data-ui-theme="cinematic"] .nav-pill-cine {
+    padding: 14px 18px 14px 26px;
+    border: 1px solid rgb(255 255 255 / 0.26);
+    box-shadow: 0 1px 0 rgb(255 255 255 / 0.32) inset, 0 14px 32px rgb(0 0 0 / 0.3);
+  }
 }
 :root[data-ui-theme="cinematic"] .nav-chip {
   border-radius: 9999px;
@@ -657,6 +662,24 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   font-family: "Bebas Neue", var(--font-display), ui-sans-serif, sans-serif;
   letter-spacing: 0.04em;
 }
+/* the compact search box inside the right-hand cluster of the cinematic pill */
+:root[data-ui-theme="cinematic"] .nav-search-cine input {
+  background: rgb(255 255 255 / 0.12) !important;
+  border: 1px solid rgb(255 255 255 / 0.24) !important;
+  color: #fff !important;
+  font-size: 12px;
+}
+:root[data-ui-theme="cinematic"] .nav-search-cine input::placeholder { color: rgb(255 255 255 / 0.55); }
+:root[data-ui-theme="cinematic"] .nav-search-cine svg { stroke: rgb(255 255 255 / 0.7); }
+/* the mobile menu: a second, separate floating glass panel below the pill, not welded to it */
+:root[data-ui-theme="cinematic"] .mobile-panel-cine {
+  border-radius: 1.75rem;
+  background: rgb(255 255 255 / 0.1);
+  border: 1px solid rgb(255 255 255 / 0.22);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 20px 44px -16px rgb(0 0 0 / 0.5);
+  -webkit-backdrop-filter: blur(22px) saturate(160%);
+  backdrop-filter: blur(22px) saturate(160%);
+}
 
 /* ------------------------------------------------------------------
    Cinematic product/rail card: a thin glass panel, structured in distinct zones (image stage, title,
@@ -664,8 +687,15 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
    boards' rail-card layout than a recolored version of the same box.
 ------------------------------------------------------------------- */
 :root[data-ui-theme="cinematic"] .product-card-cine {
-  border-radius: 1.5rem;
+  border-radius: 1.25rem; /* 20px, ported from the board's rail-card radius */
+  background: rgb(255 255 255 / 0.1);
+  -webkit-backdrop-filter: blur(16px) saturate(150%);
+  backdrop-filter: blur(16px) saturate(150%);
+  border: 1px solid rgb(255 255 255 / 0.2);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 18px 40px -18px rgb(0 0 0 / 0.55);
 }
+/* Price, ported from the board (#6ee7b7 on every rail card and the product-detail price). */
+:root[data-ui-theme="cinematic"] .t-price { color: #6ee7b7; }
 :root[data-ui-theme="cinematic"] .tag-pill {
   display: inline-flex;
   align-items: center;

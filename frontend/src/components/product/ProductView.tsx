@@ -133,12 +133,10 @@ export function ProductView({ id }: { id: string }) {
       <div className="grid gap-8 lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)] lg:gap-12">
         <div className="card self-start p-3 lg:sticky lg:top-24">
           <div data-tilt className={clsx("product-media overflow-hidden rounded-[1.25rem]", categoryTint(product.category))}>
-            {/* The single highest-value spot for the real three.js treatment: one canvas, one product. */}
             <ProductVisual
               src={product.image ?? cheapest.image}
               alt={product.title}
               category={product.category}
-              enable3d
               className="aspect-square w-full animate-fade-in p-8 sm:p-14"
             />
           </div>
