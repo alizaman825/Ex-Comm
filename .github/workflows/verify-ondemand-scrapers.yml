@@ -11,12 +11,6 @@ on:
         description: "Search term to test with"
         required: false
         default: "samsung galaxy a55"
-  # workflow_dispatch only works once a workflow file is on the default branch, so while this is only
-  # on a feature branch it also runs on push to that branch (temporary - removed once this workflow
-  # file reaches main, at which point workflow_dispatch alone is enough).
-  push:
-    branches:
-      - claude/project-thread-0klvpz
 
 jobs:
   verify:

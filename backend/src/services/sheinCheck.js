@@ -1,9 +1,10 @@
 // On-demand SHEIN check for a search. Not part of the ordinary live search (SHEIN is an international
-// catalog and can block automated requests at any time), so the user asks for it. Its listings are
-// ingested like any other store's and appended to the query's stored result list (same pattern as
-// services/aliexpressCheck.js).
+// catalog, has no Pakistan storefront, and can block automated requests at any time), so the user asks
+// for it. SHEIN's USD prices are converted to PKR here (the saved exchange rate), the same way eBay's
+// and Temu's are. Its listings are ingested like any other store's and appended to the query's stored
+// result list (same pattern as services/aliexpressCheck.js).
 const scrapers = require('../scrapers');
-const { SearchCache } = require('../models');
+const { SearchCache, Setting } = require('../models');
 const { parseQuery, relevanceScore } = require('./relevance');
 const { ingestListings } = require('./ingest');
 const { liveKeyOf } = require('./search');
@@ -14,7 +15,10 @@ async function checkShein(q) {
   if (r.status !== 'success') {
     return { status: r.status === 'skipped' ? 'skipped' : 'failed', found: 0, error: r.error, code: r.code, ms: r.ms };
   }
-  const ranked = r.listings
+  const fx = await Setting.getAll();
+  const priced = r.listings.map((l) => ({ ...l, price: Math.round(l.priceUsd * fx.usdToPkr), currency: 'PKR' }));
+
+  const ranked = priced
     .map((l, i) => ({ l, i, score: relevanceScore(parsed, l.title) }))
     .sort((a, b) => b.score - a.score || a.i - b.i)
     .map((x) => x.l);

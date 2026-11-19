@@ -1,19 +1,23 @@
-// SHEIN adapter (supplier source, like AliExpress: international catalog, checked on demand, not part
-// of the ordinary live search). The Pakistan storefront (pk.shein.com) embeds its search result list as
+// SHEIN adapter (supplier source, like AliExpress/Temu: international catalog, checked on demand, not
+// part of the ordinary live search). SHEIN has no Pakistan-specific storefront (checked: there is no
+// pk.shein.com or shein.com.pk - confirmed by web search, since this environment cannot reach shein.com
+// itself to check directly), so this uses the global www.shein.com site and converts its USD prices to
+// PKR the same way eBay's and Temu's are (services/sheinCheck.js). It embeds its search result list as
 // JSON inside a <script> tag rather than rendering plain HTML.
 //
-// Best effort: SHEIN runs an anti-bot "risk" layer that can challenge or block plain HTTP requests at
-// any time (worse than AliExpress), and the exact key under which it embeds the product list has moved
-// between redesigns. `extractFirstJsonArray` tries several known marker keys in turn; if none match,
-// this throws a BLOCKED ScrapeError the same way a captcha page would, which the existing circuit
-// breaker already handles. This has not been checked against a live page from this environment (the
-// sandbox this was written in cannot reach shein.com) - run `node scripts/live-check.js "<query>"`
-// after deploying and add the real marker key here if it differs.
+// Verified from a real (GitHub Actions) runner on 2026-11-19: the request itself reaches shein.com, but
+// SHEIN's anti-bot "risk" layer rejects it before any product JSON is returned, so none of the MARKERS
+// below have been confirmed against a real response yet - they're carried over from public scraping
+// write-ups, not observed. `extractFirstJsonArray` tries each in turn; if none match, this throws a
+// BLOCKED ScrapeError the same way a captcha page would, which the existing circuit breaker already
+// handles. Re-run `.github/workflows/verify-ondemand-scrapers.yml` (or the "Check on SHEIN" button)
+// after changing anything here - a 403/challenge response means the request itself needs work (headers,
+// a real browser session), not just the marker keys.
 const axios = require('axios');
 const { ScrapeError, USER_AGENT } = require('./http');
 const { parsePrice, parseNumber, extractFirstJsonArray } = require('./parse');
 
-const BASE = 'https://pk.shein.com';
+const BASE = 'https://www.shein.com';
 const TIMEOUT_MS = 20000;
 const MARKERS = ['"products":', '"goodsList":', '"goods_list":'];
 
@@ -28,10 +32,8 @@ function parse(html) {
     const id = it.goods_id ?? it.goodsId ?? it.productId ?? it.id;
     const title = it.goods_name ?? it.goodsName ?? it.productName ?? it.title;
     const rawPrice = it.salePrice?.amount ?? it.salePrice ?? it.price?.amount ?? it.price;
-    const price = parsePrice(rawPrice);
-    if (!id || !title || !price) continue;
-    const rawOriginal = it.retailPrice?.amount ?? it.retailPrice ?? it.originalPrice?.amount ?? it.originalPrice;
-    const original = parsePrice(rawOriginal);
+    const priceUsd = parsePrice(rawPrice);
+    if (!id || !title || !priceUsd) continue;
     const slug = it.goods_url_name ?? it.goodsUrlName;
     out.push({
       platform: 'shein',
@@ -40,9 +42,7 @@ function parse(html) {
       title: String(title).trim(),
       url: slug ? `${BASE}/${slug}-p-${id}.html` : asUrl(it.goods_url ?? it.url) || `${BASE}/pdsearch/${encodeURIComponent(String(title))}/`,
       image: asUrl(it.goods_img ?? it.goodsImg ?? it.image),
-      price,
-      originalPrice: original && original > price ? original : null,
-      currency: 'PKR',
+      priceUsd,
       rating: parseNumber(it.comment_rank_average ?? it.commentRankAverage ?? it.rating) || null,
       reviewCount: parseNumber(it.comment_num ?? it.commentNum ?? it.reviewCount) || 0,
       inStock: it.is_sold_out ? Number(it.is_sold_out) !== 1 : true,
