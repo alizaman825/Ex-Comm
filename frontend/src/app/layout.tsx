@@ -11,7 +11,6 @@ import { CompareProvider } from "@/components/compare/CompareProvider";
 import { CompareTray } from "@/components/compare/CompareTray";
 import { CinematicAtmosphere } from "@/components/cinematic/CinematicAtmosphere";
 import { TiltEffect } from "@/components/cinematic/TiltEffect";
-import { DEFAULT_UI_THEME } from "@/lib/ui-theme";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-display", display: "swap" });
 const body = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
@@ -33,16 +32,11 @@ export const viewport: Viewport = {
 // Runs before first paint: dark only when the visitor switched it on earlier (never from the OS setting).
 const THEME_SCRIPT = `try{var t=localStorage.getItem("excomm-theme");if(t==="dark"){document.documentElement.setAttribute("data-theme","dark")}else{document.documentElement.removeAttribute("data-theme");if(t!==null&&t!=="light")localStorage.removeItem("excomm-theme")}}catch(e){}`;
 
-// Runs before first paint: applies the visitor's own choice (saved by UiThemeToggle) over the
-// NEXT_PUBLIC_UI_THEME default baked into DEFAULT_UI_THEME, so there is no flash of the other theme.
-const UI_THEME_SCRIPT = `try{var t=localStorage.getItem("excomm-ui-theme");var d=${JSON.stringify(DEFAULT_UI_THEME)};var v=(t==="classic"||t==="cinematic")?t:d;document.documentElement.setAttribute("data-ui-theme",v);}catch(e){document.documentElement.setAttribute("data-ui-theme",${JSON.stringify(DEFAULT_UI_THEME)});}`;
-
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`} data-ui-theme={DEFAULT_UI_THEME} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${body.variable}`} data-ui-theme="cinematic" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
-        <script dangerouslySetInnerHTML={{ __html: UI_THEME_SCRIPT }} />
       </head>
       <body className="flex min-h-screen flex-col">
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-surface focus:px-5 focus:py-2 focus:shadow-lift">

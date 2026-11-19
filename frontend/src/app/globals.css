@@ -302,12 +302,12 @@
 :root[data-theme="dark"] .tint-lilac,
 :root[data-theme="dark"] .tint-butter,
 :root[data-theme="dark"] .photo,
-:root[data-ui-theme="cinematic"] .tint-peach,
-:root[data-ui-theme="cinematic"] .tint-mint,
-:root[data-ui-theme="cinematic"] .tint-sky,
-:root[data-ui-theme="cinematic"] .tint-lilac,
-:root[data-ui-theme="cinematic"] .tint-butter,
-:root[data-ui-theme="cinematic"] .photo { background-color: rgb(var(--tile)); }
+.tint-peach,
+.tint-mint,
+.tint-sky,
+.tint-lilac,
+.tint-butter,
+.photo { background-color: rgb(var(--tile)); }
 
 /* Landing scenes: plain stacked sections by default; pinned (sticky) scroll scenes only when motion is enabled */
 .scene-inner { padding-top: 7rem; padding-bottom: 6rem; min-height: 38rem; }
@@ -325,24 +325,20 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 }
 
 /* ------------------------------------------------------------------
-   Cinematic glass theme (feature flag: NEXT_PUBLIC_UI_THEME=cinematic,
-   or the in-app toggle in the navbar — see src/lib/ui-theme.ts).
+   Cinematic glass look — the only design now (no classic/dual-theme
+   system; see STATUS.md). These are the same design tokens and shared
+   classes the whole app uses (.card, .btn-*, .chip, the navbar pill,
+   .skeleton, …), plus additive classes (prefixed `atmo-`, `glass-`,
+   `t-numeral`, `spec-label`, `cta-bar`) for pieces that didn't exist
+   before (the drifting gradient backdrop, glass panels, the condensed
+   numeral).
 
-   The theme is applied by overriding the SAME design tokens and shared
-   classes the whole app already uses (.card, .btn-*, .chip, the navbar
-   pill, .skeleton, …) under the `[data-ui-theme="cinematic"]` attribute,
-   plus a handful of new, additive classes (prefixed `atmo-`, `glass-`,
-   `t-numeral`, `spec-label`, `cta-bar`) for pieces that do not exist in
-   the classic theme (the drifting gradient backdrop, glass spheres, the
-   condensed numeral). Nothing here runs or renders when the attribute
-   is absent or set to "classic", so the classic theme is untouched.
-
-   The cinematic theme is always atmospheric/dark regardless of the
-   separate light/dark toggle (`data-theme`): it defines its own token
-   values below and, because it is declared after the `[data-theme="dark"]`
-   block above and has equal CSS specificity, it wins when both are set.
+   Always atmospheric/dark regardless of the separate light/dark toggle
+   (`data-theme`): it defines its own token values below and, because it
+   is declared after the `[data-theme="dark"]` block above and has equal
+   CSS specificity, it wins when both are set.
 ------------------------------------------------------------------- */
-:root[data-ui-theme="cinematic"] {
+:root {
   color-scheme: dark;
   --bg: 20 14 22;
   --surface: 34 24 34;
@@ -404,17 +400,15 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   --glow-c: 120 104 255; /* night violet */
 }
 
-/* Backdrop: full-bleed gradient + drifting glow circles. Hidden entirely in classic theme. */
+/* Backdrop: full-bleed gradient + drifting glow circles. Always on now (cinematic is the only look). */
 .atmo {
   position: fixed;
   inset: 0;
   z-index: -10;
   overflow: hidden;
-  opacity: 0;
+  opacity: 1;
   pointer-events: none;
-  transition: opacity 0.4s ease;
 }
-:root[data-ui-theme="cinematic"] .atmo { opacity: 1; }
 .atmo-gradient {
   position: absolute;
   inset: 0;
@@ -444,31 +438,31 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 
 /* Glass surfaces: reskin the shared primitives so every page that uses them (home, product,
    compare, categories, search, wishlist, alerts) gets the frosted-glass look for free. */
-:root[data-ui-theme="cinematic"] body { background-color: transparent; color: rgb(var(--slate-600)); }
-:root[data-ui-theme="cinematic"] .card,
-:root[data-ui-theme="cinematic"] .btn-secondary,
-:root[data-ui-theme="cinematic"] .chip,
-:root[data-ui-theme="cinematic"] .input,
-:root[data-ui-theme="cinematic"] .nav-pill,
-:root[data-ui-theme="cinematic"] .glass-panel {
+body { background-color: transparent; color: rgb(var(--slate-600)); }
+.card,
+.btn-secondary,
+.chip,
+.input,
+.nav-pill,
+.glass-panel {
   background: rgb(var(--glass-bg));
   -webkit-backdrop-filter: blur(22px) saturate(140%);
   backdrop-filter: blur(22px) saturate(140%);
   border: 1px solid rgb(var(--glass-border));
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 18px 44px -18px rgb(0 0 0 / 0.55);
 }
-:root[data-ui-theme="cinematic"] .btn-primary {
+.btn-primary {
   background: linear-gradient(135deg, rgb(var(--glow-a)), rgb(var(--glow-b)));
   color: #1a1220;
   box-shadow: 0 10px 28px -8px rgb(var(--glow-b) / 0.55);
 }
-:root[data-ui-theme="cinematic"] .skeleton { background: rgb(var(--glass-bg)); }
-:root[data-ui-theme="cinematic"] .tile,
-:root[data-ui-theme="cinematic"] [class*="tint-"] { background-color: rgb(var(--glass-bg-strong)); }
+.skeleton { background: rgb(var(--glass-bg)); }
+.tile,
+[class*="tint-"] { background-color: rgb(var(--glass-bg-strong)); }
 
 /* Pill-shaped glass nav bar: translucent + blurred, with a thin bright top inset highlight so it
    visibly reads as glass sitting above the atmosphere. */
-:root[data-ui-theme="cinematic"] .nav-pill {
+.nav-pill {
   background: rgb(var(--nav-bg));
   -webkit-backdrop-filter: blur(26px) saturate(150%);
   backdrop-filter: blur(26px) saturate(150%);
@@ -479,13 +473,13 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 /* Full-bleed section backgrounds (the pastel-tinted scenes on the home page: compare/track/categories/
    sell/deals) go transparent in cinematic so the fixed .atmo gradient behind the page shows through,
    instead of a solid colour block hiding it. Classic theme keeps its pastel background untouched. */
-:root[data-ui-theme="cinematic"] .cine-section { background-color: transparent; }
+.cine-section { background-color: transparent; }
 
 /* Additive panel wrapper for sections that have no glass container of their own in the classic theme
    (e.g. the home page's product rails): invisible/no-op in classic, a real glass panel in cinematic,
    with room at the top-left for a leading .t-numeral. */
 .rail-panel { position: relative; }
-:root[data-ui-theme="cinematic"] .rail-panel {
+.rail-panel {
   padding: 3.25rem 1.25rem 1.75rem;
   border-radius: 1.75rem;
   background: rgb(var(--glass-bg));
@@ -495,7 +489,7 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.12) inset, 0 18px 44px -18px rgb(0 0 0 / 0.55);
 }
 @media (min-width: 640px) {
-  :root[data-ui-theme="cinematic"] .rail-panel { padding: 3.75rem 2rem 2.25rem; }
+  .rail-panel { padding: 3.75rem 2rem 2.25rem; }
 }
 .rail-panel > .t-numeral {
   position: absolute;
@@ -521,13 +515,13 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 
 /* Compare page: make each row/column of the comparison tables read as its own glass strip, not just
    the single outer .card panel. */
-:root[data-ui-theme="cinematic"] [data-testid="compare-table"] thead th,
-:root[data-ui-theme="cinematic"] [data-testid="compare-table"] tbody tr:nth-child(even) td,
-:root[data-ui-theme="cinematic"] [data-testid="compare-table"] tbody tr:nth-child(even) th {
+[data-testid="compare-table"] thead th,
+[data-testid="compare-table"] tbody tr:nth-child(even) td,
+[data-testid="compare-table"] tbody tr:nth-child(even) th {
   background: rgb(var(--glass-bg));
 }
-:root[data-ui-theme="cinematic"] [data-testid="compare-table"] th[scope="row"],
-:root[data-ui-theme="cinematic"] [data-testid="compare-table"] thead th:first-child {
+[data-testid="compare-table"] th[scope="row"],
+[data-testid="compare-table"] thead th:first-child {
   background: rgb(var(--glass-bg-strong));
   -webkit-backdrop-filter: blur(16px);
   backdrop-filter: blur(16px);
@@ -542,16 +536,16 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   color: rgb(var(--glow-a, 255 141 93));
   -webkit-text-stroke: 1px rgb(var(--glass-border, 255 255 255 / 0.3));
 }
-:root[data-ui-theme="cinematic"] .t-numeral { display: block; }
+.t-numeral { display: block; }
 
 /* Small uppercase spec-text blocks (brand/category labels, platform labels, etc.) */
-:root[data-ui-theme="cinematic"] .spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; }
+.spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; }
 
 /* Product media: NO backing shape behind the photo at all — no panel, no gradient, no border, no
    shadow. The product owner flagged the previous flat-panel backing itself as still reading as "a
    shape around the image"; the photo now renders directly on the card, with only the card's own
    corner radius (matched here so the image's corners line up with the card, nothing bespoke). */
-:root[data-ui-theme="cinematic"] .product-media {
+.product-media {
   border-radius: 1.5rem;
   background: transparent;
   border: none;
@@ -560,7 +554,7 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 
 
 /* Bottom glass CTA bar + round arrow button */
-:root[data-ui-theme="cinematic"] .cta-bar {
+.cta-bar {
   background: rgb(var(--nav-bg));
   -webkit-backdrop-filter: blur(24px) saturate(150%);
   backdrop-filter: blur(24px) saturate(150%);
@@ -583,16 +577,16 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 .btn-round-arrow:hover { transform: translateX(2px) scale(1.04); }
 .cta-icon-btn { display: none; }
 @media (max-width: 639px) {
-  :root[data-ui-theme="cinematic"] .cta-bar .cta-full-btn { display: none; }
-  :root[data-ui-theme="cinematic"] .cta-bar .cta-icon-btn { display: inline-flex; }
+  .cta-bar .cta-full-btn { display: none; }
+  .cta-bar .cta-icon-btn { display: inline-flex; }
 }
 
 /* Hero tilt: a tiny pointer-driven 3D tilt on the hero visual, cinematic + motion-allowed only. */
-:root[data-ui-theme="cinematic"] [data-tilt] { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); transform-style: preserve-3d; }
+[data-tilt] { transition: transform 0.25s cubic-bezier(0.22, 1, 0.36, 1); transform-style: preserve-3d; }
 
 /* Floating hero product photos (Hero.tsx Floater): no backing shape at all, in either theme now —
    the photo floats and tilts on its own, with no panel/gradient/border behind it. */
-:root[data-ui-theme="cinematic"] .floater-frame {
+.floater-frame {
   position: relative;
   display: block;
   padding: 0;
@@ -603,7 +597,7 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 
 /* A soft glass panel behind the hero price-tag visual (Hero.tsx [data-tag]): a rounded-rect card, not
    a disc, so it reads as a flat glass plate rather than a bubble. */
-:root[data-ui-theme="cinematic"] [data-tag]::before {
+[data-tag]::before {
   content: "";
   position: absolute;
   inset: -10%;
@@ -629,11 +623,11 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
    inset-highlight + drop-shadow pair, plus real clearance from the content below it instead of
    the pill touching the hero immediately.
 ------------------------------------------------------------------- */
-:root[data-ui-theme="cinematic"] .nav-shell-cine { padding-top: 0.875rem; padding-bottom: 0.75rem; }
+.nav-shell-cine { padding-top: 0.875rem; padding-bottom: 0.75rem; }
 @media (min-width: 640px) {
-  :root[data-ui-theme="cinematic"] .nav-shell-cine { padding-top: 1.25rem; padding-bottom: 2.25rem; }
+  .nav-shell-cine { padding-top: 1.25rem; padding-bottom: 2.25rem; }
 }
-:root[data-ui-theme="cinematic"] .nav-pill-cine {
+.nav-pill-cine {
   padding: 10px 10px 10px 18px;
   border-radius: 9999px;
   background: rgb(255 255 255 / 0.1);
@@ -643,38 +637,38 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   backdrop-filter: blur(22px) saturate(160%);
 }
 @media (min-width: 768px) {
-  :root[data-ui-theme="cinematic"] .nav-pill-cine {
+  .nav-pill-cine {
     padding: 14px 18px 14px 26px;
     border: 1px solid rgb(255 255 255 / 0.26);
     box-shadow: 0 1px 0 rgb(255 255 255 / 0.32) inset, 0 14px 32px rgb(0 0 0 / 0.3);
   }
 }
-:root[data-ui-theme="cinematic"] .nav-chip {
+.nav-chip {
   border-radius: 9999px;
   background: transparent;
   border: 1px solid transparent;
   transition: background 0.2s ease, border-color 0.2s ease;
 }
-:root[data-ui-theme="cinematic"] .nav-chip:hover,
-:root[data-ui-theme="cinematic"] .nav-chip[aria-current="page"] {
+.nav-chip:hover,
+.nav-chip[aria-current="page"] {
   background: rgb(var(--glass-bg-strong));
   border-color: rgb(var(--glass-border));
 }
-:root[data-ui-theme="cinematic"] .nav-wordmark {
+.nav-wordmark {
   font-family: "Bebas Neue", var(--font-display), ui-sans-serif, sans-serif;
   letter-spacing: 0.04em;
 }
 /* the compact search box inside the right-hand cluster of the cinematic pill */
-:root[data-ui-theme="cinematic"] .nav-search-cine input {
+.nav-search-cine input {
   background: rgb(255 255 255 / 0.12) !important;
   border: 1px solid rgb(255 255 255 / 0.24) !important;
   color: #fff !important;
   font-size: 12px;
 }
-:root[data-ui-theme="cinematic"] .nav-search-cine input::placeholder { color: rgb(255 255 255 / 0.55); }
-:root[data-ui-theme="cinematic"] .nav-search-cine svg { stroke: rgb(255 255 255 / 0.7); }
+.nav-search-cine input::placeholder { color: rgb(255 255 255 / 0.55); }
+.nav-search-cine svg { stroke: rgb(255 255 255 / 0.7); }
 /* the mobile menu: a second, separate floating glass panel below the pill, not welded to it */
-:root[data-ui-theme="cinematic"] .mobile-panel-cine {
+.mobile-panel-cine {
   border-radius: 1.75rem;
   background: rgb(255 255 255 / 0.1);
   border: 1px solid rgb(255 255 255 / 0.22);
@@ -688,7 +682,7 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
    store/percent tags, price) instead of the classic card's plain stacked list — closer to the concept
    boards' rail-card layout than a recolored version of the same box.
 ------------------------------------------------------------------- */
-:root[data-ui-theme="cinematic"] .product-card-cine {
+.product-card-cine {
   border-radius: 1.25rem; /* 20px, ported from the board's rail-card radius */
   background: rgb(255 255 255 / 0.1);
   -webkit-backdrop-filter: blur(16px) saturate(150%);
@@ -697,8 +691,8 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 18px 40px -18px rgb(0 0 0 / 0.55);
 }
 /* Price, ported from the board (#6ee7b7 on every rail card and the product-detail price). */
-:root[data-ui-theme="cinematic"] .t-price { color: #6ee7b7; }
-:root[data-ui-theme="cinematic"] .tag-pill {
+.t-price { color: #6ee7b7; }
+.tag-pill {
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -708,5 +702,5 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   font-weight: 800;
   letter-spacing: 0.03em;
 }
-:root[data-ui-theme="cinematic"] .tag-pill-best { background: rgb(60 214 150 / 0.18); color: rgb(110 231 183); }
-:root[data-ui-theme="cinematic"] .tag-pill-drop { background: rgb(255 104 96 / 0.18); color: rgb(253 164 175); }
+.tag-pill-best { background: rgb(60 214 150 / 0.18); color: rgb(110 231 183); }
+.tag-pill-drop { background: rgb(255 104 96 / 0.18); color: rgb(253 164 175); }
