@@ -5,6 +5,9 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   priceoye: "PriceOye",
   aliexpress: "AliExpress",
   ebay: "eBay",
+  shein: "SHEIN",
+  temu: "Temu",
+  metro: "Metro Online",
 };
 
 export const PLATFORM_COLOR: Record<Platform, string> = {
@@ -12,6 +15,9 @@ export const PLATFORM_COLOR: Record<Platform, string> = {
   priceoye: "#1E88E5",
   aliexpress: "#E5322D",
   ebay: "#0064D2",
+  shein: "#000000",
+  temu: "#FB7701",
+  metro: "#003DA5",
 };
 
 /** retail: local stores, searched live. supplier: international reference price (checked on demand). */
@@ -20,6 +26,9 @@ export const PLATFORM_ROLE: Record<Platform, "retail" | "supplier"> = {
   priceoye: "retail",
   aliexpress: "supplier",
   ebay: "supplier",
+  shein: "supplier",
+  temu: "supplier",
+  metro: "retail",
 };
 
 /** 129999 -> "Rs 129,999" */

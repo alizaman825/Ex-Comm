@@ -3,6 +3,9 @@ const { PLATFORMS } = require('../models');
 const search = require('../services/search');
 const aliexpress = require('../services/aliexpressCheck');
 const ebay = require('../services/ebayCheck');
+const shein = require('../services/sheinCheck');
+const temu = require('../services/temuCheck');
+const metro = require('../services/metroCheck');
 const { config } = require('../config/env');
 const AppError = require('../utils/AppError');
 
@@ -36,6 +39,9 @@ const searchQuerySchema = z
 
 const aliexpressBodySchema = z.object({ q: z.string().trim().min(2, 'Search for at least 2 characters').max(100) });
 const ebayBodySchema = aliexpressBodySchema;
+const sheinBodySchema = aliexpressBodySchema;
+const temuBodySchema = aliexpressBodySchema;
+const metroBodySchema = aliexpressBodySchema;
 
 async function checkAliExpress(req, res) {
   if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
@@ -47,8 +53,36 @@ async function checkEbay(req, res) {
   res.json(await ebay.checkEbay(req.body.q));
 }
 
+async function checkShein(req, res) {
+  if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
+  res.json(await shein.checkShein(req.body.q));
+}
+
+async function checkTemu(req, res) {
+  if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
+  res.json(await temu.checkTemu(req.body.q));
+}
+
+async function checkMetro(req, res) {
+  if (config.demoMode) throw new AppError(409, 'Demo mode: live store checks are switched off.');
+  res.json(await metro.checkMetro(req.body.q));
+}
+
 async function searchProducts(req, res) {
   res.json(await search.search(req.validQuery));
 }
 
-module.exports = { searchProducts, searchQuerySchema, checkAliExpress, aliexpressBodySchema, checkEbay, ebayBodySchema };
+module.exports = {
+  searchProducts,
+  searchQuerySchema,
+  checkAliExpress,
+  aliexpressBodySchema,
+  checkEbay,
+  ebayBodySchema,
+  checkShein,
+  sheinBodySchema,
+  checkTemu,
+  temuBodySchema,
+  checkMetro,
+  metroBodySchema,
+};

@@ -10,6 +10,9 @@ module.exports = () => {
   router.get('/trending', ah(meta.trending));
   router.post('/aliexpress', searchLimiter(), validate({ body: ctrl.aliexpressBodySchema }), ah(ctrl.checkAliExpress));
   router.post('/ebay', searchLimiter(), validate({ body: ctrl.ebayBodySchema }), ah(ctrl.checkEbay));
+  router.post('/shein', searchLimiter(), validate({ body: ctrl.sheinBodySchema }), ah(ctrl.checkShein));
+  router.post('/temu', searchLimiter(), validate({ body: ctrl.temuBodySchema }), ah(ctrl.checkTemu));
+  router.post('/metro', searchLimiter(), validate({ body: ctrl.metroBodySchema }), ah(ctrl.checkMetro));
   router.get('/', searchLimiter(), validate({ query: ctrl.searchQuerySchema }), ah(ctrl.searchProducts));
   return router;
 };

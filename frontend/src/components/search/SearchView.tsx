@@ -20,6 +20,9 @@ import { Filters } from "./Filters";
 import { SourceBanner } from "./SourceBanner";
 import { AliExpressCheck } from "./AliExpressCheck";
 import { EbayCheck } from "./EbayCheck";
+import { SheinCheck } from "./SheinCheck";
+import { TemuCheck } from "./TemuCheck";
+import { MetroCheck } from "./MetroCheck";
 
 const PAGE_SIZE = 12;
 
@@ -138,6 +141,9 @@ export function SearchView() {
             <>
               <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />
               <EbayCheck query={state.q} checkedCount={data.platformStatus.ebay?.loaded} onChecked={() => mutate()} />
+              <SheinCheck query={state.q} checkedCount={data.platformStatus.shein?.loaded} onChecked={() => mutate()} />
+              <TemuCheck query={state.q} checkedCount={data.platformStatus.temu?.loaded} onChecked={() => mutate()} />
+              <MetroCheck query={state.q} checkedCount={data.platformStatus.metro?.loaded} onChecked={() => mutate()} />
             </>
           )}
 

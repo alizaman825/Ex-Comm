@@ -25,6 +25,9 @@ const PLATFORM_META = [
   { id: 'priceoye', label: 'PriceOye', role: 'retail', site: 'https://priceoye.pk' },
   { id: 'aliexpress', label: 'AliExpress', role: 'supplier', site: 'https://www.aliexpress.com' },
   { id: 'ebay', label: 'eBay', role: 'supplier', site: 'https://www.ebay.com' },
+  { id: 'shein', label: 'SHEIN', role: 'supplier', site: 'https://pk.shein.com' },
+  { id: 'temu', label: 'Temu', role: 'supplier', site: 'https://www.temu.com' },
+  { id: 'metro', label: 'Metro Online', role: 'retail', site: 'https://www.metro.pk' },
 ];
 
 // GET /api/platforms: supported stores and whether each can be scraped live right now.

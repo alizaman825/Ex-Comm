@@ -4,36 +4,14 @@
 // because AliExpress is slow and can block automated requests at any time.
 const axios = require('axios');
 const { ScrapeError, USER_AGENT } = require('./http');
+const { extractJsonArray } = require('./parse');
 
 const BASE = 'https://www.aliexpress.com';
 const TIMEOUT_MS = 25000;
 const MARKER = '"itemList":{"content":';
-const BACKSLASH = 92;
 
-// Returns the JSON array that starts right after `marker`, found by matching brackets (string aware).
-function extractArray(html, marker) {
-  const at = html.indexOf(marker);
-  if (at < 0) return null;
-  const start = at + marker.length;
-  if (html[start] !== '[') return null;
-  let depth = 0;
-  let inString = false;
-  let escaped = false;
-  for (let i = start; i < html.length; i += 1) {
-    const ch = html[i];
-    if (inString) {
-      if (escaped) escaped = false;
-      else if (ch.charCodeAt(0) === BACKSLASH) escaped = true;
-      else if (ch === '"') inString = false;
-    } else if (ch === '"') inString = true;
-    else if (ch === '[' || ch === '{') depth += 1;
-    else if (ch === ']' || ch === '}') {
-      depth -= 1;
-      if (depth === 0) return html.slice(start, i + 1);
-    }
-  }
-  return null;
-}
+// Kept as a named export for the existing tests/consumers; delegates to the shared bracket-matcher.
+const extractArray = extractJsonArray;
 
 const asUrl = (u) => (u ? (String(u).startsWith('//') ? `https:${u}` : String(u)) : null);
 

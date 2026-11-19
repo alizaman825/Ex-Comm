@@ -1,8 +1,8 @@
 import type { Platform } from "./types";
 
-export const PLATFORMS: Platform[] = ["daraz", "priceoye", "aliexpress", "ebay"];
+export const PLATFORMS: Platform[] = ["daraz", "priceoye", "aliexpress", "ebay", "shein", "temu", "metro"];
 /** Checked on demand, not part of the default live search (see Filters' showSuppliers prop). */
-export const SUPPLIER_PLATFORMS: Platform[] = ["aliexpress", "ebay"];
+export const SUPPLIER_PLATFORMS: Platform[] = ["aliexpress", "ebay", "shein", "temu", "metro"];
 export const SORTS = [
   { value: "relevance", label: "Best match" },
   { value: "price_asc", label: "Price: low to high" },

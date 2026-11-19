@@ -7,7 +7,7 @@ _Version 1.0 — 2026-10-07. Derived from the approved plan (`docs/PLAN.md`)._
 Ex-Comm lets shoppers in Pakistan search one product across several online stores, compare prices side by side, follow price changes over time, keep a wishlist, and get a notification when a price drops to their target.
 
 - **Live data sources:** Daraz (daraz.pk) and PriceOye (priceoye.pk).
-- **Optional source:** AliExpress (aliexpress.com). It is in the sample (seed) data and gets a live adapter only if time allows.
+- **On-demand sources** (checked when the user asks, not part of an ordinary search): AliExpress (aliexpress.com), eBay (ebay.com, via its Browse API), SHEIN (pk.shein.com), Temu (temu.com), and Metro Online (metro.pk).
 - **Out of scope:** admin panel, analytics dashboards, payments, ordering, and checkout.
 
 **Actors**
@@ -17,7 +17,7 @@ Ex-Comm lets shoppers in Pakistan search one product across several online store
 | Visitor | Not signed in. Can search, filter, compare, and view products. |
 | Registered user | Signed in. Can do everything a visitor can, plus use the wishlist, alerts, notifications, and profile. |
 | Scheduler (system) | Timed job that re-checks prices of tracked products and raises alerts. |
-| E-commerce platform (external) | Daraz, PriceOye, and AliExpress websites that supply product data. |
+| E-commerce platform (external) | Daraz, PriceOye, AliExpress, eBay, SHEIN, Temu and Metro Online websites/APIs that supply product data. |
 
 ## 2. Functional requirements
 

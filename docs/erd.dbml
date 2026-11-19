@@ -4,7 +4,7 @@
 
 Project ExComm {
   database_type: 'MongoDB'
-  Note: 'Price comparison platform: Daraz, PriceOye, AliExpress'
+  Note: 'Price comparison platform: Daraz, PriceOye (live); AliExpress, eBay, SHEIN, Temu, Metro Online (on-demand)'
 }
 
 Enum platform {

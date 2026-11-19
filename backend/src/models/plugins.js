@@ -11,6 +11,6 @@ function toJSON(schema) {
   });
 }
 
-const PLATFORMS = ['daraz', 'priceoye', 'aliexpress', 'ebay'];
+const PLATFORMS = ['daraz', 'priceoye', 'aliexpress', 'ebay', 'shein', 'temu', 'metro'];
 
 module.exports = { toJSON, PLATFORMS };
