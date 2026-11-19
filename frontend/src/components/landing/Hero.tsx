@@ -51,7 +51,8 @@ function Floater({ product, slot }: { product: ProductCard; slot: (typeof SLOTS)
   if (broken || !product.image) return null; // never show a placeholder here
   return (
     <div data-float data-depth={slot.depth} className={clsx("multiply absolute z-10", slot.cls)}>
-      <div className="animate-float" style={{ animationDelay: slot.delay }}>
+      {/* floater-frame: plain wrapper in the classic theme; becomes a glass "bubble" in cinematic (globals.css) */}
+      <div className="floater-frame animate-float" style={{ animationDelay: slot.delay }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={product.image} alt={product.title} referrerPolicy="no-referrer" decoding="async" onError={() => setBroken(true)} className="aspect-square w-full rounded-[2rem] object-contain" />
       </div>
@@ -95,14 +96,16 @@ export function Hero() {
   return (
     <section ref={ref} data-hero className="relative flex min-h-[calc(100svh-4.5rem)] flex-col items-center overflow-x-clip px-4 pb-14 pt-4 sm:pt-8">
       <div className="relative mx-auto flex w-full max-w-[84rem] flex-1 items-center justify-center py-10 sm:py-16">
-        <span className="t-numeral pointer-events-none absolute left-3 top-2 z-0 text-[clamp(2.5rem,5vw,4.5rem)] opacity-70 sm:left-4 sm:top-4 lg:left-1 lg:top-6" aria-hidden="true">
+        <span className="t-numeral pointer-events-none absolute left-3 top-2 z-40 text-[clamp(2.5rem,5vw,4.5rem)] opacity-70 sm:left-4 sm:top-4 lg:left-1 lg:top-6" aria-hidden="true">
           01
         </span>
         <h1 className="t-hero relative z-0 text-center lg:text-left lg:self-center lg:mr-auto">
           <span className="block">Find the</span> <span className="block"><span className="swash">best price.</span></span>
         </h1>
 
-        <div data-tilt className="pointer-events-none absolute right-[50%] top-[58%] z-20 w-[9.5rem] translate-x-1/2 sm:top-1/2 sm:w-[16rem] lg:right-[3%] lg:w-[21rem] lg:translate-x-0 lg:-translate-y-1/2 xl:right-[6%]" data-tag>
+        {/* data-tag gets a glass-disc ::before behind it in cinematic (globals.css), so the hero's one big
+            product moment reads as a glass sphere too, not just the floating thumbnails */}
+        <div data-tilt data-tag className="pointer-events-none absolute right-[50%] top-[58%] z-20 w-[9.5rem] translate-x-1/2 sm:top-1/2 sm:w-[16rem] lg:right-[3%] lg:w-[21rem] lg:translate-x-0 lg:-translate-y-1/2 xl:right-[6%]">
           <TagStage high={tag.high} low={tag.low} heroRef={ref} />
         </div>
 
