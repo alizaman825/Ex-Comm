@@ -20,8 +20,8 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
   const spread = retail.length > 1 ? retail[retail.length - 1].price - retail[0].price : 0;
 
   return (
-    <article className="card card-hover group relative flex h-full flex-col overflow-hidden" data-testid="product-card">
-      <div className={clsx("product-media relative m-2 aspect-[5/4] overflow-hidden rounded-[1.1rem]", categoryTint(product.category))}>
+    <article className="card card-hover product-card-cine group relative flex h-full flex-col overflow-hidden" data-testid="product-card">
+      <div data-tilt className={clsx("product-media relative m-2 aspect-[5/4] overflow-hidden rounded-[1.1rem]", categoryTint(product.category))}>
         <ProductImage
           src={product.image}
           alt={product.title}
@@ -30,12 +30,12 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
         />
         <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
           {lowest && spread > 0 && (
-            <span className="badge-best shadow-sm">
+            <span className="badge-best tag-pill tag-pill-best shadow-sm">
               <Crown className="h-3 w-3" aria-hidden /> Best price
             </span>
           )}
           {product.priceChange7d <= -1 && (
-            <span className="badge-deal shadow-sm">
+            <span className="badge-deal tag-pill tag-pill-drop shadow-sm">
               <ArrowDownRight className="h-3 w-3" aria-hidden />-{Math.abs(product.priceChange7d).toFixed(1)}%<span className="sr-only"> price drop this week</span>
             </span>
           )}
