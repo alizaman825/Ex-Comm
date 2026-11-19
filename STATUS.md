@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-10-07 — storefront redesign (light default, opt-in dark, GSAP/three.js landing)_
+_Last updated: 2026-11-19 — daily refresh fix (keep-alive GitHub Action + home-page freshness guard)_
 
 ## Built
 - Phase 0–1: repo restructured, fresh history, plan approved (`docs/PLAN.md`), `CLAUDE.md`.
@@ -58,6 +58,11 @@ _Last updated: 2026-10-07 — storefront redesign (light default, opt-in dark, G
   - `ProductCard` now shows "checked Xh ago" next to an out-of-stock store badge (reuses `lastScrapedAt`, already on every offer). `OfferTable` already had "Last checked" + a direct "View on {store}" link per listing — confirmed, no change needed there.
   - `docs/report_notes.md` documents that store links are plain links, not affiliate/referral links (no affiliate program exists for this project).
   - Remaining review items (AliExpress landed-cost estimate, more local retailers, search autosuggest, PTA/variant filters) are scoped in `docs/REVIEW_PLAN.md` against T14/T21/new T22, not yet built.
+
+- Daily refresh fix (2026-11-19): ali found a product (Amazfit Bip 5 Smart Watch) on the home page that was actually sold out, with its price still showing a "last checked" date over a month old (Oct 9). Root cause: catalog sync and price check run as **in-process `node-cron` timers** inside the single Render web service, and Render's free plan sleeps the dyno after 15 minutes idle — nothing was waking it or triggering the jobs externally, so both schedules silently stopped firing for weeks (`docs/DEPLOY.md` already documented the sleep behavior but nothing worked around it for background jobs). Fix:
+  - `.github/workflows/daily-refresh.yml`: a GitHub Actions cron (every 15 min, independent of Render's uptime) hits `/api/health` then calls `/api/jobs/catalog-sync` and `/api/jobs/price-check` directly. Requires repo secrets `RENDER_API_URL` and `JOB_KEY` (same value as Render's generated `JOB_KEY`) — **ali needs to add these in GitHub repo settings**, documented in `docs/DEPLOY.md` §4.
+  - Safety net in case the sync falls behind again anyway: `products.controller.js` `trending`/`drops` now also require a product's freshest in-stock retail offer to have been checked within `HOME_FRESHNESS_HOURS` (default 48h, `backend/.env.example`) — a product nobody has re-checked in days is left off the home page rather than risk showing stock/price nobody has confirmed, even if the DB still says `inStock: true`. `scrapers`/`catalogSync.js` already marked a listing `inStock: false` when a re-fetch finds the product gone from the store, so once the jobs are actually running daily, sold-out items get flagged correctly without further changes.
+  - Backend test added (`tests/products.test.js`) for the freshness exclusion; not executed this session (same sandboxed `mongodb-memory-server` network block as prior sessions — `fastdl.mongodb.org` denied). Run `cd backend && npm test` to confirm.
 
 ## Working
 - **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).

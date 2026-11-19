@@ -1,7 +1,7 @@
 const request = require('supertest');
 const { createApp } = require('../src/app');
 const { seedDatabase } = require('../src/seed/seed');
-const { Product } = require('../src/models');
+const { Product, Listing } = require('../src/models');
 const { startDb, stopDb } = require('./helpers');
 
 let app;
@@ -110,6 +110,19 @@ describe('product lists', () => {
     expect(res.status).toBe(200);
     expect(res.body.products.length).toBeGreaterThan(0);
     expect(res.body.products.map((p) => p.id)).not.toContain(a55);
+  });
+
+  test('trending leaves off a product whose only in-stock offers have not been checked in days, even though it is marked in stock', async () => {
+    const before = await request(app).get('/api/products/trending?limit=30&category=mobiles');
+    expect(before.body.products.map((p) => p.id)).toContain(iphone);
+
+    const staleAt = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000); // 20 days ago, well past the freshness window
+    await Listing.updateMany({ productId: iphone }, { $set: { lastScrapedAt: staleAt, inStock: true } });
+
+    const after = await request(app).get('/api/products/trending?limit=30&category=mobiles');
+    expect(after.body.products.map((p) => p.id)).not.toContain(iphone);
+
+    await Listing.updateMany({ productId: iphone }, { $set: { lastScrapedAt: new Date() } }); // restore for later tests
   });
 });
 

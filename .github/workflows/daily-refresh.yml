@@ -1,0 +1,33 @@
+name: Keep catalog prices and stock fresh
+
+# Render's free plan spins the API down after 15 minutes idle, which stops the in-process cron jobs
+# (catalog sync, price check) too - nothing keeps the dyno awake between visits, so listings can go
+# stale for weeks. This workflow runs on GitHub's own schedule, independent of Render's uptime, and
+# calls the job endpoints directly: the HTTP request itself wakes the dyno if it was asleep.
+#
+# Requires two repository secrets (Settings -> Secrets and variables -> Actions):
+#   RENDER_API_URL  e.g. https://ex-comm-api.onrender.com
+#   JOB_KEY         the same value as the Render service's JOB_KEY env var
+on:
+  schedule:
+    - cron: '*/15 * * * *'
+  workflow_dispatch: {}
+
+jobs:
+  refresh:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Wake the API
+        run: curl -fsS --max-time 90 "${{ secrets.RENDER_API_URL }}/api/health" || true
+
+      - name: Run one catalog-sync batch
+        run: |
+          curl -fsS --max-time 60 -X POST "${{ secrets.RENDER_API_URL }}/api/jobs/catalog-sync" \
+            -H "x-job-key: ${{ secrets.JOB_KEY }}"
+
+      - name: Run a price check for wishlisted/alerted products
+        run: |
+          curl -fsS --max-time 60 -X POST "${{ secrets.RENDER_API_URL }}/api/jobs/price-check" \
+            -H "x-job-key: ${{ secrets.JOB_KEY }}" \
+            -H "Content-Type: application/json" \
+            -d '{"mode":"live"}'
