@@ -24,9 +24,9 @@ const product: ProductCardData = {
   priceChange7d: -6.2,
   platforms: ["aliexpress", "daraz", "priceoye"],
   offers: [
-    { listingId: "l1", platform: "priceoye", role: "retail", price: 117999, priceUsd: null, originalPrice: null, rating: 4.6, reviewCount: 120, inStock: true, url: "https://priceoye.pk/x", dataSource: "live", lastScrapedAt: null },
-    { listingId: "l2", platform: "daraz", role: "retail", price: 121500, priceUsd: null, originalPrice: 130000, rating: 4.3, reviewCount: 200, inStock: true, url: "https://daraz.pk/x", dataSource: "saved", lastScrapedAt: null },
-    { listingId: "l3", platform: "aliexpress", role: "supplier", price: 126400, priceUsd: 451.4, originalPrice: null, rating: null, reviewCount: 0, inStock: false, url: "https://aliexpress.com/x", dataSource: "saved", lastScrapedAt: null },
+    { listingId: "l1", platform: "priceoye", role: "retail", price: 117999, priceUsd: null, originalPrice: null, rating: 4.6, reviewCount: 120, inStock: true, url: "https://priceoye.pk/x", dataSource: "live", lastScrapedAt: null, condition: "unknown", multiVariant: false },
+    { listingId: "l2", platform: "daraz", role: "retail", price: 121500, priceUsd: null, originalPrice: 130000, rating: 4.3, reviewCount: 200, inStock: true, url: "https://daraz.pk/x", dataSource: "saved", lastScrapedAt: null, condition: "unknown", multiVariant: false },
+    { listingId: "l3", platform: "aliexpress", role: "supplier", price: 126400, priceUsd: 451.4, originalPrice: null, rating: null, reviewCount: 0, inStock: false, url: "https://aliexpress.com/x", dataSource: "saved", lastScrapedAt: null, condition: "unknown", multiVariant: false },
   ],
 };
 

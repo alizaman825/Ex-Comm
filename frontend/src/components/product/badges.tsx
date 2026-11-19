@@ -1,7 +1,7 @@
 import { ArrowDownRight, ArrowUpRight, Database, Star, Zap } from "lucide-react";
 import clsx from "clsx";
 import { PLATFORM_COLOR, PLATFORM_LABEL, formatPercent } from "@/lib/format";
-import type { DataSource, Platform } from "@/lib/types";
+import type { Condition, DataSource, Platform } from "@/lib/types";
 
 export function PlatformDot({ platform, className }: { platform: Platform; className?: string }) {
   return <span aria-hidden className={clsx("inline-block h-2 w-2 shrink-0 rounded-full", className)} style={{ backgroundColor: PLATFORM_COLOR[platform] }} />;
@@ -28,6 +28,19 @@ export function DataSourceBadge({ source, className }: { source: DataSource; cla
   return (
     <span className={clsx("badge-warning", className)} title="Saved data: stored sample or cached price, not read from the store right now">
       <Database className="h-3 w-3" aria-hidden /> Saved
+    </span>
+  );
+}
+
+/** Item condition (currently only set on eBay). Hidden when unknown, so nothing shows for stores that
+ * don't report it instead of implying "new". */
+export function ConditionBadge({ condition, label, className }: { condition: Condition; label?: string | null; className?: string }) {
+  if (condition === "unknown") return null;
+  const text = label || (condition === "new" ? "New" : condition === "refurbished" ? "Refurbished" : "Used");
+  const style = condition === "new" ? "badge-success" : condition === "refurbished" ? "badge-neutral" : "badge-warning";
+  return (
+    <span className={clsx(style, className)} title={label && label.toLowerCase() !== condition ? `eBay condition: ${label}` : undefined}>
+      {text}
     </span>
   );
 }

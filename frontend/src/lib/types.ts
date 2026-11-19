@@ -3,6 +3,8 @@
 export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay";
 export type DataSource = "live" | "saved";
 export type SearchSource = "live" | "cache" | "fallback";
+/** Item condition (currently only set on eBay listings; "unknown" everywhere else). */
+export type Condition = "new" | "refurbished" | "used" | "unknown";
 
 export interface User {
   id: string;
@@ -25,6 +27,9 @@ export interface Offer {
   url: string;
   dataSource: DataSource;
   lastScrapedAt: string | null;
+  condition: Condition;
+  /** true when the price shown is for the cheapest of several buyer-selectable variations */
+  multiVariant: boolean;
 }
 
 export interface ProductCard {
@@ -62,6 +67,10 @@ export interface Listing {
   /** Set on marketplace platforms (Daraz) where several sellers can list the same product. */
   sellerName: string | null;
   sellerLocation: string | null;
+  condition: Condition;
+  conditionLabel: string | null;
+  /** true when the price shown is for the cheapest of several buyer-selectable variations */
+  multiVariant: boolean;
 }
 
 export interface ProductDetail extends ProductCard {

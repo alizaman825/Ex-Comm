@@ -39,6 +39,20 @@ async function getToken() {
   return cachedToken.token;
 }
 
+// eBay condition codes (https://developer.ebay.com/api-docs/sell/static/metadata/condition-id-values.html),
+// collapsed to the three states we show the user. Anything we don't recognize is 'unknown' rather than
+// assumed new, since used/refurbished items are common on eBay and the whole point is to flag them.
+const NEW_CONDITION_IDS = new Set(['1000']); // "New" only; "1500 New other", "1750 New with defects" etc. are deliberately not treated as plain New
+const REFURBISHED_CONDITION_IDS = new Set(['2000', '2010', '2020', '2030', '2500', '2750']);
+function normalizeCondition(it) {
+  const id = it.conditionId != null ? String(it.conditionId) : null;
+  const label = String(it.condition || '').toLowerCase();
+  if (id ? NEW_CONDITION_IDS.has(id) : label === 'new') return 'new';
+  if ((id && REFURBISHED_CONDITION_IDS.has(id)) || label.includes('refurbish')) return 'refurbished';
+  if (id || label) return 'used';
+  return 'unknown';
+}
+
 // Normalizes one Browse API item summary. Returns null for anything we cannot price or link to.
 function mapItem(it) {
   const price = it.price && Number(it.price.value);
@@ -55,6 +69,11 @@ function mapItem(it) {
     rating: null, // the Browse API search response has no seller/item rating
     reviewCount: 0,
     inStock: true,
+    condition: normalizeCondition(it),
+    conditionLabel: it.condition || null,
+    // itemGroupType is set on listings with buyer-selectable variations (size/colour/storage/...); the
+    // Browse API prices these at the group's cheapest variation, so the real price can be higher.
+    multiVariant: Boolean(it.itemGroupType),
   };
 }
 

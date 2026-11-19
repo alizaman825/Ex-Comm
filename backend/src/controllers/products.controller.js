@@ -64,6 +64,9 @@ const fullListing = (l) => ({
   lastScrapedAt: l.lastScrapedAt,
   sellerName: l.sellerName || null,
   sellerLocation: l.sellerLocation || null,
+  condition: l.condition || 'unknown',
+  conditionLabel: l.conditionLabel || null,
+  multiVariant: Boolean(l.multiVariant),
 });
 
 // A product with nothing currently in stock anywhere shouldn't lead a promotional rail (home page
