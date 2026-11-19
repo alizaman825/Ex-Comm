@@ -15,6 +15,19 @@ import { DataSourceBadge, PlatformDot, PriceChange, Rating } from "@/components/
 import { ProductImage } from "@/components/product/ProductImage";
 import { MAX_COMPARE, useCompare } from "./CompareProvider";
 
+/**
+ * The compare page. The two approved concept boards (Product.dc.html / Product-Desktop.dc.html)
+ * cover the product-detail page's own "02 — Compare across stores" section (ported in
+ * CinematicProductView + OfferTable) but have no board of their own for this route: multi-product,
+ * side-by-side comparison is not a state either board depicts. There is therefore no literal board
+ * markup to port here. The page keeps the same table semantics and real-data wiring as before (same
+ * test ids, roles and copy) and renders through the shared glass tokens the rest of the cinematic UI
+ * already uses everywhere (.card, .badge-*, the `[data-testid="compare-table"]` glass-strip rules in
+ * globals.css) — that is what already made this page read as glass/dark, not a separate reskin here
+ * — plus the same store color-coding (PLATFORM_COLOR, via PlatformDot) used on the product page's
+ * compare rows, so both pages agree visually.
+ */
+
 const ID_RE = /^[a-f0-9]{24}$/i;
 
 /** Marks the best value(s) in a row so the table highlights them. */
@@ -31,12 +44,12 @@ const cheapestRetail = (listings: Listing[]) => {
 };
 
 function Cell({ best, children, className }: { best?: boolean; children: React.ReactNode; className?: string }) {
-  return <td className={clsx("px-4 py-3.5 align-middle", best && "bg-emerald-50/70", className)}>{children}</td>;
+  return <td className={clsx("px-4 py-3.5 align-middle", best && "bg-emerald-400/10", className)}>{children}</td>;
 }
 
 function RowLabel({ children, sub }: { children: React.ReactNode; sub?: string }) {
   return (
-    <th scope="row" className="sticky left-0 z-10 w-36 min-w-[9rem] bg-surface px-4 py-3.5 text-left align-middle text-sm font-medium text-slate-600 shadow-[1px_0_0_0_#e2e8f0]">
+    <th scope="row" className="sticky left-0 z-10 w-36 min-w-[9rem] bg-surface px-4 py-3.5 text-left align-middle text-sm font-medium text-slate-600 shadow-[1px_0_0_0_rgba(255,255,255,0.12)]">
       {children}
       {sub && <span className="spec-label block text-xs font-normal text-slate-400">{sub}</span>}
     </th>
@@ -94,16 +107,16 @@ function StoresTable({ data }: { data: CompareResponse }) {
     <div className="card overflow-x-auto" data-testid="compare-table" data-mode="platforms">
       <table className="w-full min-w-[640px] border-collapse text-sm">
         <thead>
-          <tr className="border-b border-slate-100">
+          <tr className="border-b border-white/10">
             <th className="sticky left-0 z-10 bg-surface" />
             {cols.map((c, i) => (
-              <th key={c.platform} scope="col" className={clsx("px-4 py-5 text-left align-top", lowest.has(i) && "bg-emerald-50/70", !c.l && "bg-slate-50/60")} data-missing={!c.l || undefined}>
+              <th key={c.platform} scope="col" className={clsx("px-4 py-5 text-left align-top", lowest.has(i) && "bg-emerald-400/10", !c.l && "bg-white/[0.03]")} data-missing={!c.l || undefined}>
                 <span className={clsx("flex items-center gap-2 text-base font-semibold", c.l ? "text-ink" : "text-slate-400")}>
                   <PlatformDot platform={c.platform} className={clsx("h-3 w-3", !c.l && "opacity-40")} />
                   {PLATFORM_LABEL[c.platform]}
                 </span>
                 {lowest.has(i) && (
-                  <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-onaccent">
+                  <span className="tag-pill tag-pill-best mt-1.5">
                     <Crown className="h-3 w-3" aria-hidden /> Lowest price
                   </span>
                 )}
@@ -112,14 +125,14 @@ function StoresTable({ data }: { data: CompareResponse }) {
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
-          {row("Price", (l, i) => <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-700" : "text-ink")}>{formatPrice(l.price)}</span>)}
+        <tbody className="divide-y divide-white/10">
+          {row("Price", (l, i) => <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-400" : "text-ink")}>{formatPrice(l.price)}</span>)}
           {row("Original price", (l) => <span className="tabular-nums text-slate-600">{l.originalPrice && l.originalPrice > l.price ? <span className="line-through">{formatPrice(l.originalPrice)}</span> : "–"}</span>)}
           {row("Discount", (l) => (l.discountPct > 0 ? <span className="badge-success">{l.discountPct}% off</span> : <span className="text-slate-400">–</span>))}
           {row("Rating", (l, i) => (
             <span className="inline-flex items-center gap-1.5">
               <Rating value={l.rating} />
-              {ratings.has(i) && <span className="rounded bg-amber-100 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-800">Best</span>}
+              {ratings.has(i) && <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">Best</span>}
             </span>
           ))}
           {row("Reviews", (l) => <span className="tabular-nums">{l.reviewCount ? l.reviewCount.toLocaleString("en-PK") : "–"}</span>)}
@@ -158,33 +171,37 @@ function ProductsTable({ data, onRemove }: { data: CompareResponse; onRemove: (i
     <div className="card overflow-x-auto" data-testid="compare-table" data-mode="products">
       <table className="w-full border-collapse text-sm" style={{ minWidth: `${160 + products.length * 220}px` }}>
         <thead>
-          <tr className="border-b border-slate-100">
+          <tr className="border-b border-white/10">
             <th className="sticky left-0 z-10 bg-surface" />
             {products.map((p) => (
               <th key={p.id} scope="col" className="px-4 py-5 text-left align-top font-normal">
                 <div className="relative">
-                  <button type="button" onClick={() => onRemove(p.id)} className="absolute -right-1 -top-1 z-10 rounded-full bg-surface p-1 text-slate-400 shadow-sm ring-1 ring-slate-200 hover:text-rose-600" aria-label={`Remove ${p.title} from comparison`}>
+                  <button type="button" onClick={() => onRemove(p.id)} className="absolute -right-1 -top-1 z-10 rounded-full bg-surface p-1 text-slate-400 shadow-sm ring-1 ring-white/15 hover:text-rose-400" aria-label={`Remove ${p.title} from comparison`}>
                     <X className="h-3.5 w-3.5" />
                   </button>
                   <Link href={`/products/${p.id}`} className="block">
                     <ProductImage src={p.image} alt={p.title} category={p.category} className="mx-auto h-28 w-full rounded-2xl p-2" />
-                    <span className="mt-3 line-clamp-2 block text-sm font-semibold leading-5 text-ink hover:text-brand-700">{p.title}</span>
+                    <span className="mt-3 line-clamp-2 block text-sm font-semibold leading-5 text-ink hover:text-brand-400">{p.title}</span>
                   </Link>
                 </div>
               </th>
             ))}
           </tr>
         </thead>
-        <tbody className="divide-y divide-slate-100">
+        <tbody className="divide-y divide-white/10">
           <tr>
             <RowLabel sub="in stock, retail">Lowest price</RowLabel>
             {products.map((p, i) => (
               <Cell key={p.id} best={lowest.has(i)}>
                 {cheapest[i] ? (
                   <>
-                    <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-700" : "text-ink")}>{formatPrice(cheapest[i]!.price)}</span>
+                    <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-400" : "text-ink")}>{formatPrice(cheapest[i]!.price)}</span>
                     <span className="mt-0.5 block text-xs text-slate-500">on {PLATFORM_LABEL[cheapest[i]!.platform]}</span>
-                    {lowest.has(i) && <span className="mt-1.5 inline-flex items-center gap-1 rounded bg-emerald-600 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-onaccent"><Crown className="h-3 w-3" aria-hidden /> Best price</span>}
+                    {lowest.has(i) && (
+                      <span className="tag-pill tag-pill-best mt-1.5">
+                        <Crown className="h-3 w-3" aria-hidden /> Best price
+                      </span>
+                    )}
                   </>
                 ) : (
                   <span className="text-slate-400">Out of stock</span>
@@ -210,7 +227,7 @@ function ProductsTable({ data, onRemove }: { data: CompareResponse; onRemove: (i
                 </RowLabel>
                 {prices.map((price, i) => (
                   <Cell key={products[i].id} best={best.has(i)} className="tabular-nums">
-                    {price === null ? <span className="text-sm italic text-slate-400">Not available on this store</span> : <span className={clsx(best.has(i) && "font-semibold text-emerald-700")}>{formatPrice(price)}</span>}
+                    {price === null ? <span className="text-sm italic text-slate-400">Not available on this store</span> : <span className={clsx(best.has(i) && "font-semibold text-emerald-400")}>{formatPrice(price)}</span>}
                   </Cell>
                 ))}
               </tr>
@@ -301,7 +318,7 @@ function Suggestions({ productId, ids, onAdd }: { productId: string; ids: string
   );
 }
 
-export function CompareView() {
+export function CinematicCompareView() {
   const router = useRouter();
   const params = useSearchParams();
   const tray = useCompare();
@@ -402,7 +419,7 @@ export function CompareView() {
       ) : (
         <>
           {data.mode === "products" && data.cheapest && (
-            <div className="mb-5 flex flex-wrap gap-x-8 gap-y-2 rounded-2xl border border-emerald-200 bg-emerald-50 px-5 py-3.5 text-sm text-emerald-900" data-testid="compare-summary">
+            <div className="mb-5 flex flex-wrap gap-x-8 gap-y-2 rounded-2xl border border-emerald-400/25 bg-emerald-400/10 px-5 py-3.5 text-sm text-emerald-200" data-testid="compare-summary">
               <p>
                 <strong>Best price:</strong> {data.products.find((p) => p.id === data.cheapest!.productId)?.title} at {formatPrice(data.cheapest.price)} on {PLATFORM_LABEL[data.cheapest.platform]}
               </p>
@@ -415,10 +432,10 @@ export function CompareView() {
           )}
           {data.mode === "platforms" ? (
             <Fragment>
-              <div className="card mb-5 flex items-center gap-4 rounded-card border border-slate-200 bg-surface p-4">
+              <div className="card mb-5 flex items-center gap-4 rounded-card border border-white/10 bg-surface p-4">
                 <ProductImage src={data.products[0].image} alt="" category={data.products[0].category} className="h-16 w-16 shrink-0 rounded-2xl p-1" />
                 <div className="min-w-0 flex-1">
-                  <Link href={`/products/${data.products[0].id}`} className="line-clamp-2 text-base font-semibold text-ink hover:text-brand-700">
+                  <Link href={`/products/${data.products[0].id}`} className="line-clamp-2 text-base font-semibold text-ink hover:text-brand-400">
                     {data.products[0].title}
                   </Link>
                   <p className="text-sm text-slate-500">{data.products[0].platforms.length} stores</p>
