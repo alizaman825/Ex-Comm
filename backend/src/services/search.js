@@ -86,6 +86,8 @@ function offersFor(listings) {
       url: l.url,
       dataSource: l.dataSource,
       lastScrapedAt: l.lastScrapedAt,
+      condition: l.condition || 'unknown',
+      multiVariant: Boolean(l.multiVariant),
     }));
 }
 

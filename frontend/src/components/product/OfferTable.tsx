@@ -5,7 +5,7 @@ import { ChevronDown, ExternalLink, PackageX } from "lucide-react";
 import clsx from "clsx";
 import { PLATFORM_LABEL, formatPrice, formatUsd, timeAgo } from "@/lib/format";
 import type { Listing, Platform } from "@/lib/types";
-import { DataSourceBadge, PlatformDot, Rating } from "./badges";
+import { ConditionBadge, DataSourceBadge, PlatformDot, Rating } from "./badges";
 
 interface SellerGroup {
   platform: Platform;
@@ -40,7 +40,9 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
         <h2 id="offers-heading" className="t-h2">
           Compare stores
         </h2>
-        <p className="mt-1 text-sm text-slate-600">Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers.</p>
+        <p className="mt-1 text-sm text-slate-600">
+          Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers; eBay listings can be new, used or refurbished, shown above.
+        </p>
       </div>
       <ul className="space-y-2.5">
         {groups.map((g) =>
@@ -69,6 +71,7 @@ function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
             <span className="font-display font-bold text-ink">{PLATFORM_LABEL[l.platform]}</span>
             {isLowest && <span className="badge-best !px-2 !py-0.5 !text-[10px] uppercase tracking-wide">Lowest</span>}
             {l.role === "supplier" && <span className="badge-neutral">Supplier</span>}
+            <ConditionBadge condition={l.condition} label={l.conditionLabel} />
           </div>
           {l.sellerName && (
             <p className="mt-0.5 text-xs text-slate-500">
@@ -76,7 +79,10 @@ function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
               {l.sellerLocation ? ` · ${l.sellerLocation}` : ""}
             </p>
           )}
-          <p className={clsx("mt-2 font-display text-2xl font-extrabold tabular-nums tracking-tight", isLowest ? "text-emerald-700" : "text-ink")}>{formatPrice(l.price)}</p>
+          <p className={clsx("mt-2 font-display text-2xl font-extrabold tabular-nums tracking-tight", isLowest ? "text-emerald-700" : "text-ink")}>
+            {l.multiVariant && <span className="mr-1 font-normal text-slate-500">from</span>}
+            {formatPrice(l.price)}
+          </p>
           <p className="mt-0.5 text-xs text-slate-600">
             {l.role === "supplier" && l.priceUsd ? <span>{formatUsd(l.priceUsd)} at the saved exchange rate · </span> : null}
             {l.discountPct > 0 ? (
@@ -87,6 +93,9 @@ function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
               l.role !== "supplier" && "No discount listed"
             )}
           </p>
+          {l.multiVariant && (
+            <p className="mt-0.5 text-xs text-amber-700">Has several options (size/colour/storage) — the price shown is for the cheapest one.</p>
+          )}
         </div>
         <a href={l.url} target="_blank" rel="noopener noreferrer" className={clsx(isLowest ? "btn-primary" : "btn-secondary", "btn-sm !py-2.5")}>
           {l.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[l.platform]} <ExternalLink className="h-3.5 w-3.5" aria-hidden />

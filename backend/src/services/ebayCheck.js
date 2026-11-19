@@ -5,7 +5,7 @@
 // Listing.price is compared across stores as PKR everywhere else in the app.
 const scrapers = require('../scrapers');
 const { SearchCache, Setting } = require('../models');
-const { parseQuery, relevanceScore } = require('./relevance');
+const { parseQuery, relevanceScore, isRelevant } = require('./relevance');
 const { ingestListings } = require('./ingest');
 const { liveKeyOf } = require('./search');
 
@@ -18,7 +18,12 @@ async function checkEbay(q) {
   const fx = await Setting.getAll();
   const priced = r.listings.map((l) => ({ ...l, price: Math.round(l.priceUsd * fx.usdToPkr), currency: 'PKR' }));
 
-  const ranked = priced
+  // eBay's own search is loose (it returns accessories/other models alongside the real match); unlike
+  // ordinary live search, these results are ingested straight into an existing product's listings, so an
+  // irrelevant title here would attach as a wrong "Compare stores" row rather than just ranking low.
+  const relevant = priced.filter((l) => isRelevant(parsed, l.title));
+
+  const ranked = relevant
     .map((l, i) => ({ l, i, score: relevanceScore(parsed, l.title) }))
     .sort((a, b) => b.score - a.score || a.i - b.i)
     .map((x) => x.l);

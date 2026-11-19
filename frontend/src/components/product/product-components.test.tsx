@@ -98,7 +98,8 @@ describe("AlertDialog", () => {
 
 const listing = (over: Partial<Listing>): Listing => ({
   id: "l", platform: "daraz", role: "retail", title: "T", url: "https://x", image: null, price: 100000, priceUsd: null, originalPrice: null, discountPct: 0,
-  currency: "PKR", rating: 4.5, reviewCount: 10, inStock: true, dataSource: "live", lastScrapedAt: null, sellerName: null, sellerLocation: null, ...over,
+  currency: "PKR", rating: 4.5, reviewCount: 10, inStock: true, dataSource: "live", lastScrapedAt: null, sellerName: null, sellerLocation: null,
+  condition: "unknown", conditionLabel: null, multiVariant: false, ...over,
 });
 
 describe("OfferTable", () => {

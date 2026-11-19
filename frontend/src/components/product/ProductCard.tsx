@@ -70,6 +70,9 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
                 <PlatformDot platform={o.platform} />
                 <span className="truncate">{PLATFORM_LABEL[o.platform]}</span>
                 {o.role === "supplier" && <span className="shrink-0 rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-600">supplier</span>}
+                {o.condition !== "unknown" && o.condition !== "new" && (
+                  <span className="shrink-0 rounded bg-amber-100 px-1 py-px text-[10px] font-medium text-amber-700">{o.condition}</span>
+                )}
                 {o.dataSource === "saved" && <span className="shrink-0 rounded bg-amber-100 px-1 py-px text-[10px] font-medium text-amber-700">saved</span>}
                 {!o.inStock && (
                   <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>

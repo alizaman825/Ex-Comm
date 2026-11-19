@@ -65,6 +65,9 @@ const fullListing = (l) => ({
   lastScrapedAt: l.lastScrapedAt,
   sellerName: l.sellerName || null,
   sellerLocation: l.sellerLocation || null,
+  condition: l.condition || 'unknown',
+  conditionLabel: l.conditionLabel || null,
+  multiVariant: Boolean(l.multiVariant),
 });
 
 // A product whose freshest in-stock retail offer was last checked within the freshness window.

@@ -26,6 +26,13 @@ const listingSchema = new mongoose.Schema(
     sellerId: String,
     sellerName: String,
     sellerLocation: String,
+    // Set on eBay listings (Browse API returns item condition for every result). Other platforms leave
+    // this at the default: PriceOye/Daraz only list new items, so there is nothing to flag there.
+    condition: { type: String, enum: ['new', 'refurbished', 'used', 'unknown'], default: 'unknown' },
+    conditionLabel: String, // eBay's own wording ("Seller refurbished", "For parts or not working", ...)
+    // True when the listed price is the cheapest of several buyer-selectable variations (size/colour/...),
+    // so the actual checkout price can be higher than what is shown here.
+    multiVariant: { type: Boolean, default: false },
   },
   { timestamps: true }
 );
