@@ -8,7 +8,8 @@ const MAX_DEG = 8;
 /**
  * A subtle pointer/touch tilt on any element marked `data-tilt`: the product-detail image stage
  * and every grid/rail product card. This is the only tilt treatment on product photos now (no R3F/
- * WebGL — see ProductVisual.tsx). Cinematic theme only, and only when motion is allowed
+ * WebGL — the product/compare round removed the ProductVisual wrapper and uses ProductImage directly).
+ * Cinematic theme only, and only when motion is allowed
  * (prefers-reduced-motion off, device capable). One pointermove listener for the whole document; the
  * work per move is a bounding-box check per target, which stays cheap even across a few dozen cards.
  */
