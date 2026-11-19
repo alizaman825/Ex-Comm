@@ -63,6 +63,18 @@ async function localSearch(parsed, { category } = {}) {
     .map((x) => x.p);
 }
 
+// "Live" should mean "we actually checked this recently", not "was fetched through the live code path
+// at some unknown point in the past". Supplier listings (eBay, AliExpress) are never re-fetched by the
+// price job (scrapers/*: canRefetch = false), so without this a 6-week-old on-demand check keeps the
+// "Live" badge forever. The raw stored field is left alone (ingest/history logic depends on it); only
+// what the API reports is adjusted.
+function effectiveDataSource(l) {
+  if (l.dataSource !== 'live') return l.dataSource;
+  if (!l.lastScrapedAt) return 'saved';
+  const ageMs = Date.now() - new Date(l.lastScrapedAt).getTime();
+  return ageMs <= config.home.freshnessHours * 60 * 60 * 1000 ? 'live' : 'saved';
+}
+
 // Cheapest in-stock offer per platform, shaped for product cards.
 function offersFor(listings) {
   const best = new Map();
@@ -84,7 +96,7 @@ function offersFor(listings) {
       reviewCount: l.reviewCount || 0,
       inStock: l.inStock,
       url: l.url,
-      dataSource: l.dataSource,
+      dataSource: effectiveDataSource(l),
       lastScrapedAt: l.lastScrapedAt,
       condition: l.condition || 'unknown',
       multiVariant: Boolean(l.multiVariant),
@@ -217,4 +229,4 @@ async function search(params) {
   };
 }
 
-module.exports = { search, localSearch, queryKeyOf, liveKeyOf, toCard, offersFor };
+module.exports = { search, localSearch, queryKeyOf, liveKeyOf, toCard, offersFor, effectiveDataSource };

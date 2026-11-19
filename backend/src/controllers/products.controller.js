@@ -61,7 +61,7 @@ const fullListing = (l) => ({
   rating: l.rating || null,
   reviewCount: l.reviewCount || 0,
   inStock: l.inStock,
-  dataSource: l.dataSource,
+  dataSource: search.effectiveDataSource(l),
   lastScrapedAt: l.lastScrapedAt,
   sellerName: l.sellerName || null,
   sellerLocation: l.sellerLocation || null,
