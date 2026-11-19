@@ -26,6 +26,16 @@ Free instances sleep after 15 minutes idle; the first request after that takes a
 
 Render's free plan has no fixed outbound IP, so allow `0.0.0.0/0` under Atlas → Network Access and rely on a strong database user password.
 
+## 4. Keeping prices and stock fresh on the free plan
+
+Render's free instance sleeps after 15 minutes idle, and the scheduled catalog-sync/price-check jobs run as in-process timers - while the dyno is asleep, they don't fire, so listings can silently go stale (seen in practice: a month without a refresh). `.github/workflows/daily-refresh.yml` fixes this from outside Render: every 15 minutes it hits `/api/health` (wakes the dyno if needed) and calls `/api/jobs/catalog-sync` + `/api/jobs/price-check`, so the data keeps moving even if nobody visits the site. (This repo is public, so GitHub Actions minutes are free and unlimited; a private repo would need a longer interval to stay within its monthly minutes.)
+
+Add these repository secrets (GitHub → Settings → Secrets and variables → Actions) or the workflow has nothing to call:
+- `RENDER_API_URL`: the deployed API's base URL, e.g. `https://ex-comm-api.onrender.com`.
+- `JOB_KEY`: the same value Render generated for the service's `JOB_KEY` env var (Render dashboard → service → Environment).
+
+Without these secrets the jobs still run on their normal cron *while the dyno happens to be awake*, but gaps longer than a day are expected again.
+
 ## Notes
 
 - `TRUST_PROXY=2` makes rate limits see the visitor's IP behind the Vercel rewrite and Render's proxy.
