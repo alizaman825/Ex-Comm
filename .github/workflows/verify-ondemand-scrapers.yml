@@ -1,0 +1,27 @@
+name: Verify on-demand scrapers
+
+# One-off manual check for new on-demand adapters (currently Metro Online, SHEIN, Temu) against the
+# real sites. Exists because the cloud sandbox these adapters were written in cannot reach those hosts
+# (its network policy blocks them), but a GitHub-hosted runner can. Not wired to push/PR triggers on
+# purpose: these adapters are not on the live search path, so there is nothing to gate automatically.
+on:
+  workflow_dispatch:
+    inputs:
+      query:
+        description: "Search term to test with"
+        required: false
+        default: "samsung galaxy a55"
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+      - run: node scripts/verify-ondemand.js "${{ github.event.inputs.query }}"
