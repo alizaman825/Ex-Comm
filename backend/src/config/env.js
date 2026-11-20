@@ -69,7 +69,9 @@ const config = {
   rateLimit: {
     windowMs: 15 * 60 * 1000,
     apiMax: Number(process.env.API_RATE_LIMIT_MAX) || 300,
-    authMax: Number(process.env.AUTH_RATE_LIMIT_MAX) || 10,
+    // Keyed per IP+email (see middleware/rateLimit.js), so this only throttles repeated attempts
+    // on the same account, not every login behind a shared IP (campus Wi-Fi, mobile carrier NAT).
+    authMax: Number(process.env.AUTH_RATE_LIMIT_MAX) || 20,
   },
 };
 
