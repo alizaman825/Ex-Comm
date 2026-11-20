@@ -1,0 +1,33 @@
+name: Cleanup mismatched listings
+
+# One-off migration (backend/scripts/cleanup-mismatched-listings.js): detaches store listings that were
+# matched onto the wrong product before the accessory/price-sanity fix in services/matching.js and
+# services/ingest.js (see STATUS.md, "Accessory listings stopped attaching...", and docs/report_notes.md).
+# Click "Run workflow" below with "apply" unchecked first to see a dry-run report in the log, then run it
+# again with "apply" checked to actually fix the database.
+#
+# Requires a repository secret MONGO_URI (Settings -> Secrets and variables -> Actions -> New repository
+# secret) set to the same Atlas connection string used by the Render backend.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply the fix (unchecked = dry run only, changes nothing)'
+        type: boolean
+        default: false
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Run cleanup script
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/cleanup-mismatched-listings.js ${{ inputs.apply && '--apply' || '' }}
