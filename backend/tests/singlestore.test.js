@@ -55,6 +55,18 @@ async function otherCardFor(res, listingTitle) {
   const ids = new Set((await Listing.find({ title: listingTitle }).select('productId').lean()).map((l) => String(l.productId)));
   return res.body.otherResults.find((r) => ids.has(r.id));
 }
+// Finds every title's card (via `find`) and returns how many distinct products they land on - a listing
+// can join an existing (seeded or earlier-test) product instead of creating its own, so the right count
+// is "how many products these titles actually ended up on", not "one product per title".
+async function distinctProductsOf(titles2, find) {
+  const ids = new Set();
+  for (const t of titles2) {
+    const card = await find(t);
+    expect(card).toBeTruthy();
+    ids.add(card.id);
+  }
+  return ids.size;
+}
 
 describe('nothing is hidden: non-matches move to otherResults, they are never dropped or ranked as matches', () => {
   const phones = ['Apple iPhone 16 Pro Max - 256GB', 'Apple iPhone 16 Pro Max - 512GB'];
@@ -65,10 +77,8 @@ describe('nothing is hidden: non-matches move to otherResults, they are never dr
     stores({ daraz: () => withMeta(all.map((t, i) => listing('daraz', t, 300 + i))) });
     const res = await search('iphone 16 pro max');
     expect(res.body.mode).toBe('live');
-    expect(res.body.total).toBe(phones.length);
-    for (const t of phones) expect(await cardFor(res, t)).toBeTruthy();
-    expect(res.body.otherTotal).toBe(accessories.length);
-    for (const t of accessories) expect(await otherCardFor(res, t)).toBeTruthy();
+    expect(res.body.total).toBe(await distinctProductsOf(phones, (t) => cardFor(res, t)));
+    expect(res.body.otherTotal).toBe(await distinctProductsOf(accessories, (t) => otherCardFor(res, t)));
   });
 
   test('the best matches lead results; non-matches are grouped separately, never ranked among them', async () => {
@@ -84,10 +94,8 @@ describe('nothing is hidden: non-matches move to otherResults, they are never dr
     const covers = [...matching, ...generic];
     stores({ daraz: () => withMeta(covers.map((t, i) => listing('daraz', t, 500 + i))) });
     const res = await search('iphone 15 pro max cover');
-    expect(res.body.total).toBe(matching.length);
-    for (const t of matching) expect(await cardFor(res, t)).toBeTruthy();
-    expect(res.body.otherTotal).toBe(generic.length);
-    for (const t of generic) expect(await otherCardFor(res, t)).toBeTruthy();
+    expect(res.body.total).toBe(await distinctProductsOf(matching, (t) => cardFor(res, t)));
+    expect(res.body.otherTotal).toBe(await distinctProductsOf(generic, (t) => otherCardFor(res, t)));
     res.body.results.forEach((card) => expect(storesOf(card)).toEqual(['daraz']));
   });
 
