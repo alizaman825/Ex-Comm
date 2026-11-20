@@ -226,9 +226,12 @@
   /* Form controls */
   .label { @apply mb-1.5 block text-sm font-semibold text-slate-700; }
   .input {
-    @apply block w-full rounded-field border border-slate-200 bg-surface px-4 py-3 text-sm text-ink transition duration-200 placeholder:text-slate-400 hover:border-slate-300 focus:border-brand-500 focus:outline-none focus:ring-4 focus:ring-brand-500/15 disabled:bg-slate-100;
+    /* Focus styling (border/box-shadow/outline/caret) lives entirely in the shared focus-treatment
+       block below — no focus: utilities here, so there is only one place that decides what a
+       focused input looks like. */
+    @apply block w-full rounded-field border border-slate-200 bg-surface px-4 py-3 text-sm text-ink transition duration-200 placeholder:text-slate-400 hover:border-slate-300 disabled:bg-slate-100;
   }
-  .input-error { @apply border-rose-400 focus:border-rose-500 focus:ring-rose-500/15; }
+  .input-error { @apply border-rose-400; }
   .field-error { @apply mt-1.5 text-xs font-medium text-rose-600; }
   .field-hint { @apply mt-1.5 text-xs text-slate-500; }
 
@@ -722,30 +725,26 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
 /* ------------------------------------------------------------------
    Focus treatment shared by every glass text input (hero search, the navbar's compact search,
    and every plain .input — login/register fields, the filter price boxes): no harsh default
-   browser outline/ring, a soft warm glow instead (using the same --glow-a accent as the rest of
-   the cinematic palette), and a caret colour that is actually visible against the dark glass.
-------------------------------------------------------------------- */
-.cine-search-pill {
-  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+   browser outline/ring, a soft diffused warm glow instead (blurred, like the atmosphere's own
+   glow circles, not a crisp solid ring — a sharp 3px outline read as a harsh rectangle, which is
+   exactly what this replaces), and a caret colour that is actually visible against the dark glass.
+   One shared rule for all three input shapes instead of three near-duplicate ones. */
+.cine-search-pill,
+.nav-search-cine input,
+.input {
+  transition: border-color 0.25s ease, box-shadow 0.25s ease;
 }
-.cine-search-pill:focus-within {
-  border-color: rgb(var(--glow-a) / 0.6);
-  box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 16px 38px rgb(0 0 0 / 0.35), 0 0 0 3px rgb(var(--glow-a) / 0.28);
-}
-.cine-search-pill input {
+.cine-search-pill input,
+.nav-search-cine input,
+.input {
   caret-color: rgb(var(--glow-a));
 }
-.nav-search-cine input:focus {
-  outline: none;
-  border-color: rgb(var(--glow-a) / 0.6) !important;
-  box-shadow: 0 0 0 3px rgb(var(--glow-a) / 0.28);
-  caret-color: rgb(var(--glow-a));
-}
+.cine-search-pill:focus-within,
+.nav-search-cine input:focus,
 .input:focus {
-  border-color: rgb(var(--glow-a) / 0.6) !important;
-  box-shadow: 0 0 0 3px rgb(var(--glow-a) / 0.25) !important;
   outline: none;
-  caret-color: rgb(var(--glow-a));
+  border-color: rgb(var(--glow-a) / 0.5) !important;
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 0 0 1px rgb(var(--glow-a) / 0.3), 0 0 22px 2px rgb(var(--glow-a) / 0.22);
 }
 
 /* Native checkboxes/radios (search filters): tint them with the accent instead of leaving the
