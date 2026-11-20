@@ -1,7 +1,7 @@
-import { ArrowDownRight, ArrowUpRight, Database, Star, Zap } from "lucide-react";
+import { AlertTriangle, ArrowDownRight, ArrowUpRight, Ban, Database, HelpCircle, Star, Zap } from "lucide-react";
 import clsx from "clsx";
-import { PLATFORM_COLOR, PLATFORM_LABEL, formatPercent } from "@/lib/format";
-import type { Condition, DataSource, Platform } from "@/lib/types";
+import { PLATFORM_COLOR, PLATFORM_LABEL, formatPercent, timeAgo } from "@/lib/format";
+import type { Condition, DataSource, Platform, PriceStatus } from "@/lib/types";
 
 export function PlatformDot({ platform, className }: { platform: Platform; className?: string }) {
   return <span aria-hidden className={clsx("inline-block h-2 w-2 shrink-0 rounded-full", className)} style={{ backgroundColor: PLATFORM_COLOR[platform] }} />;
@@ -30,6 +30,46 @@ export function DataSourceBadge({ source, className }: { source: DataSource; cla
       <Database className="h-3 w-3" aria-hidden /> Saved
     </span>
   );
+}
+
+/**
+ * Replaces the old "Live"/"Saved" badge, which never expired (PLAN.md item 3: a listing scraped weeks
+ * ago could still say "Live"). Always shows the real age of the price - "Live" never appears without it.
+ */
+export function StatusBadge({ status, lastScrapedAt, className }: { status: PriceStatus; lastScrapedAt: string | null; className?: string }) {
+  const age = lastScrapedAt ? timeAgo(lastScrapedAt) : null;
+  switch (status) {
+    case "checked_recently":
+      return (
+        <span className={clsx("badge-success", className)} title="Price read from the store recently">
+          <Zap className="h-3 w-3" aria-hidden /> Checked {age}
+        </span>
+      );
+    case "stale":
+      return (
+        <span className={clsx("badge-warning", className)} title="Not re-checked recently - the price may have moved since">
+          <Database className="h-3 w-3" aria-hidden /> Checked {age}
+        </span>
+      );
+    case "unavailable":
+      return (
+        <span className={clsx("badge-neutral", className)} title="The store did not have this in stock at the last check">
+          <Ban className="h-3 w-3" aria-hidden /> Unavailable
+        </span>
+      );
+    case "check_failed":
+      return (
+        <span className={clsx("badge-warning", className)} title="The last attempt to re-check this price failed; the price shown may be out of date">
+          <AlertTriangle className="h-3 w-3" aria-hidden /> Check failed
+        </span>
+      );
+    default:
+      return (
+        <span className={clsx("badge-neutral", className)} title="This price has never been checked, or not recently enough to say">
+          <HelpCircle className="h-3 w-3" aria-hidden /> Unknown
+        </span>
+      );
+  }
 }
 
 /** Item condition (currently only set on eBay). Hidden when unknown, so nothing shows for stores that

@@ -115,7 +115,7 @@ function HeroVisual({ product }: { product: ProductDetail }) {
       <span className="absolute left-2 top-4 rounded-full bg-emerald-400/90 px-3 py-1.5 text-[11px] font-extrabold text-[#06281c] sm:left-4">Lowest price</span>
       {product.priceChange7d <= -1 && (
         <span className="absolute bottom-4 right-2 rounded-full bg-[#fcd34d]/95 px-3 py-1.5 text-[11px] font-extrabold text-[#3f2d05] sm:right-4">
-          {Math.round(product.priceChange7d)}% today
+          {Math.round(product.priceChange7d)}% this week
         </span>
       )}
     </div>
@@ -272,7 +272,13 @@ export function CinematicProductView({ id }: { id: string }) {
     const cheapest = (pool.length ? pool : retail.length ? retail : product.listings).reduce((a, b) => (b.price < a.price ? b : a));
     const hasSaved = product.listings.some((l) => l.dataSource === "saved");
     const platforms = [...new Set(product.listings.map((l) => l.platform))] as Platform[];
-    return { cheapest, hasSaved, platforms };
+    // PLAN.md item 5: one primary savings figure, from offers checked recently enough to trust - never
+    // a stale/failed-check price, and never a second, differently-worded "save" number alongside it.
+    const trustedRetail = [...retail.filter((l) => l.inStock && l.status === "checked_recently")].sort((a, b) => a.price - b.price);
+    const savings = trustedRetail.length > 1 && trustedRetail[1].price > trustedRetail[0].price
+      ? { store: trustedRetail[0].platform, amount: trustedRetail[1].price - trustedRetail[0].price }
+      : null;
+    return { cheapest, hasSaved, platforms, savings };
   }, [product]);
 
   if (error instanceof ApiError && (error.status === 404 || error.status === 400)) {
@@ -320,9 +326,9 @@ export function CinematicProductView({ id }: { id: string }) {
         </Link>
       </div>
 
-      {product.maxPrice - cheapest.price > 0 && (
+      {view.savings && (
         <p className="mt-4 flex items-center justify-center gap-1.5 text-[12.5px] font-semibold text-emerald-300 lg:justify-start">
-          <Crown className="h-3.5 w-3.5" aria-hidden /> You save up to {formatPrice(product.maxPrice - cheapest.price)} compared with the most expensive store.
+          <Crown className="h-3.5 w-3.5" aria-hidden /> Cheapest at {PLATFORM_LABEL[view.savings.store]}, {formatPrice(view.savings.amount)} less than the next store.
         </p>
       )}
 

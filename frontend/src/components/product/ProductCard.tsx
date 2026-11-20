@@ -16,8 +16,11 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
   // Retail stores come first; the AliExpress supplier price is listed but never counts as "cheapest".
   const retail = product.offers.filter((o) => o.role !== "supplier");
   const offers = [...retail, ...product.offers.filter((o) => o.role === "supplier")].slice(0, 3);
-  const lowest = retail[0];
-  const spread = retail.length > 1 ? retail[retail.length - 1].price - retail[0].price : 0;
+  // "Best price" / "save Rs X" only ever compares offers checked recently enough to trust (PLAN.md item
+  // 5) - a stale or failed-check price must never be the one a badge calls cheapest.
+  const trustedRetail = retail.filter((o) => o.status === "checked_recently");
+  const lowest = trustedRetail[0];
+  const spread = trustedRetail.length > 1 ? trustedRetail[trustedRetail.length - 1].price - trustedRetail[0].price : 0;
 
   return (
     <article className="card card-hover product-card-cine group relative flex h-full flex-col overflow-hidden" data-testid="product-card">

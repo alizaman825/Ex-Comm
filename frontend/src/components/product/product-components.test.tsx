@@ -98,7 +98,7 @@ describe("AlertDialog", () => {
 
 const listing = (over: Partial<Listing>): Listing => ({
   id: "l", platform: "daraz", role: "retail", title: "T", url: "https://x", image: null, price: 100000, priceUsd: null, originalPrice: null, discountPct: 0,
-  currency: "PKR", rating: 4.5, reviewCount: 10, inStock: true, dataSource: "live", lastScrapedAt: null, sellerName: null, sellerLocation: null,
+  currency: "PKR", rating: 4.5, reviewCount: 10, inStock: true, dataSource: "live", lastScrapedAt: null, status: "checked_recently", sellerName: null, sellerLocation: null,
   condition: "unknown", conditionLabel: null, multiVariant: false, ...over,
 });
 
@@ -118,7 +118,9 @@ describe("OfferTable", () => {
     expect(within(rows[0]).getByText("Lowest")).toBeInTheDocument();
     expect(within(rows[1]).queryByText("Lowest")).not.toBeInTheDocument();
     expect(within(rows[1]).getByText("7% off")).toBeInTheDocument();
-    expect(within(rows[1]).getByText("Saved")).toBeInTheDocument();
+    // PLAN.md item 3: the old always-"Live"/"Saved" dataSource label is gone - every row now shows its
+    // real freshness status instead (StatusBadge), computed from lastScrapedAt, not from dataSource.
+    expect(within(rows[1]).getByText(/Checked/)).toBeInTheDocument();
     expect(within(rows[2]).getByText("Supplier")).toBeInTheDocument();
     expect(within(rows[2]).getByText(/\$321\.43/)).toBeInTheDocument();
     expect(within(rows[2]).queryByText("Lowest")).not.toBeInTheDocument(); // a cheaper supplier is never "lowest"

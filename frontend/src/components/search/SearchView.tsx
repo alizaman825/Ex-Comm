@@ -188,6 +188,21 @@ export function SearchView() {
                   }}
                 />
               )}
+              {data.otherResults && data.otherResults.length > 0 && (
+                <details className="mt-10 rounded-2xl border border-slate-200 bg-surface p-4" data-testid="other-models">
+                  <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                    {data.otherTotal} other model{data.otherTotal === 1 ? "" : "s"} close to this search
+                  </summary>
+                  <p className="mt-2 text-xs text-slate-500">
+                    These did not pass the exact-model check above - a different storage size, variant, or model number - so they are not counted in the {data.total} results shown.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {data.otherResults.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                </details>
+              )}
             </>
           ) : null}
         </section>

@@ -36,7 +36,7 @@ function lowestOffer(p: ProductCardData) {
 function badgeFor(p: ProductCardData) {
   const low = lowestOffer(p);
   if (low?.dataSource === "saved") return { text: "Saved", cls: "bg-[#e0e7ff]/95 text-[#2e2a70]" };
-  if (p.priceChange7d <= -1) return { text: `${Math.round(p.priceChange7d)}%`, cls: "bg-[#fcd34d]/95 text-[#3f2d05]" };
+  if (p.priceChange7d <= -1) return { text: `${Math.round(p.priceChange7d)}% this wk`, cls: "bg-[#fcd34d]/95 text-[#3f2d05]" };
   return { text: "Lowest", cls: "bg-emerald-400/90 text-[#06281c]" };
 }
 
@@ -58,7 +58,7 @@ function HeroVisual({ product, variant }: { product: ProductCardData | undefined
       <span className={clsx("absolute rounded-full bg-emerald-400/90 font-extrabold text-[#06281c]", badgeTextCls, badgeTopCls)}>Lowest price</span>
       {low && (
         <span className={clsx("absolute rounded-full bg-[#fcd34d]/95 font-extrabold text-[#3f2d05]", badgeTextCls, badgeBottomCls)}>
-          {product.priceChange7d <= -1 ? `${Math.round(product.priceChange7d)}% today` : "Checked today"}
+          {product.priceChange7d <= -1 ? `${Math.round(product.priceChange7d)}% this week` : "Checked today"}
         </span>
       )}
     </div>

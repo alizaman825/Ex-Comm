@@ -44,10 +44,12 @@ function capitalize(s) {
 }
 
 // Adds a price-history point when the price changed or the last point is old.
-async function appendHistory(listing, price, now, { force = false } = {}) {
+// `source` ('real' | 'simulated') records whether this point came from an actual scrape or from
+// simulate mode's fabricated price move - see models/PriceHistory.js and PLAN.md item 1.
+async function appendHistory(listing, price, now, { force = false, source = 'real' } = {}) {
   const last = await PriceHistory.findOne({ listingId: listing._id }).sort({ scrapedAt: -1 }).lean();
   if (force || !last || last.price !== price || now - last.scrapedAt > HISTORY_MIN_GAP_MS) {
-    await PriceHistory.create({ listingId: listing._id, productId: listing.productId, platform: listing.platform, price, scrapedAt: now });
+    await PriceHistory.create({ listingId: listing._id, productId: listing.productId, platform: listing.platform, price, scrapedAt: now, source });
     return true;
   }
   return false;
@@ -227,7 +229,7 @@ async function ingestListings(listings) {
     if (!doc) continue;
     const last = lastOf.get(String(doc._id));
     if (!last || last.price !== l.price || now - last.at > HISTORY_MIN_GAP_MS) {
-      points.push({ listingId: doc._id, productId: doc.productId, platform: l.platform, price: l.price, scrapedAt: now });
+      points.push({ listingId: doc._id, productId: doc.productId, platform: l.platform, price: l.price, scrapedAt: now, source: 'real' });
     }
   }
   if (points.length) await PriceHistory.insertMany(points, { ordered: false });

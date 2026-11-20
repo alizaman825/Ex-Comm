@@ -3,9 +3,9 @@
 import { useState } from "react";
 import { ChevronDown, ExternalLink, PackageX } from "lucide-react";
 import clsx from "clsx";
-import { PLATFORM_COLOR, PLATFORM_LABEL, formatPrice, formatUsd, timeAgo } from "@/lib/format";
+import { PLATFORM_COLOR, PLATFORM_LABEL, formatPrice, formatUsd } from "@/lib/format";
 import type { Listing, Platform } from "@/lib/types";
-import { ConditionBadge, DataSourceBadge, Rating } from "./badges";
+import { ConditionBadge, Rating, StatusBadge } from "./badges";
 import { SectionHeading } from "@/components/ui/SectionHeading";
 
 interface SellerGroup {
@@ -122,8 +122,7 @@ function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
               <PackageX className="h-3 w-3" aria-hidden /> Out of stock
             </span>
           )}
-          <DataSourceBadge source={l.dataSource} className="!bg-white/10 !text-white/60" />
-          <span className="text-[11px] text-white/40">Updated {timeAgo(l.lastScrapedAt)}</span>
+          <StatusBadge status={l.status} lastScrapedAt={l.lastScrapedAt} className="!bg-white/10 !text-white/60" />
         </div>
         {l.discountPct > 0 && (
           <p className="text-[11px] text-white/50">

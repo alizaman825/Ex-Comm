@@ -21,6 +21,26 @@ const config = {
     priceCheckCron: process.env.PRICE_CHECK_CRON || '0 */6 * * *',
     key: process.env.JOB_KEY || '',
     maxListingsPerRun: Number(process.env.PRICE_CHECK_MAX_LISTINGS) || 60,
+    // Phase 1 "stop fake data": simulate mode (fabricated price moves, no real scrape) must never run
+    // against production data silently. Allowed by default outside production (local dev/demo); in
+    // production it needs this explicit opt-in on top of still being production, so turning it on there
+    // is a deliberate, visible choice, not an accident of a stray `{"mode":"simulate"}` call.
+    allowSimulate: process.env.ALLOW_SIMULATE === 'true' || env !== 'production',
+  },
+  // Price points written before this date predate the source field below; they are treated as
+  // 'unverified' (not 'real') until proven otherwise, because simulate mode's own documented demo
+  // command (`POST /api/jobs/price-check {"mode":"simulate"}`, see CLAUDE.md) could in principle have
+  // written into the same production collection with no field distinguishing it. See AUDIT.md section 3.
+  priceHistory: {
+    verifiedCutoff: new Date(process.env.PRICE_HISTORY_VERIFIED_CUTOFF || '2026-11-20T00:00:00.000Z'),
+  },
+  // Price-status windows, derived from the real schedule: catalogSync.refreshHours/retryHours above are
+  // how often a listing is actually re-checked (daily-refresh.yml runs every 15 min but each run only
+  // advances a small batch), so "recently checked" and "stale" use the same numbers rather than an
+  // arbitrary guess.
+  priceStatus: {
+    recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS) || 24,
+    staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS) || 168,
   },
   catalogSync: {
     // Slow background sync of the sample catalog's store listings (see jobs/catalogSync.js).
