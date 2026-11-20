@@ -127,9 +127,16 @@ Also fixed this phase, ahead of having the real counts:
   before this field existed defaults to `'unverified'`, never silently to `'real'`.
 - `services/jobs/priceCheck.js`'s `simulate` mode now refuses to run at all outside a non-production
   setting (`ALLOW_SIMULATE=true`), closing the exact risk flagged in Phase 0 below for any run from now on.
-  Whether `simulate` mode was ever actually run against production *before* this fix is **still
-  unverified** — GitHub's Actions history and Render's job logs are the only record of that, and this
-  session has access to neither; flagging as a question for ali rather than guessing.
+  Whether `simulate` mode was ever actually run against production *before* this fix: checked via Render
+  (2026-11-20) on the live `ex-comm-api` service. **No evidence found that it ever ran**, but this isn't a
+  full proof: the service's full deploy/env-var history (since it was created 2026-10-07) shows no
+  `SIMULATE`/`ALLOW_SIMULATE`-style env var was ever set, and Render's app logs - which only retain 30
+  days, so they cover 2026-10-21 onward - have zero matches for "simulate" and show only two
+  `POST /api/jobs/price-check` calls in that window (both today, 200 OK, body/mode not visible from the
+  log line). The gap is 2026-10-07 to 2026-10-21 (the service's first ~2 weeks), which no retained log
+  covers - if `simulate` ever ran, it would have to have been in that window. Treating any `PriceHistory`
+  point from before 2026-10-21 as unverified by this method (it already defaults to `'unverified'` unless
+  explicitly tagged `'real'`, so this changes no code - just the confidence behind that default).
 - Seeded/sample listings are now excluded from search, cards, deals, compare and alerts whenever
   `NODE_ENV=production` (`services/publicData.js`), so even before the counts are known, seed data cannot
   reach a real shopper in production.

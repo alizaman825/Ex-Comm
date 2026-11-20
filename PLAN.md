@@ -109,9 +109,8 @@ exists.
    390px/1280px (brief step 6) is still real work, not done yet. OK to fold it into Phase 1's item 6+ or
    Phase 2 (whichever starts touching the relevant pages first) rather than as a separate pass?
 
-4. **New this phase - simulate-mode history question.** Item 1 asked whether `simulate` mode has ever
-   run against production. This session has no access to Render's job logs or GitHub's Actions history
-   for prior runs, so it genuinely can't be answered from here - flagging it to you rather than guessing.
-   Until it's answered, all pre-2026-11-20 `PriceHistory` points default to `source: 'unverified'`
-   (never `'real'`) and are excluded from every "cheapest"/trend calculation, which is the safe default
-   either way.
+4. **Simulate-mode history question - checked via Render, answer in AUDIT §3.** Short version: no
+   evidence found that `simulate` mode ever ran in production, but Render's logs only go back to
+   2026-10-21 (30-day retention) against a service created 2026-10-07, so the first ~2 weeks can't be
+   checked that way. All pre-2026-11-20 `PriceHistory` points still default to `source: 'unverified'`
+   (never `'real'`) regardless, so nothing downstream depends on this answer being certain.
