@@ -4,7 +4,19 @@ import type { ProductCard } from "@/lib/types";
 const siteUrl = process.env.SITE_URL || "https://ex-comm.vercel.app";
 const backendUrl = (process.env.BACKEND_URL || "http://127.0.0.1:5000").replace(/\/+$/, "");
 
-const STATIC_PATHS = ["", "/search", "/categories", "/compare", "/best-deals", "/about"];
+const STATIC_PATHS = [
+  "",
+  "/search",
+  "/categories",
+  "/compare",
+  "/best-deals",
+  "/about",
+  "/methodology",
+  "/privacy",
+  "/terms",
+  "/contact",
+  "/affiliate-disclosure",
+];
 
 /** Real, live product URLs only (AUDIT.md §4j / PLAN.md Phase 1 "bonus" item) - no fabricated or
  * placeholder entries. Best-effort: a trending-products fetch failure still returns the static pages

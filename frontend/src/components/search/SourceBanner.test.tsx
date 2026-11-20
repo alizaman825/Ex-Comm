@@ -28,7 +28,7 @@ describe("SourceBanner wording", () => {
 
   it("is honest when the stores could not be reached, and in demo mode", () => {
     expect(bannerMessage(response({ source: "fallback" }))).toMatch(/could not be checked/);
-    expect(bannerMessage(response({ source: "fallback", demoMode: true }))).toMatch(/Demo mode.*saved sample data/);
+    expect(bannerMessage(response({ source: "fallback", demoMode: true }))).toMatch(/Demo mode.*saved data/);
   });
 });
 
