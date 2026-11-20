@@ -6,12 +6,17 @@ const backendUrl = (process.env.BACKEND_URL || "http://127.0.0.1:5000").replace(
 
 const STATIC_PATHS = ["", "/search", "/categories", "/compare", "/best-deals", "/about"];
 
+// Sensible cap, not the whole catalog (~2000 products): /api/products/trending ranks by popularity, so
+// this covers every product that's realistically worth a crawler's attention without an unbounded or
+// ever-growing sitemap. Matches listQuerySchema's max in products.controller.js.
+const SITEMAP_PRODUCT_LIMIT = 300;
+
 /** Real, live product URLs only (AUDIT.md §4j / PLAN.md Phase 1 "bonus" item) - no fabricated or
  * placeholder entries. Best-effort: a trending-products fetch failure still returns the static pages
  * rather than failing the whole sitemap. */
 async function productUrls(): Promise<MetadataRoute.Sitemap> {
   try {
-    const res = await fetch(`${backendUrl}/api/products/trending?limit=30`, { next: { revalidate: 3600 } });
+    const res = await fetch(`${backendUrl}/api/products/trending?limit=${SITEMAP_PRODUCT_LIMIT}`, { next: { revalidate: 3600 } });
     if (!res.ok) return [];
     const data = (await res.json()) as { products?: ProductCard[] };
     return (data.products ?? []).map((p) => ({ url: `${siteUrl}/products/${p.id}`, changeFrequency: "daily" as const, priority: 0.7 }));
