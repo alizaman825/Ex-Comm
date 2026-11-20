@@ -17,10 +17,17 @@ const axisPrice = (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : Strin
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className={clsx("mt-0.5 font-display text-xl font-bold tabular-nums", tone === "good" ? "text-emerald-700" : tone === "bad" ? "text-rose-700" : "text-ink")}>{value}</p>
-      {sub && <p className="text-xs text-slate-500">{sub}</p>}
+    <div className="rounded-2xl border border-white/[0.18] bg-white/[0.08] px-3 py-3 sm:px-4">
+      <p className="text-[11px] font-medium leading-snug text-white/55">{label}</p>
+      <p
+        className={clsx(
+          "mt-0.5 whitespace-nowrap font-display text-[15px] font-bold tabular-nums sm:text-lg",
+          tone === "good" ? "text-emerald-300" : tone === "bad" ? "text-rose-300" : "text-white"
+        )}
+      >
+        {value}
+      </p>
+      {sub && <p className="text-[11px] text-white/45">{sub}</p>}
     </div>
   );
 }
@@ -83,9 +90,15 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
           </span>
           Price history
         </h2>
-        <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="History range">
+        <div className="inline-flex rounded-full border border-white/[0.18] bg-white/[0.08] p-1" role="group" aria-label="History range">
           {RANGES.map((r) => (
-            <button key={r} type="button" onClick={() => setDays(r)} aria-pressed={days === r} className={clsx("rounded-full px-4 py-1.5 text-sm font-semibold transition duration-200", days === r ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}>
+            <button
+              key={r}
+              type="button"
+              onClick={() => setDays(r)}
+              aria-pressed={days === r}
+              className={clsx("rounded-full px-4 py-1.5 text-sm font-semibold transition duration-200", days === r ? "bg-white text-[#0b0812] shadow-sm" : "text-white/60 hover:text-white")}
+            >
               {r} days
             </button>
           ))}
@@ -97,7 +110,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
           <ErrorState title="Could not load price history" onRetry={() => mutate()} className="border-0 shadow-none" />
         ) : isLoading && !data ? (
           <div role="status" aria-label="Loading price history" className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
               {Array.from({ length: 5 }, (_, i) => (
                 <Skeleton key={i} className="h-[74px]" />
               ))}
@@ -109,7 +122,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
         ) : (
           <>
             {data.summary && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="history-summary">
+              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5" data-testid="history-summary">
                 <Stat label="Current (lowest)" value={formatPrice(data.summary.current)} />
                 <Stat label="Lowest in period" value={formatPrice(data.summary.lowest)} sub={formatDate(data.summary.lowestDate)} tone="good" />
                 <Stat label="Highest in period" value={formatPrice(data.summary.highest)} />
@@ -134,10 +147,18 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Chart legend">
               {data.series.map((s) => (
                 <li key={s.platform}>
-                  <button type="button" onClick={() => toggle(s.platform)} aria-pressed={!hidden.has(s.platform)} className={clsx("inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition duration-200", hidden.has(s.platform) ? "bg-surface text-slate-500 line-through ring-1 ring-slate-200" : "bg-slate-100 text-slate-700")}>
+                  <button
+                    type="button"
+                    onClick={() => toggle(s.platform)}
+                    aria-pressed={!hidden.has(s.platform)}
+                    className={clsx(
+                      "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition duration-200",
+                      hidden.has(s.platform) ? "border-white/[0.14] bg-white/[0.05] text-white/40 line-through" : "border-white/[0.18] bg-white/[0.08] text-white/80"
+                    )}
+                  >
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PLATFORM_COLOR[s.platform] }} />
                     {PLATFORM_LABEL[s.platform]}
-                    {s.role === "supplier" && <span className="text-slate-500">(supplier, dashed)</span>}
+                    {s.role === "supplier" && <span className="text-white/45">(supplier, dashed)</span>}
                   </button>
                 </li>
               ))}

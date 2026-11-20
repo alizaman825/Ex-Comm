@@ -57,7 +57,9 @@ export function SearchBar({ size = "md", autoFocus, className, buttonLabel = "Co
           autoComplete="off"
           className={clsx(
             "w-full border-0 text-ink transition duration-200 placeholder:text-slate-400 focus:outline-none focus:ring-4",
-            large ? "rounded-full bg-surface py-4 pl-14 pr-44 text-base shadow-float sm:py-5" : "rounded-full bg-slate-100 py-2.5 pl-10 pr-4 text-sm hover:bg-slate-200/70 focus:bg-surface",
+            large
+              ? "rounded-full bg-surface py-4 pl-14 pr-44 text-base shadow-float sm:py-5"
+              : "rounded-full border border-white/[0.16] bg-white/[0.08] py-2.5 pl-10 pr-4 text-sm hover:bg-white/[0.12] focus:bg-white/[0.12]",
             error ? "ring-2 ring-rose-400 focus:ring-rose-500/30" : "focus:ring-brand-500/15"
           )}
           />

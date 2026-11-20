@@ -108,7 +108,7 @@ export function ProductCardSkeleton() {
         <div className="skeleton h-4 w-full" />
         <div className="skeleton h-4 w-2/3" />
         <div className="skeleton h-6 w-28" />
-        <div className="space-y-2 rounded-2xl bg-slate-50 p-3">
+        <div className="space-y-2 rounded-2xl border border-white/[0.14] bg-white/[0.06] p-3">
           <div className="skeleton h-3 w-full" />
           <div className="skeleton h-3 w-full" />
         </div>
