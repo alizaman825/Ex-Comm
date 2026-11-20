@@ -202,7 +202,10 @@ describe('same store never merged; different stores grouped for comparison', () 
     const res = await search('samsung galaxy a55');
     expect(await Product.countDocuments()).toBe(before); // grouped into the sample product, not duplicated
     const product = await Product.findOne({ title: 'Samsung Galaxy A55 5G 8GB 256GB' });
-    const adopted = await Listing.findOne({ productId: product._id, platform: 'daraz' });
+    // Scoped by externalId, not just { productId, platform 'daraz' }: an earlier test in this describe
+    // block (deliberately, per the file's own design - see its header comment) also attaches Daraz
+    // sellers to this same sample product, so more than one Daraz listing can exist on it by now.
+    const adopted = await Listing.findOne({ productId: product._id, platform: 'daraz', externalId: 'dz-adopt-1' });
     expect(adopted).toMatchObject({ externalId: 'dz-adopt-1', price: 118500, dataSource: 'live', seeded: false });
     const { PriceHistory } = require('../src/models');
     expect(await PriceHistory.countDocuments({ listingId: adopted._id })).toBe(91);
