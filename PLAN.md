@@ -38,7 +38,7 @@ exists.
 | Make search the homepage's main action; working autocomplete, typo tolerance, filters, sorting, loading/empty/error states | Phase 1's search fix | Typo ("ihpone") still finds iPhone; empty query state shown, not a blank page |
 | Pakistan-specific filters (PTA-approved, warranty, new/refurbished, delivery/COD) where data exists | data-truth numbers (do we even have this data at scale?) | Filters only shown for fields with real coverage; no filter that always returns 0 results |
 | Product card / product page: variant selector, one offers table, honest history + text alternative, price-alert action | Phase 1 | Manual walk-through at 390px and 1280px |
-| Keep purple-orange cinematic identity; refine per the brief: solid high-contrast surfaces for prices/tables (WCAG AA), 44px+ touch targets, no horizontal scroll 320–1440px, acceptable perf on low-end Android | **owner decision needed, see Open Questions** | Contrast-checker pass on price/table surfaces; manual low-end-device check |
+| Keep purple-orange cinematic identity; refine per the brief: solid high-contrast surfaces for prices/tables (WCAG AA), 44px+ touch targets, no horizontal scroll 320–1440px, acceptable perf on low-end Android | ali confirmed 2026-11-20: follow the brief (solid surfaces, glass sparingly) | Contrast-checker pass on price/table surfaces; manual low-end-device check |
 | Hide empty sections instead of showing them with no data | Phase 1 (need to know what's real) | No section renders with 0 real items |
 
 ---
@@ -66,33 +66,24 @@ exists.
 
 ---
 
-## Open questions for ali
+## Decisions from ali (2026-11-20)
 
-1. **Visual identity conflict.** Your new brief (Part A rule 1) says: keep purple-orange/dark/cinematic,
-   but put prices/tables/offer rows on **solid, high-contrast surfaces**, use glass **sparingly**, and
-   test glass on a low-end Android phone. Project memory from the redesign work says you earlier required
-   **every surface to be glass, no opaque tiles/bars/buttons anywhere**. These two are in direct tension
-   for exactly the surfaces that matter most for trust (price numbers, offer tables). The brief is newer
-   and is yours, so Phase 2's plan above follows the brief — solid surfaces for prices/tables, glass kept
-   elsewhere — but please confirm that's really the call before Phase 2 touches those components, since
-   it reverses a standing rule from the redesign work.
+1. **Visual identity: resolved.** Follow the new brief: solid, high-contrast surfaces for prices and
+   tables; glass used sparingly elsewhere. This overrides the earlier "every surface must be glass, no
+   opaque tiles anywhere" rule from the redesign work, specifically for price/table surfaces. Phase 2's
+   plan above already follows this.
 
-2. **Branching workflow.** Rule 2 in your brief says: work on a feature branch and a preview deployment,
-   never push straight to production. Looking at the commit history, recent work (the redesign rounds,
-   PRs #25/#28/#30/#31, the GitHub Actions setup) has been pushed straight to `main`, which auto-deploys.
-   This audit itself is on a branch with a PR, per rule 2 and per this project's own Git Development
-   Branch Requirements. Should *every* future phase go through a branch + preview deploy + your review
-   before merge (slower, safer), or do you want to keep pushing small/low-risk changes straight to `main`
-   as before and reserve branches for bigger changes? Either is fine — just needs to be consistent so
-   future phases don't guess.
+2. **Branching workflow: resolved.** No preview-deploy step for ordinary phase work — push straight to
+   `main` as before, same as the redesign rounds. (This audit stays on its existing branch/PR since it's
+   already done that way; future phases skip the branch-and-preview step unless ali asks for it on a
+   specific change.)
 
-3. **Two PLAN.md files.** The brief wants exactly three root docs (AUDIT.md, PLAN.md, CHANGELOG.md).
-   This repo already has `docs/PLAN.md` (your university report's implementation plan) and `STATUS.md`.
-   Keep both PLAN.md files for their different audiences (root = launch readiness, docs/ = report
-   narrative), or should the report's PLAN.md be retired/merged once the final-year-project framing comes
-   out of the public pages in Phase 1?
+3. **Two PLAN.md files: resolved.** Keep `docs/PLAN.md` (the university report's plan) as it is — no
+   merge or retirement. This root `PLAN.md` is the separate launch-readiness plan.
 
-4. **Atlas access for the data-truth numbers.** AUDIT §3's product/store/offer/history counts need a
+## Open questions for ali (still open)
+
+1. **Atlas access for the data-truth numbers.** AUDIT §3's product/store/offer/history counts need a
    real DB query. You've said before you have no Atlas shell and no local checkout. Options: (a) a
    one-off GitHub Action (like the existing cleanup workflow) that runs a read-only report script and
    prints counts to the Action log, using the same `MONGO_URI` secret the cleanup workflow already has —
@@ -100,11 +91,11 @@ exists.
    counts as JSON (no raw data, just numbers). (a) is less code and reuses an existing pattern. OK to
    build either as part of Phase 1?
 
-5. **Best-deals headline logic (issue f).** I didn't locate the homepage's specific "headline deal"
+2. **Best-deals headline logic (issue f).** I didn't locate the homepage's specific "headline deal"
    selection code in the time available this phase, so issue (f) (Rs 1,290 smartwatch at "-53%") is
    unconfirmed, not disproven. Phase 1 will track it down properly when touching the Best Deals logic
    anyway — flagging now so you know it's not forgotten, not ignored.
 
-6. **Browser/device testing.** No Playwright/browser run was done this phase (curl-only verification).
+3. **Browser/device testing.** No Playwright/browser run was done this phase (curl-only verification).
    Full user-journey testing at 390px/1280px (brief step 6) is real work, not done yet. OK to fold it into
    Phase 1 or 2 (whichever starts touching the relevant pages first) rather than as a separate pass?
