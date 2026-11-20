@@ -33,14 +33,17 @@ jobs:
       - name: Wake the API
         run: curl -fsS --max-time 90 "${{ steps.api.outputs.api_url }}/api/health" || true
 
+      # A batch of up to 8 catalog-sync tasks, each a polite (1.5-3s delay) live request to Daraz/
+      # PriceOye, can genuinely take longer than 60s end to end (confirmed: the previous 60s limit
+      # timed out on a real run once the URL bug above stopped masking it) - 150s gives it room.
       - name: Run one catalog-sync batch
         run: |
-          curl -fsS --max-time 60 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/catalog-sync" \
+          curl -fsS --max-time 150 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/catalog-sync" \
             -H "x-job-key: ${{ secrets.JOB_KEY }}"
 
       - name: Run a price check for wishlisted/alerted products
         run: |
-          curl -fsS --max-time 60 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/price-check" \
+          curl -fsS --max-time 150 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/price-check" \
             -H "x-job-key: ${{ secrets.JOB_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"mode":"live"}'
