@@ -1,1 +1,31 @@
-WORKFLOW_PLACEHOLDER
+name: Telex.pk sync (manual)
+
+# Phase 2A: a manual-only trigger for the Telex.pk background sync, matching how daily-refresh.yml
+# calls the other job endpoints. No schedule block here on purpose - the owner has not approved
+# running this automatically yet, and the job itself is also off by default (SYNC_TELEX_ENABLED).
+# Run it from the Actions tab (Run workflow) once ready to test or demo a batch.
+#
+# Requires the same two repository secrets as daily-refresh.yml:
+#   RENDER_API_URL  e.g. https://ex-comm-api.onrender.com
+#   JOB_KEY         the same value as the Render service's JOB_KEY env var
+on:
+  workflow_dispatch: {}
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Resolve the API origin
+        id: api
+        run: |
+          origin=$(echo "${{ secrets.RENDER_API_URL }}" | sed -E 's#^(https?://[^/]+).*#\1#')
+          echo "api_url=$origin" >> "$GITHUB_OUTPUT"
+          echo "Resolved host: $(echo "$origin" | sed -E 's#^https?://##')"
+
+      - name: Wake the API
+        run: curl -fsS --max-time 90 "${{ steps.api.outputs.api_url }}/api/health" || true
+
+      - name: Run one Telex.pk sync batch
+        run: |
+          curl -fsS --max-time 150 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/telex-sync" \
+            -H "x-job-key: ${{ secrets.JOB_KEY }}"
