@@ -130,37 +130,49 @@ describe('same store never merged; different stores grouped for comparison', () 
     // PriceOye is not in MULTI_SELLER_PLATFORMS, so the plain "one listing per store per product" rule
     // still applies there. Daraz's own version of this rule is covered separately below, now that it
     // allows several sellers (see docs/MULTI_SELLER_PLAN.md).
-    stores({ priceoye: () => withMeta([listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 540000), listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 555000), listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 560000)]) });
-    const res = await search('iphone 16 pro max');
+    // Uses "iPhone 17" (not 16): this file's earlier describe block stores several "iPhone 16 Pro Max"
+    // listings under a plain, storage-less product title, and this test's own PriceOye listings would
+    // otherwise be close enough to "adopt" that leftover product on first sight and inherit its Daraz
+    // offer - a cross-test collision, not a real matching bug.
+    stores({ priceoye: () => withMeta([listing('priceoye', 'Apple iPhone 17 Pro Max 256GB', 540000), listing('priceoye', 'Apple iPhone 17 Pro Max 256GB', 555000), listing('priceoye', 'Apple iPhone 17 Pro Max 256GB', 560000)]) });
+    const res = await search('iphone 17 pro max');
     expect(res.body.total).toBe(3);
     res.body.results.forEach((c) => expect(storesOf(c)).toEqual(['priceoye']));
   });
 
   test('several different Daraz sellers for the same item attach to one product, as separate offers', async () => {
+    // A synthetic title, not the seeded "Samsung Galaxy A55 5G 8GB 256GB": that sample product already
+    // carries seeded Daraz AND PriceOye retail listings (see src/seed/seed.js), so this test's own 2
+    // sellers would land on top of that pre-existing data instead of being the only Daraz offers, and
+    // would also consume the seeded Daraz listing's "adopt me" slot that the next test relies on.
     stores({
       daraz: () =>
         withMeta([
-          listing('daraz', 'Samsung Galaxy A55 5G 8GB 256GB', 127000, { sellerId: 'seller-1', sellerName: 'Smart Phone Line', sellerLocation: 'Punjab' }),
-          listing('daraz', 'Samsung Galaxy A55 5G 8GB 256GB', 172999, { sellerId: 'seller-2', sellerName: 'Combine Communication', sellerLocation: 'Punjab' }),
+          listing('daraz', 'Vortex Z9 Pro 5G 256GB', 127000, { sellerId: 'seller-1', sellerName: 'Smart Phone Line', sellerLocation: 'Punjab' }),
+          listing('daraz', 'Vortex Z9 Pro 5G 256GB', 172999, { sellerId: 'seller-2', sellerName: 'Combine Communication', sellerLocation: 'Punjab' }),
         ]),
     });
-    const res = await search('samsung galaxy a55');
+    const res = await search('vortex z9 pro');
     expect(res.body.total).toBe(1); // one product, not two
-    const daraz = await Listing.find({ platform: 'daraz', title: 'Samsung Galaxy A55 5G 8GB 256GB' }).lean();
+    const daraz = await Listing.find({ platform: 'daraz', title: 'Vortex Z9 Pro 5G 256GB' }).lean();
     expect(daraz).toHaveLength(2);
     expect(daraz.map((l) => l.sellerName).sort()).toEqual(['Combine Communication', 'Smart Phone Line']);
     expect(res.body.results[0].minPrice).toBe(127000); // the true minimum across both sellers
   });
 
   test('a second Daraz seller does not attach to a genuinely different variant', async () => {
+    // A synthetic model, not "Samsung Galaxy A55": the 256GB variant below is close enough to the seeded
+    // "Samsung Galaxy A55 5G 8GB 256GB" product (missing RAM token tolerated by the brand/storage match)
+    // to adopt its seeded Daraz listing, which would consume the slot the "adopts the first live listing"
+    // test below relies on.
     stores({
       daraz: () =>
         withMeta([
-          listing('daraz', 'Samsung Galaxy A55 5G 128GB', 110000, { sellerId: 'seller-1', sellerName: 'Seller One' }),
-          listing('daraz', 'Samsung Galaxy A55 5G 256GB', 135000, { sellerId: 'seller-2', sellerName: 'Seller Two' }),
+          listing('daraz', 'Nebula X7 5G 128GB', 110000, { sellerId: 'seller-1', sellerName: 'Seller One' }),
+          listing('daraz', 'Nebula X7 5G 256GB', 135000, { sellerId: 'seller-2', sellerName: 'Seller Two' }),
         ]),
     });
-    const res = await search('samsung galaxy a55');
+    const res = await search('nebula x7');
     expect(res.body.total).toBe(2); // different storage: two separate products, not merged as "two sellers"
   });
 
@@ -202,6 +214,9 @@ describe('same store never merged; different stores grouped for comparison', () 
     const res = await search('samsung galaxy a55');
     expect(await Product.countDocuments()).toBe(before); // grouped into the sample product, not duplicated
     const product = await Product.findOne({ title: 'Samsung Galaxy A55 5G 8GB 256GB' });
+    // The seeded Daraz listing on this product is still untouched (the earlier tests in this describe
+    // block were moved off this product's title, see above), so it's the one live listing this test's
+    // own Daraz data should adopt, keeping its externalId and accumulated price history.
     const adopted = await Listing.findOne({ productId: product._id, platform: 'daraz' });
     expect(adopted).toMatchObject({ externalId: 'dz-adopt-1', price: 118500, dataSource: 'live', seeded: false });
     const { PriceHistory } = require('../src/models');
