@@ -3,8 +3,10 @@
 export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay";
 export type DataSource = "live" | "saved";
 export type SearchSource = "live" | "cache" | "fallback";
-/** Replaces the old always-"Live" badge (PLAN.md item 3): computed fresh from lastScrapedAt/inStock. */
-export type PriceStatus = "checked_recently" | "stale" | "unavailable" | "check_failed" | "unknown";
+/** Replaces the old always-"Live" badge (PLAN.md item 3): computed fresh from lastScrapedAt/inStock.
+ * "saved_reference" is AliExpress only (owner decision, 2026-11-20) - never "checked recently", never
+ * eligible for cheapest/deals/alerts, regardless of how fresh the underlying listing is. */
+export type PriceStatus = "saved_reference" | "checked_recently" | "stale" | "unavailable" | "check_failed" | "unknown";
 /** Item condition (currently only set on eBay listings; "unknown" everywhere else). */
 export type Condition = "new" | "refurbished" | "used" | "unknown";
 

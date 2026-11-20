@@ -1,7 +1,7 @@
 const { Product, Listing, PriceHistory } = require('../models');
 const { searchKeyOf } = require('./matching');
 const { isTrustworthy } = require('./priceStatus');
-const { excludeSeededInProd, realHistoryFilter, isHeadlineEligible } = require('./publicData');
+const { excludeSeededInProd, realHistoryFilter, isHeadlineEligible, excludeStaleInProd } = require('./publicData');
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -89,7 +89,7 @@ async function refreshProductsStats(productIds) {
   const ids = [...new Set(productIds.map(String))];
   if (!ids.length) return;
   const [listings, products] = await Promise.all([
-    Listing.find(excludeSeededInProd({ productId: { $in: ids } })).lean(),
+    Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: ids } }))).lean(),
     Product.find({ _id: { $in: ids } }).select('brand title image').lean(),
   ]);
   const now = Date.now();
@@ -103,6 +103,17 @@ async function refreshProductsStats(productIds) {
     { $group: { _id: '$listingId', price: { $first: '$price' } } },
   ]);
   const pastPrice = new Map(past.map((p) => [String(p._id), p.price]));
+  // Deals rule (owner decision, 2026-11-20): at least 5 real observations spanning at least 7 days -
+  // same bar as the per-product history chart's savings line (PriceChart.tsx), denormalized here so
+  // /products/drops can filter on it directly rather than every homepage request re-aggregating history.
+  const since90 = new Date(now - 90 * DAY);
+  const historyStats = await PriceHistory.aggregate([
+    { $match: realHistoryFilter({ listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $gte: since90 } }) },
+    { $group: { _id: '$productId', count: { $sum: 1 }, first: { $min: '$scrapedAt' }, last: { $max: '$scrapedAt' } } },
+  ]);
+  const dealEligibleOf = new Map(
+    historyStats.map((h) => [String(h._id), h.count >= 5 && (new Date(h.last) - new Date(h.first)) / DAY >= 7])
+  );
   const byProduct = new Map();
   for (const l of listings) {
     const k = String(l.productId);
@@ -110,7 +121,10 @@ async function refreshProductsStats(productIds) {
     byProduct.get(k).push(l);
   }
   const ops = products.map((p) => ({
-    updateOne: { filter: { _id: p._id }, update: { $set: computeStats(p, byProduct.get(String(p._id)) || [], pastPrice, now) } },
+    updateOne: {
+      filter: { _id: p._id },
+      update: { $set: { ...computeStats(p, byProduct.get(String(p._id)) || [], pastPrice, now), dealEligible: dealEligibleOf.get(String(p._id)) || false } },
+    },
   }));
   if (ops.length) await Product.bulkWrite(ops, { ordered: false });
 }

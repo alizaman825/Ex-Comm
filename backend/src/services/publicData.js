@@ -25,4 +25,14 @@ function isHeadlineEligible(listing, isTrustworthy, now) {
   return isTrustworthy(listing, now) || (!config.isProd && Boolean(listing.seeded));
 }
 
-module.exports = { excludeSeededInProd, realHistoryFilter, isHeadlineEligible };
+// A listing not re-checked in over config.listingMaxAgeDays never appears in public results, cheapest,
+// deals or alerts in production (owner decision, 2026-11-20) - it stays in the database and reappears
+// once refreshed. Same non-prod carve-out as the rest of this file: the seed catalog is never
+// continuously re-scraped, so this would otherwise hide it entirely outside production.
+function excludeStaleInProd(filter = {}) {
+  if (!config.isProd) return filter;
+  const cutoff = new Date(Date.now() - config.listingMaxAgeDays * 24 * 60 * 60 * 1000);
+  return { ...filter, $or: [{ lastScrapedAt: { $exists: false } }, { lastScrapedAt: { $gte: cutoff } }] };
+}
+
+module.exports = { excludeSeededInProd, realHistoryFilter, isHeadlineEligible, excludeStaleInProd };

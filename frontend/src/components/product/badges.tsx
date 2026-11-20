@@ -39,6 +39,12 @@ export function DataSourceBadge({ source, className }: { source: DataSource; cla
 export function StatusBadge({ status, lastScrapedAt, className }: { status: PriceStatus; lastScrapedAt: string | null; className?: string }) {
   const age = lastScrapedAt ? timeAgo(lastScrapedAt) : null;
   switch (status) {
+    case "saved_reference":
+      return (
+        <span className={clsx("badge-neutral", className)} title="AliExpress is kept as a saved reference price - not part of cheapest, deals or alerts">
+          <Database className="h-3 w-3" aria-hidden /> Saved reference{age ? ` · Checked ${age}` : ""}
+        </span>
+      );
     case "checked_recently":
       return (
         <span className={clsx("badge-success", className)} title="Price read from the store recently">

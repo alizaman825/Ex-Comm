@@ -3,7 +3,7 @@ const { Product, Listing, PriceHistory, Wishlist, Alert } = require('../models')
 const AppError = require('../utils/AppError');
 const search = require('../services/search');
 const { resolveCategory } = require('../services/categories');
-const { excludeSeededInProd, realHistoryFilter } = require('../services/publicData');
+const { excludeSeededInProd, realHistoryFilter, excludeStaleInProd } = require('../services/publicData');
 const { statusOf } = require('../services/priceStatus');
 const { config } = require('../config/env');
 
@@ -30,7 +30,7 @@ function categoryFilter(category) {
 
 async function cardsFor(products) {
   if (!products.length) return [];
-  const listings = await Listing.find(excludeSeededInProd({ productId: { $in: products.map((p) => p._id) } })).lean();
+  const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: products.map((p) => p._id) } }))).lean();
   const by = new Map();
   for (const l of listings) {
     const k = String(l.productId);
@@ -101,10 +101,14 @@ async function trending(req, res) {
   res.json({ products: await availableCardsFor(pool, limit) });
 }
 
-// GET /api/products/drops: biggest price drops over the last 7 days, in-stock only.
+// GET /api/products/drops: biggest price drops over the last 7 days, in-stock only, and only products
+// with enough real history behind the number (owner decision, 2026-11-20: >=5 real observations over
+// >=7 days - services/productStats.js's dealEligible). Expect very few results while the catalog is
+// still mostly unverified history; an empty list here is the frontend's cue to hide the section rather
+// than back-fill it with unverified data.
 async function drops(req, res) {
   const { limit, category } = req.validQuery;
-  const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 } })
+  const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 }, dealEligible: true })
     .sort({ priceChange7d: 1 })
     .limit(limit * 3)
     .lean();
@@ -114,7 +118,7 @@ async function drops(req, res) {
 // GET /api/products/:id: product with every listing (and the user's wishlist/alert state if signed in).
 async function getProduct(req, res) {
   const product = await loadProduct(req.params.id);
-  const listings = await Listing.find(excludeSeededInProd({ productId: product._id })).sort({ price: 1 }).lean();
+  const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: product._id }))).sort({ price: 1 }).lean();
   const [card] = await cardsFor([product]);
   const out = { ...card, retailMinPrice: product.retailMinPrice || null, supplierMinPrice: product.supplierMinPrice || null, listings: listings.map(fullListing) };
   if (req.user) {
@@ -215,7 +219,7 @@ async function compare(req, res) {
   const products = await Product.find({ _id: { $in: ids } }).lean();
   if (products.length !== ids.length) throw new AppError(404, 'One or more products were not found');
   const ordered = ids.map((id) => products.find((p) => String(p._id) === id));
-  const listings = await Listing.find(excludeSeededInProd({ productId: { $in: ids } })).sort({ price: 1 }).lean();
+  const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: ids } }))).sort({ price: 1 }).lean();
 
   const columns = ordered.map((p) => {
     const mine = listings.filter((l) => String(l.productId) === String(p._id));

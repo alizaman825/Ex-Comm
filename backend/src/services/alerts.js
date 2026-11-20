@@ -3,7 +3,7 @@
 const { Alert, Listing, Notification, Product, User } = require('../models');
 const mailer = require('./mailer');
 const { isTrustworthy } = require('./priceStatus');
-const { excludeSeededInProd, isHeadlineEligible } = require('./publicData');
+const { excludeSeededInProd, isHeadlineEligible, excludeStaleInProd } = require('./publicData');
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const PLATFORM_LABEL = { daraz: 'Daraz', priceoye: 'PriceOye', aliexpress: 'AliExpress' };
@@ -60,7 +60,7 @@ async function createNotification(alert, product, offer) {
 async function evaluateAlert(alert, { product, listings } = {}) {
   const prod = product || (await Product.findById(alert.productId));
   if (!prod) return { triggered: false };
-  const lst = listings || (await Listing.find(excludeSeededInProd({ productId: alert.productId })).lean());
+  const lst = listings || (await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: alert.productId }))).lean());
   const { offer, triggered } = checkPriceAlert(alert, lst);
   if (!triggered) return { triggered: false, offer };
   return { triggered: true, offer, notification: await createNotification(alert, prod, offer) };
@@ -70,7 +70,7 @@ async function evaluateAlert(alert, { product, listings } = {}) {
 async function evaluateProductAlerts(productId) {
   const [product, listings, alerts] = await Promise.all([
     Product.findById(productId),
-    Listing.find(excludeSeededInProd({ productId })).lean(),
+    Listing.find(excludeStaleInProd(excludeSeededInProd({ productId }))).lean(),
     Alert.find({ productId, active: true }),
   ]);
   const fired = [];

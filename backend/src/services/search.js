@@ -9,7 +9,7 @@ const { normalizeText, searchKeyOf } = require('./matching');
 const { resolveCategory } = require('./categories');
 const { parseQuery, isRelevantAny, bestScore, TOKEN_SYNONYMS } = require('./relevance');
 const liveSearch = require('./liveSearch');
-const { excludeSeededInProd } = require('./publicData');
+const { excludeSeededInProd, excludeStaleInProd } = require('./publicData');
 const { statusOf } = require('./priceStatus');
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
@@ -154,7 +154,7 @@ async function search(params) {
   const allProducts = [...products, ...otherProducts];
   const listingsByProduct = new Map();
   if (allProducts.length) {
-    const all = await Listing.find(excludeSeededInProd({ productId: { $in: allProducts.map((p) => p._id) } })).lean();
+    const all = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: allProducts.map((p) => p._id) } }))).lean();
     for (const l of all) {
       const k = String(l.productId);
       if (!listingsByProduct.has(k)) listingsByProduct.set(k, []);
