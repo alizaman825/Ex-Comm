@@ -123,9 +123,13 @@ function relevanceScore(parsedQuery, title) {
     if (!wanted && accessoryWordsIn([...titleTokens]).length) score -= 0.15;
   }
   // Ranking only (nothing is hidden): when the query did not ask for accessories, titles that are clearly
-  // accessories (case, cover, charger ... or "for / compatible with" the phone) rank below real products.
+  // accessories (case, cover, charger ... or "for / compatible with" the phone, e.g. "Case for iPhone 16")
+  // rank below real products. modelOnlyAfterFits is position-aware (the model must come AFTER the "for" /
+  // "compatible with" etc.) so it isn't tripped by an ordinary product description that happens to contain
+  // one of those words elsewhere ("New Sealed, will require signature for delivery", "suitable for daily
+  // use") - a naive "title contains the word 'for' anywhere" check used to wrongly tank those.
   if (!accessoryWords.length) {
-    const accessoryLike = accessoryWordsIn([...titleTokens]).length > 0 || (model.length > 0 && normalizeText(title).split(' ').some((t) => FITS_WORDS.has(t)));
+    const accessoryLike = accessoryWordsIn([...titleTokens]).length > 0 || (model.length > 0 && modelOnlyAfterFits(model, title));
     if (accessoryLike) score -= 0.3;
   }
   // Prefer concise titles with the same hits (closer to the exact product).

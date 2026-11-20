@@ -63,7 +63,7 @@ const fullListing = (l) => ({
   rating: l.rating || null,
   reviewCount: l.reviewCount || 0,
   inStock: l.inStock,
-  dataSource: l.dataSource,
+  dataSource: search.effectiveDataSource(l),
   lastScrapedAt: l.lastScrapedAt,
   // Replaces the old always-"Live"/"Saved" badge (PLAN.md item 3): checked_recently | stale |
   // unavailable | check_failed | unknown, computed fresh from lastScrapedAt/inStock/lastCheckFailedAt.
