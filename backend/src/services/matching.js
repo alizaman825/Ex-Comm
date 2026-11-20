@@ -28,8 +28,15 @@ const VARIANT_WORDS = new Set(
   'pro max plus ultra mini lite fe se air neo prime note 5g 4g slim oled digital disc edition xl'.split(' ')
 );
 
+// Words that mean an item attaches to or protects ANOTHER device, not the device category itself.
+// "headphone(s)"/"earphone(s)"/"earbud(s)" were removed from here (2026-11-20): they name a product
+// category someone searches for directly ("sony wh-1000xm5 headphones"), not an accessory relationship
+// like "case"/"charger" - keeping them here made isRelevant()/analyzeTitle() wrongly treat a pair of
+// headphones as an accessory and reject the product itself (tests/search.test.js, "model codes with
+// hyphens"). A genuine phone-accessory listing titled e.g. "Earphones for iPhone 15" is still caught by
+// FITS_WORDS ("for"/"compatible"/"fits"/"suitable"), not by this list.
 const ACCESSORY_WORDS = new Set(
-  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard earphone earphones earbud earbuds headphone headphones'.split(' ')
+  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard'.split(' ')
 );
 
 // "for/compatible with/fits/suitable for": a title built around one of these words names a product only

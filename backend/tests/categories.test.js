@@ -117,6 +117,7 @@ describe('trending and platforms', () => {
       ['daraz', 'retail'],
       ['priceoye', 'retail'],
       ['aliexpress', 'supplier'],
+      ['ebay', 'supplier'],
     ]);
     expect(res.body.platforms.find((p) => p.id === 'aliexpress').live).toBe(false);
   });
