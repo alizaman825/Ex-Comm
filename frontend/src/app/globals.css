@@ -746,6 +746,35 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
   border-color: rgb(var(--glow-a) / 0.5) !important;
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 0 0 1px rgb(var(--glow-a) / 0.3), 0 0 22px 2px rgb(var(--glow-a) / 0.22);
 }
+/* The hero search pill's own <input> is a bare, unclassed field (unlike .input/.nav-search-cine
+   input, which carry a class the global `:focus-visible` base rule's ring/ring-offset loses to on
+   specificity): with nothing overriding it, the browser's default focus-visible ring (ring-2
+   ring-brand-500 ring-offset-2 ring-offset-canvas, from globals.css's base layer) painted its own
+   solid dark ring-offset box with sharp corners plus a bright orange ring right inside the rounded
+   glass pill, on top of the pill's own soft glow from :focus-within above. The input itself should
+   stay fully transparent on focus — only the outer pill glows. */
+.cine-search-pill input:focus,
+.cine-search-pill input:focus-visible {
+  outline: none;
+  box-shadow: none;
+}
+
+/* A native <select> (e.g. the search page's "Sort by") keeps its own OS-drawn widget chrome and
+   focus indicator unless appearance is disabled — with only `.input`'s box-shadow/border-color
+   override (which a plain outline:none cannot fully suppress on an un-styled native control), the
+   browser's own focus ring still shows through on top, which is what read as a harsh crisp orange
+   box instead of the soft glass glow used everywhere else. `appearance-none` + a custom chevron
+   hands the whole control over to our own styles, so the shared .input:focus glow applies cleanly.
+   `color-scheme: dark` plus dark option colors keeps the open native list dark instead of a jarring
+   white OS popup — a true glass-blurred open state is not something a native <select> can render in
+   CSS, so this is the closest match without replacing it with a custom listbox. */
+.glass-select {
+  color-scheme: dark;
+}
+.glass-select option {
+  background-color: rgb(24 18 28);
+  color: #fff;
+}
 
 /* Native checkboxes/radios (search filters): tint them with the accent instead of leaving the
    browser's plain black/blue default, which read as leftover old-theme styling against the glass
