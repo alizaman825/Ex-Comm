@@ -59,6 +59,12 @@ const config = {
         recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_EBAY) || 72,
         staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_EBAY) || 336,
       },
+      // Telex (Phase 2A): a slow periodic background sync, not a per-search live scrape - its own window
+      // so a listing synced a few hours ago still reads "checked recently" rather than borrowing Daraz's.
+      telex: {
+        recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_TELEX) || 72,
+        staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_TELEX) || 336,
+      },
     },
   },
   // A listing older than this never shows in public results, cheapest or deals/alerts, even as "unknown"
@@ -75,6 +81,22 @@ const config = {
     // Owner decision (2026-11-20): refresh the most popular products (homepage/top search results) before
     // the rest of the catalog. This many of the top-popularity products count as "priority".
     priorityLimit: Number(process.env.CATALOG_SYNC_PRIORITY_LIMIT) || 60,
+  },
+  // Telex.pk (Telemart) background catalog sync (Phase 2A, docs/SOURCES-REPORT.md): discovers products
+  // via /sitemap.xml and reads each product page read-only, honest User-Agent, polite delay, exponential
+  // backoff on 429/5xx, immediate stop if blocked. Off by default - SYNC_TELEX_ENABLED must be set to
+  // "true" before the scheduler or the manual endpoint actually syncs anything (jobs/telexSync.js).
+  telexSync: {
+    enabled: process.env.SYNC_TELEX_ENABLED === 'true',
+    cron: process.env.TELEX_SYNC_CRON || '0 */6 * * *',
+    maxPagesPerRun: Number(process.env.TELEX_MAX_PAGES_PER_RUN) || 10,
+    minDelayMs: Number(process.env.TELEX_MIN_DELAY_MS ?? 3000),
+    maxDelayMs: Number(process.env.TELEX_MAX_DELAY_MS ?? 5000),
+    timeoutMs: Number(process.env.TELEX_TIMEOUT_MS) || 10000,
+    maxRetries: Number(process.env.TELEX_MAX_RETRIES) || 3,
+    // Owner-confirmed contact (2026-11-20): URL only, no personal email, per agents.md's identification
+    // guidance.
+    userAgent: process.env.TELEX_USER_AGENT || 'Ex-CommBot/1.0 (+https://ex-comm.vercel.app)',
   },
   // How recently a product needs to have been checked to lead a home-page rail (trending/drops). A product
   // whose freshest offer is older than this is left off rather than risk showing stock/price that an idle

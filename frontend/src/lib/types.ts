@@ -1,6 +1,6 @@
 // Shapes returned by the Ex-Comm API (see docs/PLAN.md section 4).
 
-export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay";
+export type Platform = "daraz" | "priceoye" | "telex" | "aliexpress" | "ebay";
 export type DataSource = "live" | "saved";
 export type SearchSource = "live" | "cache" | "fallback";
 /** Replaces the old always-"Live" badge (PLAN.md item 3): computed fresh from lastScrapedAt/inStock.
