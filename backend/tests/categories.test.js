@@ -116,6 +116,7 @@ describe('trending and platforms', () => {
     expect(res.body.platforms.map((p) => [p.id, p.role])).toEqual([
       ['daraz', 'retail'],
       ['priceoye', 'retail'],
+      ['telex', 'retail'],
       ['aliexpress', 'supplier'],
       ['ebay', 'supplier'],
     ]);

@@ -186,3 +186,24 @@ _Last updated: 2026-11-20 — product page re-check round: real bugs ali caught 
 ## Next
 - Finish the Daraz and AliExpress capture (see above), reseed, regenerate screenshots.
 - Checkpoint 2 reached. Next (per the revised plan): seller module T14 (margin calculator + opportunities API), T16 (seller UI), optional T15; then closing T17–T19; NICE last.
+
+## Phase 2A: Telex.pk sync (branch claude/telex-sync, awaiting ali's approval to merge)
+- Step 1 (honest User-Agent test, 10 requests to telex.pk): all clean, no blocks/challenges. robots.txt
+  and agents.md both explicitly invite read-only agents via /sitemap.xml + /products/{handle}; price and
+  stock are readable from og:price:amount/og:price:currency meta tags and an embedded "available" field
+  (no JSON-LD on these pages). The /api/ucp/mcp endpoint also works but is built for transactional
+  shopping agents, not bulk sync - not used here.
+- Step 2 built: backend/src/scrapers/telex.js (sitemap discovery, product-page parsing, URL allowlist,
+  exponential backoff) + backend/src/jobs/telexSync.js (background job, exact-matchKey matching only -
+  no fuzzy merge, Setting-backed progress like catalogSync.js). Off by default (SYNC_TELEX_ENABLED,
+  defaults false); manual trigger POST /api/jobs/telex-sync and a new telex-sync.yml GitHub Action
+  (workflow_dispatch only, no schedule). Added a 'telex' price-status window and PLATFORMS entry.
+  Tests: backend/tests/telexScraper.test.js (parser/fixtures/category filter/URL allowlist) and
+  backend/tests/telexSync.test.js (job behaviour: kill switch, matching, backoff, disallowed URLs,
+  polite-delay window) - no live calls in CI.
+- Frontend: About/Methodology page mentions Telex as a periodically-synced source (not live-on-search);
+  Platform type/labels/colors updated so Telex listings render in the existing UI. No new per-store
+  button, per the brief.
+- Not done in this pass: docs/ (requirements, use_cases, erd.dbml, test_cases) were not updated for
+  Telex - flagged as a follow-up, not blocking the PR.
+- Step 3 (Mega.pk) not started - gated on ali's approval of Step 2 first, per the brief.

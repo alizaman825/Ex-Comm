@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { Database, LineChart, Scale, Search, ShieldCheck, Zap } from "lucide-react";
+import { Database, LineChart, RefreshCw, Scale, Search, ShieldCheck, Zap } from "lucide-react";
 import { DataSourceBadge } from "@/components/product/badges";
 
 export const metadata: Metadata = { title: "About", description: "What Ex-Comm is, how it works, and where its prices come from." };
 
 const FAQ = [
   { q: "Why does a product sometimes show only one store?", a: "Stores name products differently, so Ex-Comm matches them by brand, model and key specs. When the match is not confident the products stay separate. You can always add products to the compare tray and compare them manually." },
-  { q: "How fresh are the prices?", a: "Searches check Daraz and PriceOye live and keep the result for a few hours. Every result says whether it is live, cached or saved data, and shows when it was updated." },
-  { q: "Is the price history real?", a: "Price history recorded after a product is searched or tracked is real, timestamped data. AliExpress supplier prices are kept as a saved reference rather than checked live, and are labelled as such wherever they're shown. See our Methodology page for the full detail." },
+  { q: "How fresh are the prices?", a: "Searches check Daraz and PriceOye live and keep the result for a few hours. Telex.pk is synced in the background every few hours rather than checked on every search. Every result says whether it is live, synced or saved data, and shows when it was updated." },
+  { q: "Is the price history real?", a: "Price history recorded after a product is searched, tracked or synced is real, timestamped data. AliExpress supplier prices are kept as a saved reference rather than checked live, and are labelled as such wherever they're shown. See our Methodology page for the full detail." },
   { q: "Do you sell anything?", a: "No. Ex-Comm only compares prices and links to the store. You buy from the store." },
 ];
 
@@ -26,7 +26,7 @@ export default function AboutPage() {
         <h2 className="t-h2">How it works</h2>
         <ol className="mt-6 grid gap-5 sm:grid-cols-3">
           {[
-            { icon: Search, t: "1. Search", d: "Search by product name. Results are gathered from Daraz and PriceOye, plus AliExpress and eBay supplier prices checked on demand." },
+            { icon: Search, t: "1. Search", d: "Search by product name. Results are gathered from Daraz, PriceOye and Telex.pk, plus AliExpress and eBay supplier prices checked on demand." },
             { icon: Scale, t: "2. Compare", d: "The same product from different stores is grouped, so you can see every price, rating and stock status side by side." },
             { icon: LineChart, t: "3. Track", d: "Save products, view price history, and set a target price. You get a notification when it is reached." },
           ].map(({ icon: Icon, t, d }) => (
@@ -44,7 +44,7 @@ export default function AboutPage() {
       <section id="data" className="mb-14 scroll-mt-24">
         <h2 className="t-h2">Where the prices come from</h2>
         <p className="mt-3 text-slate-600">Every price in Ex-Comm carries a label so you always know how trustworthy it is.</p>
-        <div className="mt-6 grid gap-5 sm:grid-cols-2">
+        <div className="mt-6 grid gap-5 sm:grid-cols-3">
           <div className="card p-5">
             <div className="flex items-center gap-2">
               <Zap className="h-5 w-5 text-emerald-600" aria-hidden />
@@ -53,6 +53,16 @@ export default function AboutPage() {
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
               Read from the public pages of <strong>Daraz</strong> and <strong>PriceOye</strong> when you search or when a tracked product is checked. Requests are slow and polite: one at a time with short pauses, so the stores are not overloaded.
+            </p>
+          </div>
+          <div className="card p-5">
+            <div className="flex items-center gap-2">
+              <RefreshCw className="h-5 w-5 text-sky-600" aria-hidden />
+              <h3 className="t-h3">Synced data</h3>
+              <DataSourceBadge source="live" className="ml-auto" />
+            </div>
+            <p className="mt-2 text-sm leading-relaxed text-slate-600">
+              <strong>Telex.pk</strong> listings are collected by a slow background sync, a handful of products at a time, every few hours - not read live on every search. Each price still shows exactly when it was last checked, never a permanent &ldquo;live&rdquo; claim.
             </p>
           </div>
           <div className="card p-5">
