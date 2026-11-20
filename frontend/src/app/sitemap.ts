@@ -4,7 +4,19 @@ import type { ProductCard } from "@/lib/types";
 const siteUrl = process.env.SITE_URL || "https://ex-comm.vercel.app";
 const backendUrl = (process.env.BACKEND_URL || "http://127.0.0.1:5000").replace(/\/+$/, "");
 
-const STATIC_PATHS = ["", "/search", "/categories", "/compare", "/best-deals", "/about"];
+const STATIC_PATHS = [
+  "",
+  "/search",
+  "/categories",
+  "/compare",
+  "/best-deals",
+  "/about",
+  "/methodology",
+  "/privacy",
+  "/terms",
+  "/contact",
+  "/affiliate-disclosure",
+];
 
 // Sensible cap, not the whole catalog (~2000 products): /api/products/trending ranks by popularity, so
 // this covers every product that's realistically worth a crawler's attention without an unbounded or

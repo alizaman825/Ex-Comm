@@ -205,7 +205,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
                 </li>
               ))}
             </ul>
-            {hasSavedData && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">Some prices on this page are saved sample data. For built-in sample products the history is generated to demonstrate the chart, so do not treat it as real market history.</p>}
+            {hasSavedData && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">Some prices on this page are saved reference prices (AliExpress), not checked live right now, so they may be out of date. See <a href="/methodology" className="underline">Methodology</a> for how we label price freshness.</p>}
           </>
         )}
       </div>

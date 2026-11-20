@@ -8,15 +8,15 @@ import { storeProblems } from "@/lib/stores";
 const TONE = {
   live: { chip: "Live", chipCls: "tag-pill tag-pill-best", icon: CheckCircle2 },
   cache: { chip: "Cached", chipCls: "tag-pill tag-pill-neutral", icon: CheckCircle2 },
-  fallback: { chip: "Sample", chipCls: "tag-pill tag-pill-warn", icon: AlertTriangle },
-  demo: { chip: "Sample", chipCls: "tag-pill tag-pill-warn", icon: Database },
+  fallback: { chip: "Saved", chipCls: "tag-pill tag-pill-warn", icon: AlertTriangle },
+  demo: { chip: "Demo", chipCls: "tag-pill tag-pill-warn", icon: Database },
 } as const;
 
 type Kind = keyof typeof TONE;
 const kindOf = (data: SearchResponse): Kind => (data.demoMode ? "demo" : data.source);
 
 export function bannerMessage(data: SearchResponse): string {
-  if (data.demoMode) return "Demo mode: live store search is switched off, so you are seeing saved sample data.";
+  if (data.demoMode) return "Demo mode: live store search is switched off, so you are seeing saved data.";
   if (data.source === "live") return `Live results from the stores, checked ${timeAgo(data.fetchedAt)}.`;
   if (data.source === "cache") return `Live results from the stores, checked ${timeAgo(data.fetchedAt)}. Prices may have changed since: refresh to check the stores again.`;
   return "The stores could not be checked just now, so you are seeing saved data. Prices may be out of date.";
