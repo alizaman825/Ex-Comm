@@ -21,4 +21,24 @@ async function create(req, res) {
   res.status(201).json({ id: report._id });
 }
 
-module.exports = { create, createSchema };
+const listQuerySchema = z.object({
+  status: z.enum(['open', 'reviewed']).optional(),
+  limit: z.coerce.number().int().min(1).max(100).default(50),
+});
+
+// GET /api/reports (owner-only, x-job-key protected - PLAN.md Phase 1 item 7 continuation): no admin
+// UI yet, so this is the "simple way to read submitted reports" the brief asks for. Never logs a
+// report's contents - the response is the only place they're exposed.
+async function list(req, res) {
+  const { status, limit } = req.query;
+  const filter = status ? { status } : {};
+  const reports = await Report.find(filter)
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .populate('productId', 'title')
+    .populate('listingId', 'platform title')
+    .lean();
+  res.json({ reports, openCount: await Report.countDocuments({ status: 'open' }) });
+}
+
+module.exports = { create, createSchema, list, listQuerySchema };
