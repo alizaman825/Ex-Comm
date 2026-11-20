@@ -62,6 +62,8 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
       </SectionHeading>
       <p className="mb-4 text-[12.5px] text-white/55">
         Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers; eBay listings can be new, used or refurbished, shown above.
+        Shipping cost and cash-on-delivery availability vary by seller and aren&apos;t tracked here — check the store page before ordering. AliExpress/eBay prices exclude
+        international shipping and customs duties.
       </p>
       <ul className="space-y-2.5">
         {groups.map((g) =>

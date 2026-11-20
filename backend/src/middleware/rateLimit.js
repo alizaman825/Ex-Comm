@@ -29,4 +29,9 @@ const authLimiter = () =>
 const searchLimiter = () =>
   rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.search.rateLimitMax, standardHeaders: 'draft-7', legacyHeaders: false, handler });
 
-module.exports = { apiLimiter, authLimiter, searchLimiter };
+// "Report a wrong price or product" (PLAN.md Phase 1 item 7): no auth required, so IP alone is the
+// only key available; kept tight since a handful of genuine reports per IP per window is plenty.
+const reportLimiter = () =>
+  rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.rateLimit.reportMax, standardHeaders: 'draft-7', legacyHeaders: false, handler });
+
+module.exports = { apiLimiter, authLimiter, searchLimiter, reportLimiter };
