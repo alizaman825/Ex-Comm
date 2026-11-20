@@ -23,6 +23,9 @@ async function listCategories(_req, res) {
 const PLATFORM_META = [
   { id: 'daraz', label: 'Daraz', role: 'retail', site: 'https://www.daraz.pk' },
   { id: 'priceoye', label: 'PriceOye', role: 'retail', site: 'https://priceoye.pk' },
+  // Telex (Phase 2A): a background sync, not a live-on-search adapter - `live` below is always false
+  // for it, since it is never in config.scraper.livePlatforms.
+  { id: 'telex', label: 'Telex.pk', role: 'retail', site: 'https://www.telex.pk' },
   { id: 'aliexpress', label: 'AliExpress', role: 'supplier', site: 'https://www.aliexpress.com' },
   { id: 'ebay', label: 'eBay', role: 'supplier', site: 'https://www.ebay.com' },
 ];

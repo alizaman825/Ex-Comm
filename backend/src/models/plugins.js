@@ -11,6 +11,8 @@ function toJSON(schema) {
   });
 }
 
-const PLATFORMS = ['daraz', 'priceoye', 'aliexpress', 'ebay'];
+// 'telex' (Phase 2A): background sync only (jobs/telexSync.js) - never an on-demand live adapter like
+// daraz/priceoye, and not a per-request supplier check like aliexpress/ebay.
+const PLATFORMS = ['daraz', 'priceoye', 'aliexpress', 'ebay', 'telex'];
 
 module.exports = { toJSON, PLATFORMS };
