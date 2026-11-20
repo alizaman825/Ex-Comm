@@ -437,14 +437,25 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
 }
 
 /* Glass surfaces: reskin the shared primitives so every page that uses them (home, product,
-   compare, categories, search, wishlist, alerts) gets the frosted-glass look for free. */
+   compare, categories, search, wishlist, alerts) gets the frosted-glass look for free.
+   `.bg-surface` is included here too: several components (AliExpressCheck/EbayCheck notices,
+   the search-loading banner, the navbar dropdown, Modal/Drawer/Toast, CompareTray, badges,
+   PriceChart, WishlistButton) apply the raw `bg-surface` Tailwind utility directly instead of
+   one of the classes above. That utility still resolves to the solid `--surface` token (near-
+   black under the cinematic palette), so every one of those surfaces was rendering as an opaque
+   dark/black rectangle sitting on top of the gradient atmosphere — the literal "old black design"
+   look, not a sizing/clipping bug in the atmosphere itself (verified: the fixed .atmo backdrop
+   does cover the full scroll height everywhere; these raw-utility surfaces were simply opaque and
+   stacked on top of it). Reskinning the utility class itself fixes every one of those call sites
+   at once, site-wide, without hunting down each component. */
 body { background-color: transparent; color: rgb(var(--slate-600)); }
 .card,
 .btn-secondary,
 .chip,
 .input,
 .nav-pill,
-.glass-panel {
+.glass-panel,
+.bg-surface {
   background: rgb(var(--glass-bg));
   -webkit-backdrop-filter: blur(22px) saturate(140%);
   backdrop-filter: blur(22px) saturate(140%);
