@@ -32,21 +32,36 @@ function allTasks() {
 
 const taskKey = (t) => `${t.item.t}|${t.platform}`;
 
-// Never-checked tasks first (catalog order), then the longest-ago checked. A match is refreshed after
-// refreshHours, a miss is retried after retryHours.
-function dueTasks(state, now) {
+// The titles currently featured on the homepage/top search results (owner decision, 2026-11-20): the
+// most popular products, by the same ranking trending()/search already use. Fetched fresh on each run
+// rather than cached, since popularity shifts as people search/wishlist/alert.
+async function priorityTitles() {
+  const top = await Product.find()
+    .sort({ popularity: -1, reviewCount: -1 })
+    .limit(config.catalogSync.priorityLimit)
+    .select('title')
+    .lean();
+  return new Set(top.map((p) => p.title));
+}
+
+// Priority tasks first (owner decision, 2026-11-20: launch-category products on the homepage/top search
+// get refreshed before the rest of the catalog), then within each group: never-checked tasks (catalog
+// order), then the longest-ago checked. A match is refreshed after refreshHours, a miss retried after
+// retryHours. `priority` is a Set of catalog item titles (see priorityTitles()); omit it to ignore priority.
+function dueTasks(state, now, priority = new Set()) {
   const { refreshHours, retryHours } = config.catalogSync;
   const due = [];
   allTasks().forEach((t, i) => {
     const s = state[taskKey(t)];
+    const isPriority = priority.has(t.item.t);
     if (!s) {
-      due.push({ ...t, order: -1, i });
+      due.push({ ...t, order: -1, i, isPriority });
       return;
     }
     const at = new Date(s.at).getTime();
-    if (now - at >= (s.ok ? refreshHours : retryHours) * HOUR) due.push({ ...t, order: at, i });
+    if (now - at >= (s.ok ? refreshHours : retryHours) * HOUR) due.push({ ...t, order: at, i, isPriority });
   });
-  return due.sort((a, b) => a.order - b.order || a.i - b.i);
+  return due.sort((a, b) => Number(b.isPriority) - Number(a.isPriority) || a.order - b.order || a.i - b.i);
 }
 
 const fieldsOf = (l, now) => ({
@@ -157,9 +172,9 @@ async function runCatalogSync({ batch = config.catalogSync.batch, trigger = 'sch
   let status = 'success';
   let error;
   try {
-    const stateRow = await Setting.findOne({ key: STATE_KEY }).lean();
+    const [stateRow, priority] = await Promise.all([Setting.findOne({ key: STATE_KEY }).lean(), priorityTitles()]);
     const state = (stateRow && stateRow.value) || {};
-    const due = dueTasks(state, startedAt.getTime());
+    const due = dueTasks(state, startedAt.getTime(), priority);
     summary.remaining = Math.max(0, due.length - batch);
     const refused = new Set(); // stores that refused a request in this run: skipped until the next run
     let handled = 0;
@@ -214,4 +229,4 @@ async function catalogSyncProgress() {
   return { total: tasks.length, checked: tasks.filter(has).length, matched: tasks.filter((t) => has(t) && has(t).ok).length, due: dueTasks(state, Date.now()).length };
 }
 
-module.exports = { runCatalogSync, isRunning, catalogSyncProgress, dueTasks };
+module.exports = { runCatalogSync, isRunning, catalogSyncProgress, dueTasks, priorityTitles };

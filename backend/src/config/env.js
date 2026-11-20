@@ -72,6 +72,9 @@ const config = {
     platforms: (process.env.CATALOG_SYNC_PLATFORMS || 'daraz,priceoye').split(',').map((x) => x.trim()).filter(Boolean),
     refreshHours: Number(process.env.CATALOG_SYNC_REFRESH_HOURS) || 24,
     retryHours: Number(process.env.CATALOG_SYNC_RETRY_HOURS) || 168,
+    // Owner decision (2026-11-20): refresh the most popular products (homepage/top search results) before
+    // the rest of the catalog. This many of the top-popularity products count as "priority".
+    priorityLimit: Number(process.env.CATALOG_SYNC_PRIORITY_LIMIT) || 60,
   },
   // How recently a product needs to have been checked to lead a home-page rail (trending/drops). A product
   // whose freshest offer is older than this is left off rather than risk showing stock/price that an idle
