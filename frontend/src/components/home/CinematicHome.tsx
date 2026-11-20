@@ -42,15 +42,22 @@ function badgeFor(p: ProductCardData) {
 
 /* ---------------------------------------------------------------- Hero ---------------------------------------------------------------- */
 
-function HeroVisual({ product }: { product: ProductCardData | undefined }) {
-  if (!product) return <div className="hidden aspect-square w-[22rem] shrink-0 lg:block" aria-hidden />;
+function HeroVisual({ product, variant }: { product: ProductCardData | undefined; variant: "mobile" | "desktop" }) {
+  const isMobile = variant === "mobile";
+  const sizeCls = isMobile ? "aspect-square w-40" : "aspect-square w-[22rem]";
+  const visibilityCls = isMobile ? "flex lg:hidden" : "hidden lg:flex";
+  const badgeTextCls = isMobile ? "text-[9.5px] px-2.5 py-1" : "text-[11px] px-3 py-1.5";
+  const badgeTopCls = isMobile ? "left-1 top-3" : "left-2 top-6";
+  const badgeBottomCls = isMobile ? "bottom-3 right-1" : "bottom-6 right-2";
+
+  if (!product) return <div className={clsx(sizeCls, "shrink-0", isMobile ? "hidden" : "hidden lg:block")} aria-hidden />;
   const low = lowestOffer(product);
   return (
-    <div className="relative hidden aspect-square w-[22rem] shrink-0 items-center justify-center lg:flex">
+    <div className={clsx("relative items-center justify-center shrink-0", sizeCls, visibilityCls)}>
       <ProductImage src={product.image} alt={product.title} category={product.category} className="h-[85%] w-[85%] drop-shadow-[0_30px_50px_rgba(0,0,0,0.4)]" />
-      <span className="absolute left-2 top-6 rounded-full bg-emerald-400/90 px-3 py-1.5 text-[11px] font-extrabold text-[#06281c]">Lowest price</span>
+      <span className={clsx("absolute rounded-full bg-emerald-400/90 font-extrabold text-[#06281c]", badgeTextCls, badgeTopCls)}>Lowest price</span>
       {low && (
-        <span className="absolute bottom-6 right-2 rounded-full bg-[#fcd34d]/95 px-3 py-1.5 text-[11px] font-extrabold text-[#3f2d05]">
+        <span className={clsx("absolute rounded-full bg-[#fcd34d]/95 font-extrabold text-[#3f2d05]", badgeTextCls, badgeBottomCls)}>
           {product.priceChange7d <= -1 ? `${Math.round(product.priceChange7d)}% today` : "Checked today"}
         </span>
       )}
@@ -85,6 +92,10 @@ function Hero() {
             Daraz, PriceOye and more, compared live — plus AliExpress as a checked, saved reference.
           </p>
 
+          <div className="mb-5 flex justify-center lg:hidden">
+            <HeroVisual product={top} variant="mobile" />
+          </div>
+
           <div className="max-w-[29rem]">
             <CineSearchBar />
           </div>
@@ -92,7 +103,7 @@ function Hero() {
           <CategoryChips />
         </div>
 
-        <HeroVisual product={top} />
+        <HeroVisual product={top} variant="desktop" />
       </div>
     </section>
   );
