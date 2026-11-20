@@ -78,7 +78,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
                 )}
                 {o.dataSource === "saved" && <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-[10px] font-medium text-amber-300">saved</span>}
                 {!o.inStock && (
-                  <span className="rounded bg-white/10 px-1 py-px text-[10px] font-medium text-white/55">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
+                  <span className="shrink-0 whitespace-nowrap rounded bg-white/10 px-1 py-px text-[10px] font-medium text-white/55">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
                 )}
               </span>
               <span className={clsx("shrink-0 whitespace-nowrap tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-300" : "text-white/70")}>{formatPrice(o.price)}</span>
