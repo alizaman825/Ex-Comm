@@ -114,6 +114,8 @@ const config = {
     // Keyed per IP+email (see middleware/rateLimit.js), so this only throttles repeated attempts
     // on the same account, not every login behind a shared IP (campus Wi-Fi, mobile carrier NAT).
     authMax: Number(process.env.AUTH_RATE_LIMIT_MAX) || 20,
+    // "Report a wrong price or product" has no account, so this is keyed on IP alone - deliberately tight.
+    reportMax: Number(process.env.REPORT_RATE_LIMIT_MAX) || 5,
   },
 };
 

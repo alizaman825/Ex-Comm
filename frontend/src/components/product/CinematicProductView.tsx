@@ -14,6 +14,7 @@ import { EmptyState, ErrorState, Skeleton } from "@/components/ui/primitives";
 import { useToast } from "@/components/ui/Toast";
 import { useCompare } from "@/components/compare/CompareProvider";
 import { OfferTable } from "./OfferTable";
+import { ReportProblem } from "./ReportProblem";
 import { PriceChart } from "./PriceChart";
 import { AlertDialog } from "./AlertDialog";
 import { PriceChange, Rating } from "./badges";
@@ -335,6 +336,9 @@ export function CinematicProductView({ id }: { id: string }) {
       <div className="mt-10 flex flex-col gap-6">
         <OfferTable listings={product.listings} />
         <PriceChart productId={product.id} hasSavedData={view.hasSaved} />
+        <div className="flex justify-center lg:justify-start">
+          <ReportProblem productId={product.id} title={product.title} />
+        </div>
       </div>
 
       <SimilarProducts id={product.id} />

@@ -16,6 +16,7 @@ const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["700", "800"]
 const body = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.SITE_URL || "https://ex-comm.vercel.app"),
   title: { default: "Ex-Comm: compare prices across Daraz, PriceOye and AliExpress", template: "%s | Ex-Comm" },
   description: "Search once, compare prices across Pakistani online stores, track price history and get alerts when prices drop.",
   // Light is the only default: ask browsers and extensions not to auto-darken the page.
