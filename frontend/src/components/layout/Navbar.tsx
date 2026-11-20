@@ -13,6 +13,7 @@ import { ThemeToggle } from "./ThemeToggle";
 
 const LINKS = [
   { href: "/categories", label: "Categories" },
+  { href: "/best-deals", label: "Best deals" },
   { href: "/compare", label: "Compare" },
 ];
 
