@@ -1,6 +1,6 @@
 # Status
 
-_Last updated: 2026-11-20 — cinematic redesign round 8: fixed two bugs round 7's self-report claimed were fixed but weren't (verified against real screenshots): black surfaces on the search page (and footer, site-wide) breaking the gradient atmosphere, and a harsh static orange input border_
+_Last updated: 2026-11-20 — fixed a production outage: live search and the keep-alive workflow were both 404ing against the Render backend because of a trailing-slash/stray-path mismatch in RENDER_API_URL/BACKEND_URL_
 
 ## Built
 - Cinematic redesign round 8 — two real, unresolved bugs found by inspecting actual screenshots from round 7 rather than trusting its "fixed" claim (2026-11-20):
@@ -132,6 +132,7 @@ _Last updated: 2026-11-20 — cinematic redesign round 8: fixed two bugs round 7
   - Full report notes in `docs/report_notes.md`, "Accessories matching as the device".
 
 ## Working
+- **Production outage fixed (2026-11-20):** live search on the deployed site was failing ("We could not load results") and the `daily-refresh.yml` keep-alive workflow had been 404ing on `/api/health` for hours, even after ali regenerated the `JOB_KEY` secret and redeployed Render. Root cause: `RENDER_API_URL` / Vercel's `BACKEND_URL` carried a trailing slash or stray path, turning `<origin>/api/health` into a double slash or duplicated `/api` segment that Express treated as unmatched (404) - invisible in Actions logs since GitHub masks the secret's literal value everywhere. Fixed in `.github/workflows/daily-refresh.yml` (strips to `scheme://host` before every curl call, prints just the host for debugging) and `frontend/next.config.mjs` (strips a trailing slash from `BACKEND_URL` before building the `/api/*` rewrite). Verified live: a re-run of the workflow right after merging returned `{"status":"ok","db":"connected",...}` immediately. That same run surfaced a second, previously-masked issue - `catalog-sync`/`price-check` are real batch jobs that can take longer than the workflow's 60s curl timeout once they actually run; raised both to 150s. Ask ali to rotate `JOB_KEY` (pasted in plaintext into project chat during debugging) in Render's Environment tab and update the matching GitHub secret.
 - **MongoDB Atlas (your own cluster) is connected** (database `excomm`, 90 products / 222 listings / ~20k history points, demo user). The backend uses the Atlas URI from `backend/.env`; `MONGO_URI=memory` remains available as an offline fallback. Seeding is resumable: a completion marker (`settings.seedCompletedAt`) lets the server detect and redo an interrupted seed (a first seed over Atlas takes about a minute).
 - API runs in dev and production mode with the embedded DB (`MONGO_URI=memory`); auto-seed and demo login verified.
 - Daraz JSON search and PriceOye search HTML reachable without a browser (probed 2026-10-07).
