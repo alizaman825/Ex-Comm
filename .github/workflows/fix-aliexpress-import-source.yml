@@ -1,0 +1,30 @@
+name: Fix AliExpress import source label
+
+# One-off correction (ali's Phase 1 continuation brief, step A6, 2026-11-20): relabels the AliExpress
+# 2026-10-07 bulk-import PriceHistory points from 'real' to 'unverified', since a bulk import is not a
+# live check. Writes to production data, so it requires manual workflow_dispatch and defaults to a dry
+# run - set `apply` to actually write. Requires the same MONGO_URI repository secret the other data
+# workflows use.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Write the relabel (unchecked = dry run, counts only, nothing written)'
+        type: boolean
+        default: false
+
+jobs:
+  fix:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Run the fix (dry run unless apply is checked)
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/fix-aliexpress-import-source.js ${{ inputs.apply && '--apply' || '' }}
