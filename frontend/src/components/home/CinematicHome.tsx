@@ -8,7 +8,7 @@ import { useCategories } from "@/lib/hooks";
 import { ArrowRight } from "lucide-react";
 import { PLATFORM_LABEL, formatPrice } from "@/lib/format";
 import type { ProductCard as ProductCardData } from "@/lib/types";
-import { ProductImage } from "@/components/product/ProductImage";
+import { CategoryIcon, ProductImage } from "@/components/product/ProductImage";
 import { CineSearchBar } from "./CineSearchBar";
 
 /**
@@ -166,13 +166,53 @@ function DropsSection() {
   );
 }
 
-/* ----------------------------------------------------- 03: trending (mobile only) ----------------------------------------------------- */
+/* ----------------------------------------------------- 03: shop by category ----------------------------------------------------- */
+
+function CategoryTile({ slug, name, productCount }: { slug: string; name: string; productCount: number }) {
+  return (
+    <Link
+      href={`/search?category=${slug}`}
+      data-testid="home-category-tile"
+      className="flex flex-col items-center gap-2.5 rounded-[1.25rem] border border-white/20 bg-white/10 p-4 text-center backdrop-blur-xl transition hover:bg-white/[0.16] sm:p-5"
+    >
+      <span className="flex h-12 w-12 items-center justify-center rounded-2xl bg-white/10 text-white ring-1 ring-white/15 sm:h-14 sm:w-14">
+        <CategoryIcon slug={slug} className="h-6 w-6 sm:h-7 sm:w-7" />
+      </span>
+      <span className="line-clamp-1 text-[12.5px] font-bold text-white">{name}</span>
+      <span className="spec-label text-[9px] text-white/50">{productCount} products</span>
+    </Link>
+  );
+}
+
+function CategoriesSection() {
+  const { data, isLoading } = useCategories();
+  const categories = data?.categories ?? [];
+  return (
+    <section className="px-5 pb-8 pt-1 sm:px-6 lg:px-10 lg:pb-14">
+      <div className="mx-auto max-w-[85rem]">
+        <div className="mb-3 flex items-center justify-between sm:mb-4">
+          <p className="spec-label text-[9.5px] text-white/60 lg:text-[10.5px]">03 — Shop by category</p>
+          <Link href="/categories" className="spec-label text-[9.5px] text-white/60 hover:text-white">
+            All categories →
+          </Link>
+        </div>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
+          {isLoading && !data
+            ? Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton h-[7.5rem] !rounded-[1.25rem]" aria-hidden />)
+            : categories.map((c) => <CategoryTile key={c.slug} slug={c.slug} name={c.name} productCount={c.productCount} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ------------------------------------------------------- 04: trending searches ------------------------------------------------------- */
 
 function TrendingTile({ product }: { product: ProductCardData }) {
   const badge = badgeFor(product);
   return (
-    <Link href={`/products/${product.id}`} className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl">
-      <div className="mb-2 flex h-14 items-center justify-center">
+    <Link href={`/products/${product.id}`} className="rounded-2xl border border-white/20 bg-white/10 p-3 backdrop-blur-xl transition hover:bg-white/[0.16]">
+      <div className="mb-2 flex h-14 items-center justify-center lg:h-20">
         <ProductImage src={product.image} alt={product.title} category={product.category} className="h-full w-full" />
       </div>
       <p className="mb-1 line-clamp-1 text-[11px] font-semibold text-white">{product.title}</p>
@@ -182,15 +222,46 @@ function TrendingTile({ product }: { product: ProductCardData }) {
 }
 
 function TrendingSection() {
-  const { data, isLoading } = useTrending(4);
+  const { data, isLoading } = useTrending(8);
   const products = data?.products ?? [];
   return (
-    <section className="px-5 pb-4 pt-1 lg:hidden">
-      <p className="spec-label mb-2.5 text-[9.5px] text-white/60">03 — Trending searches</p>
-      <div className="grid grid-cols-2 gap-2.5">
-        {isLoading && !data
-          ? Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-28 !rounded-2xl" aria-hidden />)
-          : products.map((p) => <TrendingTile key={p.id} product={p} />)}
+    <section className="px-5 pb-6 pt-1 sm:px-6 lg:px-10 lg:pb-14">
+      <div className="mx-auto max-w-[85rem]">
+        <p className="spec-label mb-2.5 text-[9.5px] text-white/60 sm:mb-3.5 lg:text-[10.5px]">04 — Trending searches</p>
+        <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
+          {isLoading && !data
+            ? Array.from({ length: 8 }, (_, i) => <div key={i} className="skeleton h-28 !rounded-2xl lg:h-36" aria-hidden />)
+            : products.slice(0, 8).map((p) => <TrendingTile key={p.id} product={p} />)}
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* ----------------------------------------------------- 05: best deals preview ----------------------------------------------------- */
+
+function BestDealsPreview() {
+  const { data, isLoading } = useDrops(8);
+  const products = data?.products ?? [];
+  return (
+    <section className="px-5 pb-8 pt-1 sm:px-6 lg:px-10 lg:pb-16">
+      <div className="mx-auto max-w-[85rem]">
+        <div className="mb-3 flex items-center justify-between sm:mb-4">
+          <p className="spec-label text-[9.5px] text-white/60 lg:text-[10.5px]">05 — Best deals preview</p>
+          <Link href="/best-deals" className="spec-label text-[9.5px] text-white/60 hover:text-white">
+            Browse best deals →
+          </Link>
+        </div>
+        <div className="-mx-5 flex gap-3.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:grid lg:grid-cols-4 lg:gap-[18px] lg:overflow-visible [&::-webkit-scrollbar]:hidden">
+          {isLoading && !data
+            ? Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-[13.5rem] w-[9.4rem] shrink-0 !rounded-[1.25rem] sm:w-auto" aria-hidden />)
+            : products.slice(0, 4).map((p) => <DropCard key={p.id} product={p} />)}
+        </div>
+        <div className="mt-4 flex justify-center lg:mt-6">
+          <Link href="/best-deals" className="btn-secondary btn-sm">
+            Browse best deals <ArrowRight className="h-3.5 w-3.5" aria-hidden />
+          </Link>
+        </div>
       </div>
     </section>
   );
@@ -241,7 +312,9 @@ export function CinematicHome() {
     <>
       <Hero />
       <DropsSection />
+      <CategoriesSection />
       <TrendingSection />
+      <BestDealsPreview />
       <BottomBars />
     </>
   );
