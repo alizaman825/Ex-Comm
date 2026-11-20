@@ -106,7 +106,7 @@ export function AlertDialog({ open, onClose, productId, title, currentPrice, pla
       ) : (
         <form onSubmit={onSubmit} noValidate className="space-y-4">
           {formError && (
-            <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            <div role="alert" className="alert-danger rounded-2xl border p-3 text-sm">
               {formError}
             </div>
           )}

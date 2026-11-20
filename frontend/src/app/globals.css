@@ -783,3 +783,40 @@ input[type="checkbox"],
 input[type="radio"] {
   accent-color: rgb(var(--glow-a));
 }
+
+/* Danger form-error banner: a glass panel with a red/rose tint, not an opaque solid fill. Used by
+   every form's "something went wrong" banner (login, register, the price-alert dialog) instead of
+   the old light-theme `bg-rose-50 text-rose-800` combo, which rendered as an opaque pale-pink box
+   with dark-red text — the one opaque surface ali flagged on the mobile login page. Tint/text
+   values match the app's existing glass "danger" accent (`.tag-pill-drop`) so it reads as the same
+   red used for a price-drop tag elsewhere, just panel-shaped; blur matches every other glass
+   surface (`.card`/`.input`/etc. above) so it still reads as glass, just rose instead of neutral. */
+.alert-danger {
+  background: rgb(var(--rose-500) / 0.14);
+  border-color: rgb(var(--rose-500) / 0.4) !important;
+  color: rgb(253 164 175); /* same rose as .tag-pill-drop's text, for the same red elsewhere in the UI */
+  -webkit-backdrop-filter: blur(22px) saturate(140%);
+  backdrop-filter: blur(22px) saturate(140%);
+}
+
+/* Autofill override: Chrome/mobile Safari paint an autofilled input with their own opaque UA
+   background (commonly pale yellow) that ignores the app's own background-color entirely and
+   cannot be beaten with a plain `background` rule. The standard fix is this combination: an inset
+   box-shadow large enough to cover the field (paints over the UA fill — box-shadow cannot carry
+   blur/backdrop-filter, so this uses `--raised`, the closest opaque token to how a blurred glass
+   input actually renders against the dark atmosphere, as the least-opaque-looking stand-in) plus
+   a very long background-color transition (belt-and-suspenders against the same UA paint) and
+   `-webkit-text-fill-color`/`caret-color` set back to the app's normal input text/caret colors,
+   since autofill also overrides those. Targets the bare element, not just `.input`, so it fixes
+   every input in every form (login, register, search/filter boxes, profile), per ali's request to
+   check every form, not only login. */
+input:-webkit-autofill,
+input:-webkit-autofill:hover,
+input:-webkit-autofill:focus,
+input:-webkit-autofill:active {
+  -webkit-text-fill-color: rgb(var(--slate-900));
+  caret-color: rgb(var(--glow-a, 255 141 93));
+  -webkit-box-shadow: 0 0 0 1000px rgb(var(--raised)) inset;
+  box-shadow: 0 0 0 1000px rgb(var(--raised)) inset;
+  transition: background-color 600000s 0s, color 600000s 0s;
+}
