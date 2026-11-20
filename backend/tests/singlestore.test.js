@@ -194,6 +194,33 @@ describe('same store never merged; different stores grouped for comparison', () 
   });
 });
 
+// Regression for the "Rs 3,000 iPhone that's actually a phone case" report: a Daraz accessory listing
+// named only after the phone it fits ("For iPhone16 128GB", no accessory noun at all) normalizes to the
+// exact same brand/model/storage tokens as the real seeded phone, which used to let it attach as an
+// offer via the matchKey exact-match fast path (see services/matching.js, services/ingest.js).
+describe('accessory listings never attach to the device they are named after', () => {
+  test('a "for <phone>" title with no accessory noun does not become an offer on the phone, even with identical tokens', async () => {
+    const phone = await Product.findOne({ title: 'Apple iPhone 16 128GB' });
+    expect(phone).toBeTruthy();
+    const before = await Listing.countDocuments({ productId: phone._id });
+
+    await ingestListings([listing('daraz', 'For iPhone16 128GB', 3000)]);
+
+    expect(await Listing.countDocuments({ productId: phone._id })).toBe(before);
+    const caseListing = await Listing.findOne({ title: 'For iPhone16 128GB' });
+    expect(String(caseListing.productId)).not.toBe(String(phone._id));
+  });
+
+  test('a listing priced far below the product\'s known range is rejected as an offer, even with a clean title', async () => {
+    const phone = await Product.findOne({ title: 'Apple iPhone 16 128GB' });
+    const before = await Listing.countDocuments({ productId: phone._id });
+
+    await ingestListings([listing('daraz', 'Apple iPhone 16 128GB', 3000)]);
+
+    expect(await Listing.countDocuments({ productId: phone._id })).toBe(before);
+  });
+});
+
 describe('one store only', () => {
   test('a product on a single store (PriceOye) is its own result and the compare data lists only that store', async () => {
     stores({ priceoye: () => withMeta([listing('priceoye', 'Tecno Camon 40 Pro 8GB 256GB', 62999)]) });

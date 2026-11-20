@@ -24,9 +24,18 @@ Each store names the same product differently, e.g. "Apple iPhone 15 (128GB) - B
 Limitations to state in the report:
 - Matching can produce **false negatives** (the same product not grouped). Example: a missing brand in one title. These are covered by manual comparison.
 - Matching can produce **false positives** (different variants grouped). Example: "Galaxy A15" vs "Galaxy A15 5G". To reduce this, the matcher is conservative and requires numeric tokens (storage, model numbers) to match exactly.
-- Accessories (cases, chargers) can look like the main product. Very cheap listings in a group are flagged rather than trusted.
+- Accessories (cases, chargers) can look like the main product. See "Accessories matching as the device" below for the title- and price-based guards now in place.
 - Accuracy is measured on a small hand-labelled sample, not a large benchmark.
 - **Future work:** use barcodes/GTINs where stores publish them, add learned similarity (text embeddings), and let user feedback ("not the same product") improve matching.
+
+### Accessories matching as the device (fixed 2026-11-20)
+Reported: a search for "Apple iPhone 18 Pro Max" showed a Daraz offer at Rs 3,000 (99.5% "off") whose actual listing was a phone case titled `"For iPhone18ProMax"` (Daraz breadcrumb Mobile Accessories > Phone Cases). Root cause and fixes, all in `services/matching.js` / `services/ingest.js`:
+- **The title had no accessory noun at all.** `"For iPhone18ProMax"` normalizes to the exact same brand+model tokens as `"Apple iPhone 18 Pro Max"` (`iphone 18 pro max`), and the existing accessory check (`ACCESSORY_WORDS`: case, cover, charger, ...) only looked for an accessory *noun*, which this title doesn't have - "for" was dropped as a stopword before anything saw it. `analyzeTitle` now also flags a title as an accessory when it is built around "for/compatible/fits/suitable" (the same signal `relevance.js` already used for search ranking), and that flag is folded into `matchKey` itself.
+- **This bypassed fuzzy matching entirely.** Because the normalized tokens were identical, `ingest.js` matched the listing via its `matchKey` exact-match fast path, which never calls `similarity()` (the accessory check used to live only there). Folding the accessory flag into the key itself closes this path, not just the fuzzy one.
+- **Price sanity check, independent of the title fix.** `ingest.js` now refuses to attach a new listing to an existing product when its price is below 40% of that product's known price range (`Product.minPrice`/`retailMinPrice`) - a second guard for cases a title heuristic misses (clones, wrong variant, other junk). A rejected listing still becomes its own (unmatched) product rather than being discarded.
+- `earphone(s)`/`earbud(s)`/`headphone(s)` were added to `ACCESSORY_WORDS` (reported: lens protectors and earphones appearing as phone search results) so a "Wired Earphones for iPhone 18 Pro Max"-style title can't match the phone either, even without the "for" marker.
+- **Cleanup migration:** `backend/scripts/cleanup-mismatched-listings.js` re-checks every stored listing against the product it's attached to and detaches mismatches (by either guard above) into their own product, run with `--apply`.
+- **Not done:** Daraz's category breadcrumb (seen in the report) is only on the product's own page, not in the search JSON the scraper reads - using it would need an extra per-listing request per search result, which the existing scrape-budget limits (see "Considered and deferred" below) rule out the same way. Title + price is the only signal available at search time.
 
 ### Phone variants (RAM/storage) and cross-store naming (fixed 2026-11-19)
 Two real gaps found against actual harvested Daraz/PriceOye phone titles (`backend/src/seed/listings.json`):

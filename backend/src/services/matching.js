@@ -29,8 +29,20 @@ const VARIANT_WORDS = new Set(
 );
 
 const ACCESSORY_WORDS = new Set(
-  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard'.split(' ')
+  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard earphone earphones earbud earbuds headphone headphones'.split(' ')
 );
+
+// "for/compatible with/fits/suitable for": a title built around one of these words names a product only
+// as what something ELSE fits ("For iPhone18ProMax", "Compatible with Galaxy A55") - the item for sale is an
+// accessory even when it names no accessory noun at all (no "case"/"cover" in the title). Same set as
+// relevance.js's FITS_WORDS, duplicated here because that module imports from this one.
+const FITS_WORDS = new Set(['for', 'compatible', 'fits', 'suitable']);
+
+// True when a title (its RAW words, before stopwords like "for" are dropped) marks the thing for sale as
+// an accessory rather than the device itself.
+function isAccessoryTitle(rawTokens) {
+  return rawTokens.some((t) => ACCESSORY_WORDS.has(t) || FITS_WORDS.has(t));
+}
 
 const BRAND_ALIASES = {
   iphone: 'apple', ipad: 'apple', airpods: 'apple', macbook: 'apple', imac: 'apple',
@@ -91,9 +103,10 @@ function detectBrand(tokens) {
   return null;
 }
 
-// Returns { brand, tokens (significant, in order), key (order-independent) }.
+// Returns { brand, tokens (significant, in order), key (order-independent), accessory }.
 function analyzeTitle(title) {
   const raw = normalizeText(title).split(' ').filter(Boolean);
+  const accessory = isAccessoryTitle(raw);
   const tokens = [];
   for (const t of raw) {
     if (STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
@@ -102,8 +115,11 @@ function analyzeTitle(title) {
   }
   const brand = detectBrand(tokens);
   const rest = tokens.filter((t) => t !== brand);
-  const key = [brand || '_', ...[...rest].sort()].join(' ');
-  return { brand, tokens: rest, key };
+  // The accessory flag is folded into the key itself so an accessory listing never exact-key-matches the
+  // real device it was titled after ("For iPhone18ProMax" normalizes to the same brand+model tokens as
+  // "Apple iPhone 18 Pro Max", but must never become an offer on that phone's page).
+  const key = [brand || '_', accessory ? '~acc' : '', ...[...rest].sort()].join(' ');
+  return { brand, tokens: rest, key, accessory };
 }
 
 // All meaningful tokens of a text (brand included), for query relevance checks.
@@ -138,10 +154,7 @@ const storageBytes = (t) => parseFloat(t) * (t.endsWith('tb') ? 1024 : 1);
 // Similarity 0..1 between two analyzed titles. Hard rules return 0.
 function similarity(a, b) {
   if (a.brand && b.brand && a.brand !== b.brand) return 0;
-
-  const accA = a.tokens.some((t) => ACCESSORY_WORDS.has(t));
-  const accB = b.tokens.some((t) => ACCESSORY_WORDS.has(t));
-  if (accA !== accB) return 0;
+  if (a.accessory !== b.accessory) return 0;
 
   // Model numbers ("a55", "15", "1000xm5") and variant words ("pro", "5g") must agree exactly.
   if (!sameSet(setOf(a.tokens, isModel), setOf(b.tokens, isModel))) return 0;
@@ -222,4 +235,4 @@ const brandOf = (text) => {
   return b ? BRAND_CANON[b] || b : b;
 };
 
-module.exports = { brandOf, accessoryWordsIn, ACCESSORY_WORDS, searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
+module.exports = { brandOf, accessoryWordsIn, ACCESSORY_WORDS, FITS_WORDS, isAccessoryTitle, searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
