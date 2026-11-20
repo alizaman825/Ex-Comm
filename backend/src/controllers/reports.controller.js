@@ -32,8 +32,11 @@ const listQuerySchema = z.object({
 async function list(req, res) {
   const { status, limit } = req.query;
   const filter = status ? { status } : {};
+  // _id as a tiebreaker: two reports created in the same millisecond would otherwise sort in
+  // whatever order the database happens to return them, since createdAt alone can't tell them
+  // apart. ObjectIds are monotonically increasing, so this keeps "newest first" stable.
   const reports = await Report.find(filter)
-    .sort({ createdAt: -1 })
+    .sort({ createdAt: -1, _id: -1 })
     .limit(limit)
     .populate('productId', 'title')
     .populate('listingId', 'platform title')
