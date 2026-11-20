@@ -16,6 +16,9 @@ function coverage(item, listing) {
   const have = new Set(got.tokens);
   const compact = got.tokens.join('');
   if (want.brand && got.brand && want.brand !== got.brand) return 0;
+  // A catalog item (a real device) is never flagged accessory; reject any listing that is ("For iPhone18ProMax",
+  // a case titled with no accessory noun at all - see matching.js's isAccessoryTitle).
+  if (got.accessory && !want.accessory) return 0;
   const extraAccessory = accessoryWordsIn(got.tokens).some((w) => !want.tokens.includes(w));
   if (extraAccessory) return 0;
   const present = (t) => have.has(t) || compact.includes(t);
