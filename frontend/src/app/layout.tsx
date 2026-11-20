@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import type { ReactNode } from "react";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
+import "@fontsource/bebas-neue";
 import "./globals.css";
 import { AuthProvider } from "@/lib/auth";
 import { ToastProvider } from "@/components/ui/Toast";
@@ -8,11 +9,14 @@ import { Navbar } from "@/components/layout/Navbar";
 import { Footer } from "@/components/layout/Footer";
 import { CompareProvider } from "@/components/compare/CompareProvider";
 import { CompareTray } from "@/components/compare/CompareTray";
+import { CinematicAtmosphere } from "@/components/cinematic/CinematicAtmosphere";
+import { TiltEffect } from "@/components/cinematic/TiltEffect";
 
 const display = Bricolage_Grotesque({ subsets: ["latin"], weight: ["700", "800"], variable: "--font-display", display: "swap" });
 const body = DM_Sans({ subsets: ["latin"], variable: "--font-body", display: "swap" });
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.SITE_URL || "https://ex-comm.vercel.app"),
   title: { default: "Ex-Comm: compare prices across Daraz, PriceOye and AliExpress", template: "%s | Ex-Comm" },
   description: "Search once, compare prices across Pakistani online stores, track price history and get alerts when prices drop.",
   // Light is the only default: ask browsers and extensions not to auto-darken the page.
@@ -31,7 +35,7 @@ const THEME_SCRIPT = `try{var t=localStorage.getItem("excomm-theme");if(t==="dar
 
 export default function RootLayout({ children }: { children: ReactNode }) {
   return (
-    <html lang="en" className={`${display.variable} ${body.variable}`} suppressHydrationWarning>
+    <html lang="en" className={`${display.variable} ${body.variable}`} data-ui-theme="cinematic" suppressHydrationWarning>
       <head>
         <script dangerouslySetInnerHTML={{ __html: THEME_SCRIPT }} />
       </head>
@@ -39,6 +43,8 @@ export default function RootLayout({ children }: { children: ReactNode }) {
         <a href="#main" className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-[70] focus:rounded-full focus:bg-surface focus:px-5 focus:py-2 focus:shadow-lift">
           Skip to content
         </a>
+        <CinematicAtmosphere />
+        <TiltEffect />
         <AuthProvider>
           <ToastProvider>
             <CompareProvider>

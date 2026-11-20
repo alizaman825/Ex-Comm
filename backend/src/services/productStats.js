@@ -1,5 +1,7 @@
 const { Product, Listing, PriceHistory } = require('../models');
 const { searchKeyOf } = require('./matching');
+const { isTrustworthy } = require('./priceStatus');
+const { excludeSeededInProd, realHistoryFilter, isHeadlineEligible, excludeStaleInProd } = require('./publicData');
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -21,15 +23,34 @@ const preferInStock = (list) => {
 // The headline price (minPrice / maxPrice / lowestPlatform / priceChange7d) is the *retail* price a shopper
 // pays locally (Daraz, PriceOye). The supplier price (AliExpress, before shipping and customs) is kept
 // separately in supplierMinPrice, and only becomes the headline for products with no retail listing.
-function computeStats(product, listings, pastPrice) {
+//
+// PLAN.md item 3: a listing that isn't currently price-status "checked_recently" (stale, unavailable,
+// check-failed or unknown) must never be called "cheapest" or feed a deal - only trustworthy listings
+// count toward the headline price. When nothing is trustworthy, the headline is null (an honest empty
+// state) rather than falling back to data nobody has confirmed recently. Outside production, seeded
+// demo/test data is exempt from this (isHeadlineEligible) - it's never re-scraped on a schedule, so
+// gating it on freshness would hide prices on the project's own seed catalog and test fixtures.
+function computeStats(product, listings, pastPrice, now = Date.now()) {
   if (!listings.length) {
     return { listingCount: 0, platforms: [], minPrice: null, maxPrice: null, retailMinPrice: null, supplierMinPrice: null, altTitles: [] };
   }
-  const retail = listings.filter((l) => !isSupplier(l));
-  const supplier = listings.filter(isSupplier);
+  const trusted = listings.filter((l) => isHeadlineEligible(l, isTrustworthy, now));
+  const retail = trusted.filter((l) => !isSupplier(l));
+  const supplier = trusted.filter(isSupplier);
   const headline = preferInStock(retail.length ? retail : supplier);
   const retailPool = retail.length ? preferInStock(retail) : [];
   const supplierPool = supplier.length ? preferInStock(supplier) : [];
+  const altTitles = altTitlesOf(listings);
+
+  if (!headline.length) {
+    return {
+      listingCount: listings.length,
+      platforms: [...new Set(listings.map((l) => l.platform))].sort(),
+      minPrice: null, maxPrice: null, retailMinPrice: null, supplierMinPrice: null, lowestPlatform: null,
+      rating: null, reviewCount: listings.reduce((s, l) => s + (l.reviewCount || 0), 0),
+      priceChange7d: 0, altTitles, searchKey: searchKeyOf(product.brand, product.title, ...altTitles),
+    };
+  }
 
   const cheapest = headline.reduce((a, b) => (b.price < a.price ? b : a));
   const prices = headline.map((l) => l.price);
@@ -41,7 +62,6 @@ function computeStats(product, listings, pastPrice) {
 
   const past = headline.map((l) => pastPrice.get(String(l._id))).filter((p) => p !== undefined);
   const pastMin = past.length ? Math.min(...past) : null;
-  const altTitles = altTitlesOf(listings);
   const fields = {
     minPrice,
     maxPrice: Math.max(...prices),
@@ -69,16 +89,31 @@ async function refreshProductsStats(productIds) {
   const ids = [...new Set(productIds.map(String))];
   if (!ids.length) return;
   const [listings, products] = await Promise.all([
-    Listing.find({ productId: { $in: ids } }).lean(),
+    Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: ids } }))).lean(),
     Product.find({ _id: { $in: ids } }).select('brand title image').lean(),
   ]);
-  const weekAgo = new Date(Date.now() - 7 * DAY);
+  const now = Date.now();
+  const weekAgo = new Date(now - 7 * DAY);
+  // 7-day price-change math must only trust real scrapes in production, never a simulated or unverified
+  // point - a 'source' missing entirely (written before this field existed) is treated as unverified, not
+  // real. Outside production, the seed catalog's honestly-simulated history is left alone (realHistoryFilter).
   const past = await PriceHistory.aggregate([
-    { $match: { listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $lte: weekAgo } } },
+    { $match: realHistoryFilter({ listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $lte: weekAgo } }) },
     { $sort: { scrapedAt: -1 } },
     { $group: { _id: '$listingId', price: { $first: '$price' } } },
   ]);
   const pastPrice = new Map(past.map((p) => [String(p._id), p.price]));
+  // Deals rule (owner decision, 2026-11-20): at least 5 real observations spanning at least 7 days -
+  // same bar as the per-product history chart's savings line (PriceChart.tsx), denormalized here so
+  // /products/drops can filter on it directly rather than every homepage request re-aggregating history.
+  const since90 = new Date(now - 90 * DAY);
+  const historyStats = await PriceHistory.aggregate([
+    { $match: realHistoryFilter({ listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $gte: since90 } }) },
+    { $group: { _id: '$productId', count: { $sum: 1 }, first: { $min: '$scrapedAt' }, last: { $max: '$scrapedAt' } } },
+  ]);
+  const dealEligibleOf = new Map(
+    historyStats.map((h) => [String(h._id), h.count >= 5 && (new Date(h.last) - new Date(h.first)) / DAY >= 7])
+  );
   const byProduct = new Map();
   for (const l of listings) {
     const k = String(l.productId);
@@ -86,7 +121,10 @@ async function refreshProductsStats(productIds) {
     byProduct.get(k).push(l);
   }
   const ops = products.map((p) => ({
-    updateOne: { filter: { _id: p._id }, update: { $set: computeStats(p, byProduct.get(String(p._id)) || [], pastPrice) } },
+    updateOne: {
+      filter: { _id: p._id },
+      update: { $set: { ...computeStats(p, byProduct.get(String(p._id)) || [], pastPrice, now), dealEligible: dealEligibleOf.get(String(p._id)) || false } },
+    },
   }));
   if (ops.length) await Product.bulkWrite(ops, { ordered: false });
 }

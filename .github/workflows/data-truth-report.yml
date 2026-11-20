@@ -1,0 +1,24 @@
+name: Data truth report
+
+# Read-only (PLAN.md Phase 1 item 2, pre-approved by the owner 2026-11-20): prints counts only - never
+# emails, names or other user data. This repo is public, so treat this Action's logs as public too.
+#
+# Requires the same MONGO_URI repository secret the cleanup-mismatched-listings workflow already uses.
+on:
+  workflow_dispatch: {}
+
+jobs:
+  report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Run the read-only data-truth report
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/data-truth-report.js

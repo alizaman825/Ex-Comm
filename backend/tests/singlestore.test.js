@@ -1,7 +1,9 @@
-// Live search mirrors the stores: whatever Daraz or PriceOye return for the query is shown, nothing is
-// filtered out, results from a single store are results in their own right, and more are loaded on demand.
-// Regression tests for the "iphone 15 pro max cover" / "iphone 16 pro max" reports (we showed 0-1 results
-// while the store showed thousands).
+// Live search mirrors the stores: every listing a store returns is kept, results from a single store are
+// results in their own right, and more are loaded on demand. PLAN.md item 4 adds one split on top of that:
+// isRelevant() is now a hard filter, so a non-matching listing (an accessory, a different model) is never
+// ranked among or counted as a real match - it's kept, just moved to the separate otherResults/otherTotal
+// group. Regression tests for the "iphone 15 pro max cover" / "iphone 16 pro max" reports (we showed 0-1
+// results while the store showed thousands) and for item 4 (17/18 Pro Max ranking above real Pro Max hits).
 const request = require('supertest');
 const { createApp } = require('../src/app');
 const { config } = require('../src/config/env');
@@ -48,50 +50,63 @@ async function cardFor(res, listingTitle) {
   const ids = new Set((await Listing.find({ title: listingTitle }).select('productId').lean()).map((l) => String(l.productId)));
   return res.body.results.find((r) => ids.has(r.id));
 }
+// Same lookup, but in the collapsed "other models" group (PLAN.md item 4's non-matches).
+async function otherCardFor(res, listingTitle) {
+  const ids = new Set((await Listing.find({ title: listingTitle }).select('productId').lean()).map((l) => String(l.productId)));
+  return res.body.otherResults.find((r) => ids.has(r.id));
+}
+// Finds every title's card (via `find`) and returns how many distinct products they land on - a listing
+// can join an existing (seeded or earlier-test) product instead of creating its own, so the right count
+// is "how many products these titles actually ended up on", not "one product per title".
+async function distinctProductsOf(titles2, find) {
+  const ids = new Set();
+  for (const t of titles2) {
+    const card = await find(t);
+    expect(card).toBeTruthy();
+    ids.add(card.id);
+  }
+  return ids.size;
+}
 
-describe('nothing is filtered: the results are what the store returns', () => {
+describe('nothing is hidden: non-matches move to otherResults, they are never dropped or ranked as matches', () => {
   const phones = ['Apple iPhone 16 Pro Max - 256GB', 'Apple iPhone 16 Pro Max - 512GB'];
   const accessories = ['Back Cover For iPhone 16 Pro Max', 'Unbreakable membrane Sheet for 360 Protection Sheet For 16 Pro / 16 Pro Max', 'Mini Pearl Handbag for iPhone 16 Pro Max', 'Converter Sheet 14 -15', 'Totally unrelated gadget'];
 
-  test('every item the store returns is shown, including accessories and loosely related items', async () => {
+  test('every item the store returns is kept: phones in results, accessories in otherResults', async () => {
     const all = [...accessories, ...phones];
     stores({ daraz: () => withMeta(all.map((t, i) => listing('daraz', t, 300 + i))) });
     const res = await search('iphone 16 pro max');
     expect(res.body.mode).toBe('live');
-    expect(res.body.total).toBe(all.length);
-    for (const t of all) expect(await cardFor(res, t)).toBeTruthy();
+    expect(res.body.total).toBe(await distinctProductsOf(phones, (t) => cardFor(res, t)));
+    expect(res.body.otherTotal).toBe(await distinctProductsOf(accessories, (t) => otherCardFor(res, t)));
   });
 
-  test('the best matches are ranked first (ranking only, nothing is dropped)', async () => {
+  test('the best matches lead results; non-matches are grouped separately, never ranked among them', async () => {
     stores({ daraz: () => withMeta([...accessories, ...phones].map((t, i) => listing('daraz', t, 300 + i))) });
     const res = await search('iphone 16 pro max');
-    const phone = await cardFor(res, phones[0]);
-    const junk = await cardFor(res, 'Totally unrelated gadget');
-    expect(res.body.results.indexOf(phone)).toBeLessThan(res.body.results.indexOf(junk));
-    expect(res.body.results.slice(0, 2).every((r) => /iPhone 16 Pro Max/.test(r.title))).toBe(true);
+    expect(res.body.results.every((r) => /iPhone 16 Pro Max/.test(r.title))).toBe(true);
+    expect(await otherCardFor(res, 'Totally unrelated gadget')).toBeTruthy();
   });
 
-  test('"iphone 15 pro max cover": covers from the store are all shown, single-store', async () => {
-    const covers = ['15 PROMAX AND 15 PRO liquid silicone cases mobile phone cover', 'iPhone15promax Matte Back Cover', 'Phone Case For 7/8 + / 11 / 12 Models', 'Customized Mobile Cover with Picture', 'WATERPROOF MOBILE COVER'];
+  test('"iphone 15 pro max cover": covers naming the phone are matches, generic covers are grouped separately', async () => {
+    const matching = ['15 PROMAX AND 15 PRO liquid silicone cases mobile phone cover', 'iPhone15promax Matte Back Cover'];
+    const generic = ['Phone Case For 7/8 + / 11 / 12 Models', 'Customized Mobile Cover with Picture', 'WATERPROOF MOBILE COVER'];
+    const covers = [...matching, ...generic];
     stores({ daraz: () => withMeta(covers.map((t, i) => listing('daraz', t, 500 + i))) });
     const res = await search('iphone 15 pro max cover');
-    expect(res.body.total).toBe(covers.length);
-    for (const t of covers) expect(await cardFor(res, t)).toBeTruthy();
+    expect(res.body.total).toBe(await distinctProductsOf(matching, (t) => cardFor(res, t)));
+    expect(res.body.otherTotal).toBe(await distinctProductsOf(generic, (t) => otherCardFor(res, t)));
     res.body.results.forEach((card) => expect(storesOf(card)).toEqual(['daraz']));
-    // the covers that name the phone come before the generic ones
-    const first = (await cardFor(res, covers[0])).id;
-    const generic = (await cardFor(res, 'WATERPROOF MOBILE COVER')).id;
-    const ids = res.body.results.map((r) => r.id);
-    expect(ids.indexOf(first)).toBeLessThan(ids.indexOf(generic));
   });
 
-  test.each(['samsung a15 case', 'airpods pro case', 'iphone 15 charger', 'laptop sleeve 15 inch', 'apple watch strap'])('accessory query "%s": all results of a single store are shown', async (q) => {
+  test.each(['samsung a15 case', 'airpods pro case', 'iphone 15 charger', 'laptop sleeve 15 inch', 'apple watch strap'])('accessory query "%s": the matching listing is a result, the rest are grouped separately', async (q) => {
     const items = [`${q} Premium Edition`, 'Some Other Listing', 'Another Seller Listing', 'Yet Another One'].map((t, i) => listing('daraz', t, 200 + i));
     stores({ daraz: () => withMeta(items) });
     const res = await search(q);
-    expect(res.body.total).toBe(items.length);
-    for (const l of items) expect(await cardFor(res, l.title)).toBeTruthy();
-    expect(titles(res)[0]).toContain('Premium'); // the one that matches the words ranks first
+    expect(res.body.total).toBe(1);
+    expect(await cardFor(res, items[0].title)).toBeTruthy();
+    expect(res.body.otherTotal).toBe(items.length - 1);
+    for (const l of items.slice(1)) expect(await otherCardFor(res, l.title)).toBeTruthy();
   });
 
   test('spacing, case and word order do not change what is shown', async () => {
@@ -101,7 +116,8 @@ describe('nothing is filtered: the results are what the store returns', () => {
       await SearchCache.deleteMany({});
       stores({ daraz: () => withMeta(items) });
       const res = await search(q);
-      expect(res.body.total).toBe(3);
+      expect(res.body.total).toBe(2);
+      expect(res.body.otherTotal).toBe(1);
       seen.push(titles(res).slice(0, 2).sort());
     }
     expect(seen[1]).toEqual(seen[0]);
@@ -114,37 +130,49 @@ describe('same store never merged; different stores grouped for comparison', () 
     // PriceOye is not in MULTI_SELLER_PLATFORMS, so the plain "one listing per store per product" rule
     // still applies there. Daraz's own version of this rule is covered separately below, now that it
     // allows several sellers (see docs/MULTI_SELLER_PLAN.md).
-    stores({ priceoye: () => withMeta([listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 540000), listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 555000), listing('priceoye', 'Apple iPhone 16 Pro Max 256GB', 560000)]) });
-    const res = await search('iphone 16 pro max');
+    // Uses "iPhone 17" (not 16): this file's earlier describe block stores several "iPhone 16 Pro Max"
+    // listings under a plain, storage-less product title, and this test's own PriceOye listings would
+    // otherwise be close enough to "adopt" that leftover product on first sight and inherit its Daraz
+    // offer - a cross-test collision, not a real matching bug.
+    stores({ priceoye: () => withMeta([listing('priceoye', 'Apple iPhone 17 Pro Max 256GB', 540000), listing('priceoye', 'Apple iPhone 17 Pro Max 256GB', 555000), listing('priceoye', 'Apple iPhone 17 Pro Max 256GB', 560000)]) });
+    const res = await search('iphone 17 pro max');
     expect(res.body.total).toBe(3);
     res.body.results.forEach((c) => expect(storesOf(c)).toEqual(['priceoye']));
   });
 
   test('several different Daraz sellers for the same item attach to one product, as separate offers', async () => {
+    // A synthetic title, not the seeded "Samsung Galaxy A55 5G 8GB 256GB": that sample product already
+    // carries seeded Daraz AND PriceOye retail listings (see src/seed/seed.js), so this test's own 2
+    // sellers would land on top of that pre-existing data instead of being the only Daraz offers, and
+    // would also consume the seeded Daraz listing's "adopt me" slot that the next test relies on.
     stores({
       daraz: () =>
         withMeta([
-          listing('daraz', 'Samsung Galaxy A55 5G 8GB 256GB', 127000, { sellerId: 'seller-1', sellerName: 'Smart Phone Line', sellerLocation: 'Punjab' }),
-          listing('daraz', 'Samsung Galaxy A55 5G 8GB 256GB', 172999, { sellerId: 'seller-2', sellerName: 'Combine Communication', sellerLocation: 'Punjab' }),
+          listing('daraz', 'Vortex Z9 Pro 5G 256GB', 127000, { sellerId: 'seller-1', sellerName: 'Smart Phone Line', sellerLocation: 'Punjab' }),
+          listing('daraz', 'Vortex Z9 Pro 5G 256GB', 172999, { sellerId: 'seller-2', sellerName: 'Combine Communication', sellerLocation: 'Punjab' }),
         ]),
     });
-    const res = await search('samsung galaxy a55');
+    const res = await search('vortex z9 pro');
     expect(res.body.total).toBe(1); // one product, not two
-    const daraz = await Listing.find({ platform: 'daraz', title: 'Samsung Galaxy A55 5G 8GB 256GB' }).lean();
+    const daraz = await Listing.find({ platform: 'daraz', title: 'Vortex Z9 Pro 5G 256GB' }).lean();
     expect(daraz).toHaveLength(2);
     expect(daraz.map((l) => l.sellerName).sort()).toEqual(['Combine Communication', 'Smart Phone Line']);
     expect(res.body.results[0].minPrice).toBe(127000); // the true minimum across both sellers
   });
 
   test('a second Daraz seller does not attach to a genuinely different variant', async () => {
+    // A synthetic model, not "Samsung Galaxy A55": the 256GB variant below is close enough to the seeded
+    // "Samsung Galaxy A55 5G 8GB 256GB" product (missing RAM token tolerated by the brand/storage match)
+    // to adopt its seeded Daraz listing, which would consume the slot the "adopts the first live listing"
+    // test below relies on.
     stores({
       daraz: () =>
         withMeta([
-          listing('daraz', 'Samsung Galaxy A55 5G 128GB', 110000, { sellerId: 'seller-1', sellerName: 'Seller One' }),
-          listing('daraz', 'Samsung Galaxy A55 5G 256GB', 135000, { sellerId: 'seller-2', sellerName: 'Seller Two' }),
+          listing('daraz', 'Nebula X7 5G 128GB', 110000, { sellerId: 'seller-1', sellerName: 'Seller One' }),
+          listing('daraz', 'Nebula X7 5G 256GB', 135000, { sellerId: 'seller-2', sellerName: 'Seller Two' }),
         ]),
     });
-    const res = await search('samsung galaxy a55');
+    const res = await search('nebula x7');
     expect(res.body.total).toBe(2); // different storage: two separate products, not merged as "two sellers"
   });
 
@@ -186,11 +214,41 @@ describe('same store never merged; different stores grouped for comparison', () 
     const res = await search('samsung galaxy a55');
     expect(await Product.countDocuments()).toBe(before); // grouped into the sample product, not duplicated
     const product = await Product.findOne({ title: 'Samsung Galaxy A55 5G 8GB 256GB' });
+    // The seeded Daraz listing on this product is still untouched (the earlier tests in this describe
+    // block were moved off this product's title, see above), so it's the one live listing this test's
+    // own Daraz data should adopt, keeping its externalId and accumulated price history.
     const adopted = await Listing.findOne({ productId: product._id, platform: 'daraz' });
     expect(adopted).toMatchObject({ externalId: 'dz-adopt-1', price: 118500, dataSource: 'live', seeded: false });
     const { PriceHistory } = require('../src/models');
     expect(await PriceHistory.countDocuments({ listingId: adopted._id })).toBe(91);
     expect(res.body.results[0].offers.find((o) => o.platform === 'daraz')).toMatchObject({ price: 118500, dataSource: 'live' });
+  });
+});
+
+// Regression for the "Rs 3,000 iPhone that's actually a phone case" report: a Daraz accessory listing
+// named only after the phone it fits ("For iPhone16 128GB", no accessory noun at all) normalizes to the
+// exact same brand/model/storage tokens as the real seeded phone, which used to let it attach as an
+// offer via the matchKey exact-match fast path (see services/matching.js, services/ingest.js).
+describe('accessory listings never attach to the device they are named after', () => {
+  test('a "for <phone>" title with no accessory noun does not become an offer on the phone, even with identical tokens', async () => {
+    const phone = await Product.findOne({ title: 'Apple iPhone 16 128GB' });
+    expect(phone).toBeTruthy();
+    const before = await Listing.countDocuments({ productId: phone._id });
+
+    await ingestListings([listing('daraz', 'For iPhone16 128GB', 3000)]);
+
+    expect(await Listing.countDocuments({ productId: phone._id })).toBe(before);
+    const caseListing = await Listing.findOne({ title: 'For iPhone16 128GB' });
+    expect(String(caseListing.productId)).not.toBe(String(phone._id));
+  });
+
+  test('a listing priced far below the product\'s known range is rejected as an offer, even with a clean title', async () => {
+    const phone = await Product.findOne({ title: 'Apple iPhone 16 128GB' });
+    const before = await Listing.countDocuments({ productId: phone._id });
+
+    await ingestListings([listing('daraz', 'Apple iPhone 16 128GB', 3000)]);
+
+    expect(await Listing.countDocuments({ productId: phone._id })).toBe(before);
   });
 });
 

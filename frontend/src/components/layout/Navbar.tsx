@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BellRing, ChevronDown, Heart, LayoutGrid, LogOut, Menu, Scale, Settings, X } from "lucide-react";
+import { Bell, BellRing, ChevronDown, Heart, LogOut, Search, Settings, X } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth";
 import { useUnreadCount } from "@/lib/hooks";
@@ -11,9 +11,10 @@ import { Logo } from "./Logo";
 import { SearchBar } from "./SearchBar";
 import { ThemeToggle } from "./ThemeToggle";
 
-const PUBLIC_LINKS = [
-  { href: "/categories", label: "Categories", icon: LayoutGrid },
-  { href: "/compare", label: "Compare", icon: Scale },
+const LINKS = [
+  { href: "/categories", label: "Categories" },
+  { href: "/best-deals", label: "Best deals" },
+  { href: "/compare", label: "Compare" },
 ];
 
 function initials(name: string) {
@@ -25,20 +26,11 @@ function initials(name: string) {
     .join("");
 }
 
-function NavLink({ href, label, icon: Icon, onClick }: { href: string; label: string; icon: typeof Bell; onClick?: () => void }) {
+function NavLink({ href, label, onClick }: { href: string; label: string; onClick?: () => void }) {
   const pathname = usePathname();
   const active = pathname === href || pathname.startsWith(`${href}/`);
   return (
-    <Link
-      href={href}
-      onClick={onClick}
-      aria-current={active ? "page" : undefined}
-      className={clsx(
-        "inline-flex items-center gap-2 rounded-full px-3.5 py-2 text-sm font-semibold transition duration-200",
-        active ? "bg-slate-100 text-ink" : "text-slate-600 hover:bg-slate-100 hover:text-ink"
-      )}
-    >
-      <Icon className="h-4 w-4" aria-hidden />
+    <Link href={href} onClick={onClick} aria-current={active ? "page" : undefined} className="nav-chip text-[13px] font-semibold">
       {label}
     </Link>
   );
@@ -73,11 +65,11 @@ function UserMenu() {
         onClick={() => setOpen((o) => !o)}
         aria-expanded={open}
         aria-haspopup="menu"
-        className="flex items-center gap-2 rounded-full bg-surface py-1 pl-1 pr-2.5 shadow-sm ring-1 ring-slate-200 transition hover:ring-slate-300"
+        className="flex items-center gap-1.5 rounded-full bg-white py-1 pl-1 pr-3 text-[12.5px] font-bold text-[#0b0812]"
       >
-        <span className="flex h-8 w-8 items-center justify-center rounded-full bg-brand-600 text-xs font-semibold text-onbrand">{initials(user.name)}</span>
-        <span className="hidden max-w-[7rem] truncate text-sm font-medium text-ink lg:block">{user.name.split(" ")[0]}</span>
-        <ChevronDown className={clsx("h-4 w-4 text-slate-400 transition", open && "rotate-180")} aria-hidden />
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0b0812] text-[10px] font-semibold text-white">{initials(user.name)}</span>
+        <span className="hidden max-w-[7rem] truncate lg:block">{user.name.split(" ")[0]}</span>
+        <ChevronDown className={clsx("h-3.5 w-3.5 text-slate-400 transition", open && "rotate-180")} aria-hidden />
       </button>
       {open && (
         <div role="menu" className="absolute right-0 z-50 mt-3 w-64 animate-fade-up rounded-3xl bg-surface p-2 shadow-lift">
@@ -116,93 +108,115 @@ function UserMenu() {
   );
 }
 
+/**
+ * The site's only navbar now (no classic/cinematic dual path — see STATUS.md). A literal port of
+ * the approved concept board's nav pill:
+ *  - Desktop (Main-Desktop.dc.html): wordmark, centered Home/Categories/Compare links, a small
+ *    glass search box, and a white "Sign in" pill (or the signed-in user's chip).
+ *  - Mobile (Main.dc.html): wordmark plus exactly two round glass buttons — search and the
+ *    moon/theme toggle. No hamburger: the board's mobile nav carries nothing else, by design.
+ *    Tapping search opens a second floating glass panel below the pill with the full search box
+ *    and the secondary links, so signed-in actions (wishlist, alerts, profile, log out) stay
+ *    reachable without adding to the pill itself.
+ */
 export function Navbar() {
   const { user, loading, logout } = useAuth();
   const unread = useUnreadCount();
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpenAt, setMobileOpenAt] = useState<string | null>(null);
-  const mobileOpen = mobileOpenAt === pathname; // closes automatically after navigating
+  const mobileOpen = mobileOpenAt === pathname;
   const closeMobile = () => setMobileOpenAt(null);
 
   return (
     <header className="sticky top-3 z-40 px-3 sm:px-4">
-      <div className="mx-auto max-w-[78rem] rounded-[28px] bg-surface/75 shadow-card backdrop-blur-xl [-webkit-backdrop-filter:blur(24px)]">
-      <div className="flex h-14 items-center gap-3 pl-4 pr-2 lg:gap-5">
-        <Logo />
+      <div className="nav-pill-cine mx-auto flex max-w-[85rem] items-center justify-between gap-3 md:gap-6">
+        <Logo className="nav-wordmark shrink-0" />
 
-        <div className="mx-2 hidden max-w-md flex-1 md:block">
-          <Suspense fallback={<div className="h-10 rounded-full bg-slate-100" />}>
-            <SearchBar />
-          </Suspense>
-        </div>
-
-        <nav className="ml-auto hidden items-center gap-1 md:flex" aria-label="Main">
-          {PUBLIC_LINKS.map((l) => (
+        <nav className="hidden items-center gap-7 md:flex" aria-label="Main">
+          <NavLink href="/" label="Home" />
+          {LINKS.map((l) => (
             <NavLink key={l.href} {...l} />
           ))}
+        </nav>
+
+        <div className="hidden items-center gap-3 md:flex">
+          <div className="nav-search-cine w-[160px] lg:w-[220px]">
+            <Suspense fallback={<div className="h-9 rounded-full bg-white/10" />}>
+              <SearchBar />
+            </Suspense>
+          </div>
+
           {user && (
             <>
-              <Link href="/wishlist" className="btn-ghost p-2.5" aria-label="Wishlist" title="Wishlist">
-                <Heart className="h-5 w-5" aria-hidden />
+              <Link href="/wishlist" className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20" aria-label="Wishlist" title="Wishlist">
+                <Heart className="h-4 w-4" aria-hidden />
               </Link>
-              <Link href="/notifications" className="btn-ghost relative p-2.5" aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"} title="Notifications">
-                <Bell className="h-5 w-5" aria-hidden />
+              <Link
+                href="/notifications"
+                className="relative flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20"
+                aria-label={unread ? `Notifications, ${unread} unread` : "Notifications"}
+                title="Notifications"
+              >
+                <Bell className="h-4 w-4" aria-hidden />
                 {unread > 0 && (
-                  <span className="absolute right-1 top-1 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-600 px-1 text-[10px] font-bold leading-none text-white ring-2 ring-canvas" data-testid="unread-badge">
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white" data-testid="unread-badge">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
               </Link>
             </>
           )}
-          <ThemeToggle />
-          <div className="ml-1 flex items-center gap-1.5">
-            {loading ? (
-              <div className="skeleton h-9 w-24 rounded-full" />
-            ) : user ? (
-              <UserMenu />
-            ) : (
-              <>
-                <Link href={`/login${pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `?next=${encodeURIComponent(pathname)}` : ""}`} className="btn-ghost">
-                  Log in
-                </Link>
-                <Link href="/register" className="btn-primary">
-                  Sign up
-                </Link>
-              </>
-            )}
-          </div>
-        </nav>
 
-        <ThemeToggle className="btn-ghost ml-auto p-2.5 md:hidden" />
-        <button
-          type="button"
-          className="btn-ghost p-2.5 md:hidden"
-          aria-label={mobileOpen ? "Close menu" : "Open menu"}
-          aria-expanded={mobileOpen}
-          onClick={() => setMobileOpenAt(mobileOpen ? null : pathname)}
-        >
-          {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-        </button>
+          <ThemeToggle className="flex h-9 w-9 items-center justify-center rounded-full bg-white/[0.12] text-white/85 transition hover:bg-white/20" />
+
+          {loading ? (
+            <div className="skeleton h-9 w-20 rounded-full" />
+          ) : user ? (
+            <UserMenu />
+          ) : (
+            <Link
+              href={`/login${pathname !== "/" && pathname !== "/login" && pathname !== "/register" ? `?next=${encodeURIComponent(pathname)}` : ""}`}
+              className="rounded-full bg-white px-4 py-2 text-[12.5px] font-bold text-[#0b0812]"
+            >
+              Sign in
+            </Link>
+          )}
+        </div>
+
+        {/* Mobile: exactly two round glass buttons, as the board's mobile nav shows. */}
+        <div className="flex items-center gap-2 md:hidden">
+          <button
+            type="button"
+            aria-label="Search"
+            onClick={() => setMobileOpenAt(mobileOpen ? null : pathname)}
+            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.14] text-white/85"
+          >
+            {mobileOpen ? <X className="h-3.5 w-3.5" aria-hidden /> : <Search className="h-3.5 w-3.5" aria-hidden />}
+          </button>
+          <ThemeToggle className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0b0812]" />
+        </div>
       </div>
 
+      {/* A second, separate floating glass panel below the pill — the mobile search + the
+          account links the pill itself has no room for. */}
       {mobileOpen && (
-        <div className="animate-fade-up border-t border-slate-200/70 md:hidden">
-          <div className="space-y-4 px-4 py-4">
+        <div className="mobile-panel-cine animate-fade-up mx-auto mt-3 max-w-[78rem] md:hidden">
+          <div className="space-y-4 p-4">
             <Suspense fallback={null}>
-              <SearchBar />
+              <SearchBar autoFocus />
             </Suspense>
             <nav className="flex flex-col gap-1" aria-label="Mobile">
-              {PUBLIC_LINKS.map((l) => (
+              <NavLink href="/" label="Home" onClick={closeMobile} />
+              {LINKS.map((l) => (
                 <NavLink key={l.href} {...l} onClick={closeMobile} />
               ))}
               {user && (
                 <>
-                  <NavLink href="/wishlist" label="Wishlist" icon={Heart} onClick={closeMobile} />
-                  <NavLink href="/alerts" label="Price alerts" icon={BellRing} onClick={closeMobile} />
-                  <NavLink href="/notifications" label={unread ? `Notifications (${unread})` : "Notifications"} icon={Bell} onClick={closeMobile} />
-                  <NavLink href="/profile" label="Profile & settings" icon={Settings} onClick={closeMobile} />
+                  <NavLink href="/wishlist" label="Wishlist" onClick={closeMobile} />
+                  <NavLink href="/alerts" label="Price alerts" onClick={closeMobile} />
+                  <NavLink href="/notifications" label={unread ? `Notifications (${unread})` : "Notifications"} onClick={closeMobile} />
+                  <NavLink href="/profile" label="Profile & settings" onClick={closeMobile} />
                 </>
               )}
             </nav>
@@ -232,7 +246,6 @@ export function Navbar() {
           </div>
         </div>
       )}
-      </div>
     </header>
   );
 }

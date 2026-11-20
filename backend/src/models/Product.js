@@ -22,6 +22,9 @@ const productSchema = new mongoose.Schema(
     rating: Number,
     reviewCount: { type: Number, default: 0 },
     priceChange7d: { type: Number, default: 0 }, // % change of minPrice vs 7 days ago (negative = drop)
+    // Deals rule (owner decision, 2026-11-20): >=5 real PriceHistory points spanning >=7 days. Only a
+    // product meeting this can appear in /products/drops - see services/productStats.js.
+    dealEligible: { type: Boolean, default: false },
     popularity: { type: Number, default: 0 }, // wishlists + alerts + search hits
   },
   { timestamps: true }

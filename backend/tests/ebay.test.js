@@ -44,6 +44,9 @@ describe('eBay adapter', () => {
         image: 'https://img.example/v1|1.jpg',
         priceUsd: 39.99,
         inStock: true,
+        condition: 'unknown',
+        conditionLabel: null,
+        multiVariant: false,
       });
     });
 
@@ -51,6 +54,20 @@ describe('eBay adapter', () => {
       expect(ebay.mapItem(item('1', 'x', 0))).toBeNull();
       expect(ebay.mapItem({ ...item('1', 'x', 10), itemId: undefined })).toBeNull();
       expect(ebay.mapItem({ ...item('1', 'x', 10), price: { value: '10', currency: 'GBP' } })).toBeNull();
+    });
+
+    it('reports item condition, normalized to new/used/refurbished', () => {
+      expect(ebay.mapItem(item('1', 'x', 10, { condition: 'New', conditionId: '1000' }))).toMatchObject({ condition: 'new', conditionLabel: 'New' });
+      expect(ebay.mapItem(item('1', 'x', 10, { condition: 'Used', conditionId: '3000' }))).toMatchObject({ condition: 'used', conditionLabel: 'Used' });
+      expect(ebay.mapItem(item('1', 'x', 10, { condition: 'Seller refurbished', conditionId: '2500' }))).toMatchObject({ condition: 'refurbished' });
+      expect(ebay.mapItem(item('1', 'x', 10, { condition: 'Manufacturer refurbished', conditionId: '2000' }))).toMatchObject({ condition: 'refurbished' });
+      expect(ebay.mapItem(item('1', 'x', 10, { condition: 'For parts or not working', conditionId: '7000' }))).toMatchObject({ condition: 'used' });
+      expect(ebay.mapItem(item('1', 'x', 10))).toMatchObject({ condition: 'unknown' });
+    });
+
+    it('flags multi-variation listings, where the price shown is only the cheapest option', () => {
+      expect(ebay.mapItem(item('1', 'x', 10, { itemGroupType: 'SELLER_DEFINED_VARIATIONS' }))).toMatchObject({ multiVariant: true });
+      expect(ebay.mapItem(item('1', 'x', 10))).toMatchObject({ multiVariant: false });
     });
   });
 
@@ -107,6 +124,45 @@ describe('POST /api/search/ebay', () => {
     const cache = await SearchCache.findOne({ queryKey: 'live:zeta quantum widget' }).lean();
     expect(cache.productIds).toHaveLength(1);
     expect(cache.platformStatus.ebay.total).toBe(1);
+  });
+
+  it('drops eBay results that are not actually relevant to the search, so they cannot attach to the wrong product', async () => {
+    await Setting.set('usdToPkr', 300);
+    jest.spyOn(scrapers.adapters.ebay, 'search').mockResolvedValue(
+      Object.assign(
+        [
+          { platform: 'ebay', role: 'supplier', externalId: 'eb-match', title: 'Quokka Blaster Pro 5', url: 'https://www.ebay.com/itm/eb-match', priceUsd: 40, inStock: true, reviewCount: 0, condition: 'used' },
+          { platform: 'ebay', role: 'supplier', externalId: 'eb-nomatch', title: 'Unrelated Toaster Oven', url: 'https://www.ebay.com/itm/eb-nomatch', priceUsd: 15, inStock: true, reviewCount: 0, condition: 'new' },
+        ],
+        { meta: { total: 2 } }
+      )
+    );
+
+    const res = await post('quokka blaster pro 5');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: 'success', found: 1 });
+    expect(await Listing.findOne({ platform: 'ebay', externalId: 'eb-match' }).lean()).not.toBeNull();
+    expect(await Listing.findOne({ platform: 'ebay', externalId: 'eb-nomatch' }).lean()).toBeNull();
+  });
+
+  it('stores eBay condition and multi-variation flag on the listing', async () => {
+    await Setting.set('usdToPkr', 300);
+    jest.spyOn(scrapers.adapters.ebay, 'search').mockResolvedValue(
+      Object.assign(
+        [
+          {
+            platform: 'ebay', role: 'supplier', externalId: 'eb-cond', title: 'Nebula Sprocket Max 2', url: 'https://www.ebay.com/itm/eb-cond', priceUsd: 50, inStock: true, reviewCount: 0,
+            condition: 'used', conditionLabel: 'Used', multiVariant: true,
+          },
+        ],
+        { meta: { total: 1 } }
+      )
+    );
+
+    const res = await post('nebula sprocket max 2');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ status: 'success', found: 1 });
+    expect(await Listing.findOne({ platform: 'ebay', externalId: 'eb-cond' }).lean()).toMatchObject({ condition: 'used', conditionLabel: 'Used', multiVariant: true });
   });
 
   it('reports a failure (e.g. missing credentials) without throwing', async () => {

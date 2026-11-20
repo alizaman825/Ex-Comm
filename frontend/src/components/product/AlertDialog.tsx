@@ -106,13 +106,13 @@ export function AlertDialog({ open, onClose, productId, title, currentPrice, pla
       ) : (
         <form onSubmit={onSubmit} noValidate className="space-y-4">
           {formError && (
-            <div role="alert" className="rounded-2xl border border-rose-200 bg-rose-50 p-3 text-sm text-rose-800">
+            <div role="alert" className="alert-danger rounded-2xl border p-3 text-sm">
               {formError}
             </div>
           )}
           {currentPrice !== null && (
-            <p className="flex items-center gap-2 rounded-2xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
-              <BellRing className="h-4 w-4 shrink-0 text-brand-600" aria-hidden /> Current lowest price: <strong className="text-ink">{formatPrice(currentPrice)}</strong>
+            <p className="flex items-center gap-2 rounded-2xl border border-white/[0.16] bg-white/[0.08] px-3.5 py-2.5 text-sm text-white/70">
+              <BellRing className="h-4 w-4 shrink-0 text-brand-500" aria-hidden /> Current lowest price: <strong className="text-white">{formatPrice(currentPrice)}</strong>
             </p>
           )}
           <Field label="Notify me when the price is" name="targetPrice" inputMode="numeric" autoComplete="off" placeholder="e.g. 99999" value={target} onChange={(e) => setTarget(e.target.value)} error={error} hint="In Pakistani rupees (Rs). We suggest 10% below the current price." autoFocus />

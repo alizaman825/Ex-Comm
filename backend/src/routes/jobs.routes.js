@@ -1,27 +1,15 @@
-const crypto = require('crypto');
 const express = require('express');
 const { z } = require('zod');
 const { config } = require('../config/env');
 const { JobRun } = require('../models');
 const { runPriceCheck, isRunning } = require('../jobs/priceCheck');
 const { runCatalogSync, isRunning: syncRunning, catalogSyncProgress } = require('../jobs/catalogSync');
+const { runTelexSync, isRunning: telexRunning } = require('../jobs/telexSync');
 const validate = require('../middleware/validate');
-const AppError = require('../utils/AppError');
+const { requireJobKey } = require('../middleware/jobAuth');
 const ah = require('../utils/asyncHandler');
 
 const bodySchema = z.object({ mode: z.enum(['live', 'simulate']).default('live') });
-
-// Jobs are protected by a shared key (x-job-key header), not by user accounts.
-function requireJobKey(req, _res, next) {
-  const expected = config.jobs.key;
-  const given = String(req.headers['x-job-key'] || '');
-  const a = Buffer.from(given);
-  const b = Buffer.from(expected);
-  if (!expected || a.length !== b.length || !crypto.timingSafeEqual(a, b)) {
-    return next(new AppError(403, 'Invalid or missing job key'));
-  }
-  return next();
-}
 
 module.exports = () => {
   const router = express.Router();
@@ -46,17 +34,28 @@ module.exports = () => {
     })
   );
 
+  // POST /api/jobs/telex-sync: one batch of the Telex.pk background sync (off unless SYNC_TELEX_ENABLED=true)
+  router.post(
+    '/telex-sync',
+    ah(async (_req, res) => {
+      const result = await runTelexSync({ trigger: 'manual' });
+      res.status(result.reason ? 409 : 200).json(result);
+    })
+  );
+
   // GET /api/jobs/status: recent runs
   router.get(
     '/status',
     ah(async (_req, res) => {
       const runs = await JobRun.find({ name: 'price-check' }).sort({ startedAt: -1 }).limit(10).lean();
       const syncRuns = await JobRun.find({ name: 'catalog-sync' }).sort({ startedAt: -1 }).limit(10).lean();
+      const telexRuns = await JobRun.find({ name: 'telex-sync' }).sort({ startedAt: -1 }).limit(10).lean();
       res.json({
         running: isRunning(),
         schedule: config.jobs.enabled ? config.jobs.priceCheckCron : null,
         runs,
         catalogSync: { running: syncRunning(), schedule: config.jobs.enabled ? config.catalogSync.cron : null, progress: await catalogSyncProgress(), runs: syncRuns },
+        telexSync: { running: telexRunning(), enabled: config.telexSync.enabled, schedule: config.telexSync.enabled ? config.telexSync.cron : null, runs: telexRuns },
       });
     })
   );

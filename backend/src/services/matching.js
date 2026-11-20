@@ -6,8 +6,16 @@ a an and the with for of by in on to new latest original genuine authentic offic
 pta approved non nonpta warranty year years month months local stock sealed box packed pack
 free delivery shipping fast cod sale deal offer discount best quality premium hot top
 global version international edition smartphone smart phone mobile cellphone cell dual sim
-ram rom storage memory gb_ram internal colour color variant model series device
+ram rom storage memory gb_ram internal colour color variant model series device gen generation
 `.trim().split(/\s+/));
+
+// CPU/laptop generation markers ("13th Gen", "ThinkPad E14 G5"): one store's title often states a
+// generation, revision code or processor family that the same listing on another store just leaves out.
+// Unlike a storage size or "Pro"/"Max", the generation never changes which physical product it is for a
+// given specific CPU/model number (already present as its own token), so treating it as a hard-reject
+// token like VARIANT_WORDS does produced false negatives (same laptop, one title says "13th Gen"/"G5",
+// the other doesn't). Dropped like a colour instead of compared.
+const isGenerationNoise = (t) => /^[0-9]{1,2}(st|nd|rd|th)$/.test(t) || /^g[0-9]{1,2}$/.test(t);
 
 const COLOURS = new Set(`
 black white blue red green yellow pink purple violet grey gray silver gold golden rose orange
@@ -20,9 +28,28 @@ const VARIANT_WORDS = new Set(
   'pro max plus ultra mini lite fe se air neo prime note 5g 4g slim oled digital disc edition xl'.split(' ')
 );
 
+// Words that mean an item attaches to or protects ANOTHER device, not the device category itself.
+// "headphone(s)"/"earphone(s)"/"earbud(s)" were removed from here (2026-11-20): they name a product
+// category someone searches for directly ("sony wh-1000xm5 headphones"), not an accessory relationship
+// like "case"/"charger" - keeping them here made isRelevant()/analyzeTitle() wrongly treat a pair of
+// headphones as an accessory and reject the product itself (tests/search.test.js, "model codes with
+// hyphens"). A genuine phone-accessory listing titled e.g. "Earphones for iPhone 15" is still caught by
+// FITS_WORDS ("for"/"compatible"/"fits"/"suitable"), not by this list.
 const ACCESSORY_WORDS = new Set(
   'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard'.split(' ')
 );
+
+// "for/compatible with/fits/suitable for": a title built around one of these words names a product only
+// as what something ELSE fits ("For iPhone18ProMax", "Compatible with Galaxy A55") - the item for sale is an
+// accessory even when it names no accessory noun at all (no "case"/"cover" in the title). Same set as
+// relevance.js's FITS_WORDS, duplicated here because that module imports from this one.
+const FITS_WORDS = new Set(['for', 'compatible', 'fits', 'suitable']);
+
+// True when a title (its RAW words, before stopwords like "for" are dropped) marks the thing for sale as
+// an accessory rather than the device itself.
+function isAccessoryTitle(rawTokens) {
+  return rawTokens.some((t) => ACCESSORY_WORDS.has(t) || FITS_WORDS.has(t));
+}
 
 const BRAND_ALIASES = {
   iphone: 'apple', ipad: 'apple', airpods: 'apple', macbook: 'apple', imac: 'apple',
@@ -47,6 +74,9 @@ function normalizeText(title) {
     .normalize('NFKD')
     .replace(/[\u0300-\u036f]/g, '')
     .replace(/&/g, ' and ')
+    // "8GB-256GB" -> "8gb 256gb" (RAM-storage shorthand with an explicit unit before the hyphen; must run
+    // before the general hyphen-join below, which would otherwise glue it into one unmatchable token)
+    .replace(/\b(\d{1,2})gb-(\d{2,4})(gb|tb)?\b/g, (_m, r, s, u) => `${r}gb ${s}${u || 'gb'}`)
     // 'wh-1000xm5' -> 'wh1000xm5', 'usb-c' / 'usb c' / 'type c' -> 'usbc' / 'typec'
     .replace(/([a-z0-9])-(?=[a-z0-9])/g, '$1')
     .replace(/\b(usb|type)\s+c\b/g, '$1c')
@@ -80,26 +110,30 @@ function detectBrand(tokens) {
   return null;
 }
 
-// Returns { brand, tokens (significant, in order), key (order-independent) }.
+// Returns { brand, tokens (significant, in order), key (order-independent), accessory }.
 function analyzeTitle(title) {
   const raw = normalizeText(title).split(' ').filter(Boolean);
+  const accessory = isAccessoryTitle(raw);
   const tokens = [];
   for (const t of raw) {
-    if (STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
     if (t.length === 1 && !/\d/.test(t)) continue;
     if (!tokens.includes(t)) tokens.push(t);
   }
   const brand = detectBrand(tokens);
   const rest = tokens.filter((t) => t !== brand);
-  const key = [brand || '_', ...[...rest].sort()].join(' ');
-  return { brand, tokens: rest, key };
+  // The accessory flag is folded into the key itself so an accessory listing never exact-key-matches the
+  // real device it was titled after ("For iPhone18ProMax" normalizes to the same brand+model tokens as
+  // "Apple iPhone 18 Pro Max", but must never become an offer on that phone's page).
+  const key = [brand || '_', accessory ? '~acc' : '', ...[...rest].sort()].join(' ');
+  return { brand, tokens: rest, key, accessory };
 }
 
 // All meaningful tokens of a text (brand included), for query relevance checks.
 function significantTokens(text) {
   const out = [];
   for (const t of normalizeText(text).split(' ')) {
-    if (!t || STOPWORDS.has(t) || COLOURS.has(t)) continue;
+    if (!t || STOPWORDS.has(t) || COLOURS.has(t) || isGenerationNoise(t)) continue;
     if (t.length === 1 && !/\d/.test(t)) continue;
     if (!out.includes(t)) out.push(t);
   }
@@ -127,10 +161,7 @@ const storageBytes = (t) => parseFloat(t) * (t.endsWith('tb') ? 1024 : 1);
 // Similarity 0..1 between two analyzed titles. Hard rules return 0.
 function similarity(a, b) {
   if (a.brand && b.brand && a.brand !== b.brand) return 0;
-
-  const accA = a.tokens.some((t) => ACCESSORY_WORDS.has(t));
-  const accB = b.tokens.some((t) => ACCESSORY_WORDS.has(t));
-  if (accA !== accB) return 0;
+  if (a.accessory !== b.accessory) return 0;
 
   // Model numbers ("a55", "15", "1000xm5") and variant words ("pro", "5g") must agree exactly.
   if (!sameSet(setOf(a.tokens, isModel), setOf(b.tokens, isModel))) return 0;
@@ -165,17 +196,36 @@ function isSameProduct(titleA, titleB) {
 }
 
 // Pick the best candidate (with .title) for an analyzed title, or null.
+//
+// A store sometimes sells a phone in several storage/RAM configs but doesn't say which one a given
+// listing title is ("Apple iPhone 16" with no "128GB"/"256GB"). similarity() lets that listing match a
+// stored product that does name a size (needed for the normal case: cross-store titles with one side
+// more specific than the other). But if the listing's own title names no size and more than one
+// candidate product - of a *different* size from each other - would equally match it, which one it
+// really is is genuinely unknown; picking the first by iteration order would silently show that
+// listing's price as if it were a specific variant it may not be. Treat that as no confident match
+// instead (the UI's manual "pick the right product" fallback covers it).
 function findBestMatch(analyzed, candidates) {
+  const queryHasStorage = analyzed.tokens.some(isStorage);
   let best = null;
   let bestScore = 0;
+  const scored = [];
   for (const c of candidates) {
-    const score = similarity(analyzed, c.analyzed || analyzeTitle(c.title));
+    const cAnalyzed = c.analyzed || analyzeTitle(c.title);
+    const score = similarity(analyzed, cAnalyzed);
+    scored.push({ cAnalyzed, score });
     if (score > bestScore) {
       best = c;
       bestScore = score;
     }
   }
-  return bestScore >= MATCH_THRESHOLD ? { candidate: best, score: bestScore } : null;
+  if (bestScore < MATCH_THRESHOLD) return null;
+  if (!queryHasStorage) {
+    const bestStorage = setOf((best.analyzed || analyzeTitle(best.title)).tokens, isStorage);
+    const conflicting = scored.some(({ cAnalyzed, score }) => score >= MATCH_THRESHOLD && !sameSet(setOf(cAnalyzed.tokens, isStorage), bestStorage));
+    if (conflicting) return null;
+  }
+  return { candidate: best, score: bestScore };
 }
 
 // Spaces, hyphens and dots removed: "Sony WH-1000XM5" -> "sonywh1000xm5". Used to find stored products
@@ -192,4 +242,4 @@ const brandOf = (text) => {
   return b ? BRAND_CANON[b] || b : b;
 };
 
-module.exports = { brandOf, accessoryWordsIn, ACCESSORY_WORDS, searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };
+module.exports = { brandOf, accessoryWordsIn, ACCESSORY_WORDS, FITS_WORDS, isAccessoryTitle, searchKeyOf, significantTokens, hasAccessoryWord, normalizeText, analyzeTitle, similarity, isSameProduct, findBestMatch, MATCH_THRESHOLD };

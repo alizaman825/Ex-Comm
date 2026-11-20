@@ -1,7 +1,7 @@
 const { config } = require('../src/config/env');
 const scrapers = require('../src/scrapers');
 const catalog = require('../src/seed/catalog');
-const { runCatalogSync, dueTasks, catalogSyncProgress } = require('../src/jobs/catalogSync');
+const { runCatalogSync, dueTasks, catalogSyncProgress, priorityTitles } = require('../src/jobs/catalogSync');
 const { Product, Listing, PriceHistory, Setting, JobRun } = require('../src/models');
 const { startDb, stopDb, clearDb } = require('./helpers');
 
@@ -43,6 +43,21 @@ test('a confident store match is stored with its real product URL and price, and
   const next = await runCatalogSync({ batch: 1 });
   expect(next.summary.tasks).toBe(1);
   expect(search.mock.calls[1][1]).not.toBe(FIRST.t);
+});
+
+test('priority (homepage/top-search) products are refreshed before the rest of the catalog', async () => {
+  await Product.create({ title: SECOND.t, matchKey: 'priority-test', popularity: 999 });
+  const priority = await priorityTitles();
+  expect(priority.has(SECOND.t)).toBe(true);
+  expect(priority.has(FIRST.t)).toBe(false);
+  const due = dueTasks({}, Date.now(), priority);
+  expect(due[0].item.t).toBe(SECOND.t); // priority, even though it is later in catalog order
+  expect(due.findIndex((t) => t.item.t === FIRST.t)).toBeGreaterThan(0);
+});
+
+test('with no priority set, catalog order is unaffected (back-compat: dueTasks(state, now) still works)', () => {
+  const due = dueTasks({}, Date.now());
+  expect(due[0].item.t).toBe(FIRST.t);
 });
 
 test('a run handles at most one batch, never-checked items first, and reports what is left', async () => {

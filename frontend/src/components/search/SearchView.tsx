@@ -4,7 +4,7 @@ import { useCallback, useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import useSWR from "swr";
-import { Loader2, PackageSearch, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
+import { ChevronDown, Loader2, PackageSearch, Search, SlidersHorizontal, TrendingUp } from "lucide-react";
 import clsx from "clsx";
 import { api, errorMessage, fetcher } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
@@ -114,13 +114,21 @@ export function SearchView() {
             <label htmlFor="sort" className="hidden text-sm text-slate-500 sm:block">
               Sort by
             </label>
-            <select id="sort" value={state.sort} onChange={(e) => update({ sort: e.target.value as SortValue })} className="input w-auto py-2 pr-9">
-              {SORTS.map((s) => (
-                <option key={s.value} value={s.value}>
-                  {s.label}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                id="sort"
+                value={state.sort}
+                onChange={(e) => update({ sort: e.target.value as SortValue })}
+                className="input glass-select w-auto appearance-none py-2 pl-3.5 pr-9"
+              >
+                {SORTS.map((s) => (
+                  <option key={s.value} value={s.value}>
+                    {s.label}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="pointer-events-none absolute right-3 top-1/2 h-4 w-4 -translate-y-1/2 text-white/55" aria-hidden />
+            </div>
           </div>
         </div>
       </div>
@@ -179,6 +187,21 @@ export function SearchView() {
                     window.scrollTo({ top: 0, behavior: "smooth" });
                   }}
                 />
+              )}
+              {data.otherResults && data.otherResults.length > 0 && (
+                <details className="mt-10 rounded-2xl border border-slate-200 bg-surface p-4" data-testid="other-models">
+                  <summary className="cursor-pointer text-sm font-semibold text-slate-700">
+                    {data.otherTotal} other model{data.otherTotal === 1 ? "" : "s"} close to this search
+                  </summary>
+                  <p className="mt-2 text-xs text-slate-500">
+                    These did not pass the exact-model check above - a different storage size, variant, or model number - so they are not counted in the {data.total} results shown.
+                  </p>
+                  <div className="mt-4 grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3">
+                    {data.otherResults.map((p) => (
+                      <ProductCard key={p.id} product={p} />
+                    ))}
+                  </div>
+                </details>
               )}
             </>
           ) : null}

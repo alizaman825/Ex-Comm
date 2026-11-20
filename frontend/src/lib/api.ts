@@ -18,6 +18,15 @@ export class ApiError extends Error {
   }
 }
 
+// Used only when the response has no { error: { message } } body of our own shape - e.g. a 429
+// from a layer in front of our API (hosting platform throttling) rather than our rate limiter,
+// which always sends one. Keeps the user from seeing a raw "Request failed (429)".
+function fallbackMessageFor(status: number): string {
+  if (status === 429) return "Too many attempts. Please wait a few minutes and try again.";
+  if (status >= 500) return "The server had a problem. Please try again shortly.";
+  return `Request failed (${status})`;
+}
+
 type Params = Record<string, string | number | boolean | string[] | undefined | null>;
 
 export function buildUrl(path: string, params?: Params): string {
@@ -61,7 +70,7 @@ export async function api<T = unknown>(path: string, { method = "GET", body, par
   }
   if (!res.ok) {
     const err = (data as { error?: { message?: string; details?: { field: string; message: string }[] } } | null)?.error;
-    throw new ApiError(res.status, err?.message ?? `Request failed (${res.status})`, err?.details);
+    throw new ApiError(res.status, err?.message ?? fallbackMessageFor(res.status), err?.details);
   }
   return data as T;
 }

@@ -57,7 +57,7 @@ export function LoginForm() {
   return (
     <form onSubmit={onSubmit} noValidate className="space-y-5">
       {formError && (
-        <div role="alert" className="flex items-start gap-3 rounded-2xl border border-rose-200 bg-rose-50 p-4 text-sm text-rose-800">
+        <div role="alert" className="alert-danger flex items-start gap-3 rounded-2xl border p-4 text-sm">
           <AlertCircle className="mt-0.5 h-4 w-4 shrink-0" aria-hidden />
           <p>{formError}</p>
         </div>
@@ -89,9 +89,9 @@ export function LoginForm() {
 
       <div className="relative py-1">
         <div className="absolute inset-0 flex items-center" aria-hidden>
-          <div className="w-full border-t border-slate-200" />
+          <div className="w-full border-t border-white/15" />
         </div>
-        <p className="relative mx-auto w-fit bg-slate-50 px-3 text-xs uppercase tracking-wide text-slate-400">or</p>
+        <p className="relative mx-auto w-fit rounded-full bg-white/10 px-3 py-1 text-xs uppercase tracking-wide text-white/50 ring-1 ring-white/10">or</p>
       </div>
 
       <Button

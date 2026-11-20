@@ -9,6 +9,7 @@ import { fetcher } from "@/lib/api";
 import { PLATFORM_COLOR, PLATFORM_LABEL, formatDate, formatPercent, formatPrice } from "@/lib/format";
 import type { HistoryResponse, Platform } from "@/lib/types";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/primitives";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const RANGES = [7, 30, 90] as const;
 
@@ -17,10 +18,17 @@ const axisPrice = (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : Strin
 
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
-    <div className="rounded-2xl bg-slate-50 px-4 py-3">
-      <p className="text-xs font-medium text-slate-500">{label}</p>
-      <p className={clsx("mt-0.5 font-display text-xl font-bold tabular-nums", tone === "good" ? "text-emerald-700" : tone === "bad" ? "text-rose-700" : "text-ink")}>{value}</p>
-      {sub && <p className="text-xs text-slate-500">{sub}</p>}
+    <div className="rounded-2xl border border-white/[0.18] bg-white/[0.08] px-3 py-3 sm:px-4">
+      <p className="text-[11px] font-medium leading-snug text-white/55">{label}</p>
+      <p
+        className={clsx(
+          "mt-0.5 whitespace-nowrap font-display text-[15px] font-bold tabular-nums sm:text-lg",
+          tone === "good" ? "text-emerald-300" : tone === "bad" ? "text-rose-300" : "text-white"
+        )}
+      >
+        {value}
+      </p>
+      {sub && <p className="text-[11px] text-white/45">{sub}</p>}
     </div>
   );
 }
@@ -77,12 +85,18 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
   return (
     <section className="card card-pad" aria-labelledby="history-heading" data-testid="price-chart">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="history-heading" className="t-h2">
-          Price history
-        </h2>
-        <div className="inline-flex rounded-full bg-slate-100 p-1" role="group" aria-label="History range">
+        <SectionHeading number="03" className="mb-0">
+          <span id="history-heading">Price history</span>
+        </SectionHeading>
+        <div className="inline-flex rounded-full border border-white/[0.18] bg-white/[0.08] p-1" role="group" aria-label="History range">
           {RANGES.map((r) => (
-            <button key={r} type="button" onClick={() => setDays(r)} aria-pressed={days === r} className={clsx("rounded-full px-4 py-1.5 text-sm font-semibold transition duration-200", days === r ? "bg-surface text-ink shadow-sm" : "text-slate-500 hover:text-ink")}>
+            <button
+              key={r}
+              type="button"
+              onClick={() => setDays(r)}
+              aria-pressed={days === r}
+              className={clsx("rounded-full px-4 py-1.5 text-sm font-semibold transition duration-200", days === r ? "bg-white text-[#0b0812] shadow-sm" : "text-white/60 hover:text-white")}
+            >
               {r} days
             </button>
           ))}
@@ -94,7 +108,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
           <ErrorState title="Could not load price history" onRetry={() => mutate()} className="border-0 shadow-none" />
         ) : isLoading && !data ? (
           <div role="status" aria-label="Loading price history" className="space-y-4">
-            <div className="grid grid-cols-2 gap-3 sm:grid-cols-5">
+            <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
               {Array.from({ length: 5 }, (_, i) => (
                 <Skeleton key={i} className="h-[74px]" />
               ))}
@@ -106,7 +120,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
         ) : (
           <>
             {data.summary && (
-              <div className="grid grid-cols-2 gap-3 sm:grid-cols-5" data-testid="history-summary">
+              <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }} data-testid="history-summary">
                 <Stat label="Current (lowest)" value={formatPrice(data.summary.current)} />
                 <Stat label="Lowest in period" value={formatPrice(data.summary.lowest)} sub={formatDate(data.summary.lowestDate)} tone="good" />
                 <Stat label="Highest in period" value={formatPrice(data.summary.highest)} />
@@ -114,16 +128,60 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
                 <Stat label={`Change, ${days} days`} value={formatPercent(data.summary.changePct)} tone={data.summary.changePct < -0.5 ? "good" : data.summary.changePct > 0.5 ? "bad" : undefined} />
               </div>
             )}
+            {/* PLAN.md item 5: a second, history-based savings figure - shown only once there's enough
+                real data behind it (>=5 real observations over >=7 days; threshold is stated here so
+                it's never an unexplained second "save" number next to the main one on the product page). */}
+            {data.summary && data.summary.median !== null && data.summary.observations >= 5 && data.summary.daysSpan >= 7 && data.summary.median > data.summary.current && (
+              <p className="mt-3 text-xs font-medium text-emerald-700" data-testid="history-savings">
+                Rs {Math.round(data.summary.median - data.summary.current).toLocaleString("en-PK")} below the {days}-day median, based on {data.summary.observations} real price checks over {data.summary.daysSpan} days.
+              </p>
+            )}
             <div className="chart-draw mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${data.series.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke="rgb(var(--slate-200))" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }} tickLine={false} axisLine={{ stroke: "rgb(var(--slate-200))" }} minTickGap={32} />
-                  <YAxis tickFormatter={axisPrice} tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }} tickLine={false} axisLine={false} width={44} domain={["auto", "auto"]} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={shortDate}
+                    tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }}
+                    tickLine={false}
+                    axisLine={{ stroke: "rgb(var(--slate-200))" }}
+                    minTickGap={32}
+                    padding={{ left: 20, right: 20 }}
+                    tickMargin={10}
+                  />
+                  <YAxis
+                    tickFormatter={axisPrice}
+                    tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={48}
+                    tickMargin={6}
+                    domain={["auto", "auto"]}
+                    padding={{ bottom: 16 }}
+                  />
                   <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(var(--slate-400))", strokeDasharray: "3 3" }} />
                   <Legend content={() => null} />
                   {data.series.map((s) => (
-                    <Line key={s.platform} type="monotone" dataKey={s.platform} name={PLATFORM_LABEL[s.platform]} stroke={PLATFORM_COLOR[s.platform]} strokeWidth={2.25} strokeDasharray={s.role === "supplier" ? "6 4" : undefined} dot={false} activeDot={{ r: 4 }} connectNulls hide={hidden.has(s.platform)} isAnimationActive={false} />
+                    <Line
+                      key={s.platform}
+                      type="monotone"
+                      dataKey={s.platform}
+                      name={PLATFORM_LABEL[s.platform]}
+                      stroke={PLATFORM_COLOR[s.platform]}
+                      strokeWidth={2.25}
+                      strokeDasharray={s.role === "supplier" ? "6 4" : undefined}
+                      // A series with only one data point draws no visible line (recharts needs >= 2
+                      // points to connect), and with dot={false} that single point was then rendered as
+                      // nothing at all — the store's line vanished entirely even though it was in the
+                      // legend and technically "present" in the data. Show a dot for that case so a
+                      // single-point (or otherwise sparse) series is still visible on the chart.
+                      dot={s.points.length < 2 ? { r: 3, fill: PLATFORM_COLOR[s.platform], strokeWidth: 0 } : false}
+                      activeDot={{ r: 4 }}
+                      connectNulls
+                      hide={hidden.has(s.platform)}
+                      isAnimationActive={false}
+                    />
                   ))}
                 </LineChart>
               </ResponsiveContainer>
@@ -131,15 +189,23 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Chart legend">
               {data.series.map((s) => (
                 <li key={s.platform}>
-                  <button type="button" onClick={() => toggle(s.platform)} aria-pressed={!hidden.has(s.platform)} className={clsx("inline-flex items-center gap-2 rounded-full px-3.5 py-1.5 text-xs font-semibold transition duration-200", hidden.has(s.platform) ? "bg-surface text-slate-500 line-through ring-1 ring-slate-200" : "bg-slate-100 text-slate-700")}>
+                  <button
+                    type="button"
+                    onClick={() => toggle(s.platform)}
+                    aria-pressed={!hidden.has(s.platform)}
+                    className={clsx(
+                      "inline-flex items-center gap-2 rounded-full border px-3.5 py-1.5 text-xs font-semibold transition duration-200",
+                      hidden.has(s.platform) ? "border-white/[0.14] bg-white/[0.05] text-white/40 line-through" : "border-white/[0.18] bg-white/[0.08] text-white/80"
+                    )}
+                  >
                     <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: PLATFORM_COLOR[s.platform] }} />
                     {PLATFORM_LABEL[s.platform]}
-                    {s.role === "supplier" && <span className="text-slate-500">(supplier, dashed)</span>}
+                    {s.role === "supplier" && <span className="text-white/45">(supplier, dashed)</span>}
                   </button>
                 </li>
               ))}
             </ul>
-            {hasSavedData && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">Some prices on this page are saved sample data. For built-in sample products the history is generated to demonstrate the chart, so do not treat it as real market history.</p>}
+            {hasSavedData && <p className="mt-4 rounded-2xl bg-amber-50 px-4 py-3 text-xs leading-relaxed text-amber-800">Some prices on this page are saved reference prices (AliExpress), not checked live right now, so they may be out of date. See <a href="/methodology" className="underline">Methodology</a> for how we label price freshness.</p>}
           </>
         )}
       </div>

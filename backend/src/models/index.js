@@ -11,5 +11,6 @@ module.exports = {
   Category: require('./Category'),
   Setting: require('./Setting'),
   JobRun: require('./JobRun'),
+  Report: require('./Report'),
   PLATFORMS: require('./plugins').PLATFORMS,
 };

@@ -17,6 +17,16 @@ const { classify } = require('./categories');
 
 const HISTORY_MIN_GAP_MS = 12 * 60 * 60 * 1000;
 
+// A listing priced far below a product's own known range is very likely a different, cheaper item
+// mismatched onto it (an accessory, clone or wrong variant slipping past the title match) rather than a
+// real deal: real retail discounts on these stores do not go this deep. Guards the match itself, on top of
+// the title-based accessory check in matching.js.
+const PRICE_FLOOR_RATIO = 0.4;
+function priceImplausible(price, product) {
+  const ref = product && (product.minPrice ?? product.retailMinPrice);
+  return Boolean(ref) && price < ref * PRICE_FLOOR_RATIO;
+}
+
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 const keyOf = (l) => `${l.platform}|${l.externalId}`;
 
@@ -34,10 +44,12 @@ function capitalize(s) {
 }
 
 // Adds a price-history point when the price changed or the last point is old.
-async function appendHistory(listing, price, now, { force = false } = {}) {
+// `source` ('real' | 'simulated') records whether this point came from an actual scrape or from
+// simulate mode's fabricated price move - see models/PriceHistory.js and PLAN.md item 1.
+async function appendHistory(listing, price, now, { force = false, source = 'real' } = {}) {
   const last = await PriceHistory.findOne({ listingId: listing._id }).sort({ scrapedAt: -1 }).lean();
   if (force || !last || last.price !== price || now - last.scrapedAt > HISTORY_MIN_GAP_MS) {
-    await PriceHistory.create({ listingId: listing._id, productId: listing.productId, platform: listing.platform, price, scrapedAt: now });
+    await PriceHistory.create({ listingId: listing._id, productId: listing.productId, platform: listing.platform, price, scrapedAt: now, source });
     return true;
   }
   return false;
@@ -58,6 +70,9 @@ const listingFields = (l, now) => ({
   sellerId: l.sellerId || undefined,
   sellerName: l.sellerName || undefined,
   sellerLocation: l.sellerLocation || undefined,
+  condition: l.condition || undefined,
+  conditionLabel: l.conditionLabel || undefined,
+  multiVariant: l.multiVariant || false,
   seeded: false,
   dataSource: 'live',
   lastScrapedAt: now,
@@ -98,8 +113,8 @@ async function ingestListings(listings) {
   const matchKeys = [...new Set([...analyzed.values()].map((a) => a.key))];
   const brands = [...new Set([...analyzed.values()].map((a) => a.brand).filter(Boolean))];
   const [exactProducts, ...brandGroups] = await Promise.all([
-    matchKeys.length ? Product.find({ matchKey: { $in: matchKeys } }).select('title brand matchKey').lean() : [],
-    ...brands.map((b) => Product.find({ brand: new RegExp(`^${escapeRegex(b)}$`, 'i') }).select('title brand matchKey').limit(600).lean()),
+    matchKeys.length ? Product.find({ matchKey: { $in: matchKeys } }).select('title brand matchKey minPrice retailMinPrice').lean() : [],
+    ...brands.map((b) => Product.find({ brand: new RegExp(`^${escapeRegex(b)}$`, 'i') }).select('title brand matchKey minPrice retailMinPrice').limit(600).lean()),
   ]);
 
   const products = new Map(); // id -> { _id, title, brand, matchKey, analyzed }
@@ -108,7 +123,7 @@ async function ingestListings(listings) {
   const register = (p) => {
     const id = String(p._id);
     if (products.has(id)) return;
-    const entry = { _id: id, title: p.title, brand: p.brand, matchKey: p.matchKey, analyzed: analyzeTitle(p.title) };
+    const entry = { _id: id, title: p.title, brand: p.brand, matchKey: p.matchKey, minPrice: p.minPrice, retailMinPrice: p.retailMinPrice, analyzed: analyzeTitle(p.title) };
     products.set(id, entry);
     if (p.matchKey) byKey.set(p.matchKey, id);
     const b = (p.brand || '_').toLowerCase();
@@ -143,9 +158,11 @@ async function ingestListings(listings) {
     const a = analyzed.get(keyOf(l));
     let pid = null;
     const exactId = byKey.get(a.key);
-    if (exactId && !sameStoreTaken(exactId, l.platform, l.externalId)) pid = exactId;
+    if (exactId && !sameStoreTaken(exactId, l.platform, l.externalId) && !priceImplausible(l.price, products.get(exactId))) pid = exactId;
     if (!pid) {
-      const pool = (byBrand.get((a.brand || '_').toLowerCase()) || []).filter((id) => !sameStoreTaken(id, l.platform, l.externalId));
+      const pool = (byBrand.get((a.brand || '_').toLowerCase()) || []).filter(
+        (id) => !sameStoreTaken(id, l.platform, l.externalId) && !priceImplausible(l.price, products.get(id))
+      );
       const best = findBestMatch(a, pool.map((id) => products.get(id)));
       if (best) pid = best.candidate._id;
     }
@@ -212,7 +229,7 @@ async function ingestListings(listings) {
     if (!doc) continue;
     const last = lastOf.get(String(doc._id));
     if (!last || last.price !== l.price || now - last.at > HISTORY_MIN_GAP_MS) {
-      points.push({ listingId: doc._id, productId: doc.productId, platform: l.platform, price: l.price, scrapedAt: now });
+      points.push({ listingId: doc._id, productId: doc.productId, platform: l.platform, price: l.price, scrapedAt: now, source: 'real' });
     }
   }
   if (points.length) await PriceHistory.insertMany(points, { ordered: false });

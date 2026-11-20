@@ -1,8 +1,14 @@
 // Shapes returned by the Ex-Comm API (see docs/PLAN.md section 4).
 
-export type Platform = "daraz" | "priceoye" | "aliexpress" | "ebay";
+export type Platform = "daraz" | "priceoye" | "telex" | "aliexpress" | "ebay";
 export type DataSource = "live" | "saved";
 export type SearchSource = "live" | "cache" | "fallback";
+/** Replaces the old always-"Live" badge (PLAN.md item 3): computed fresh from lastScrapedAt/inStock.
+ * "saved_reference" is AliExpress only (owner decision, 2026-11-20) - never "checked recently", never
+ * eligible for cheapest/deals/alerts, regardless of how fresh the underlying listing is. */
+export type PriceStatus = "saved_reference" | "checked_recently" | "stale" | "unavailable" | "check_failed" | "unknown";
+/** Item condition (currently only set on eBay listings; "unknown" everywhere else). */
+export type Condition = "new" | "refurbished" | "used" | "unknown";
 
 export interface User {
   id: string;
@@ -25,6 +31,10 @@ export interface Offer {
   url: string;
   dataSource: DataSource;
   lastScrapedAt: string | null;
+  status: PriceStatus;
+  condition: Condition;
+  /** true when the price shown is for the cheapest of several buyer-selectable variations */
+  multiVariant: boolean;
 }
 
 export interface ProductCard {
@@ -59,9 +69,14 @@ export interface Listing {
   inStock: boolean;
   dataSource: DataSource;
   lastScrapedAt: string | null;
+  status: PriceStatus;
   /** Set on marketplace platforms (Daraz) where several sellers can list the same product. */
   sellerName: string | null;
   sellerLocation: string | null;
+  condition: Condition;
+  conditionLabel: string | null;
+  /** true when the price shown is for the cheapest of several buyer-selectable variations */
+  multiVariant: boolean;
 }
 
 export interface ProductDetail extends ProductCard {
@@ -105,6 +120,10 @@ export interface SearchResponse {
   pages: number;
   pageSize: number;
   results: ProductCard[];
+  /** PLAN.md item 4: close/loose matches (wrong model, no recognisable model number, etc.) that failed
+   * the strict relevance check - never part of `total`/`results`, shown only in a collapsed group. */
+  otherTotal?: number;
+  otherResults?: ProductCard[];
 }
 
 export interface Category {
@@ -143,7 +162,12 @@ export interface HistoryResponse {
     lowestDate: string;
     highest: number;
     average: number;
+    median: number | null;
     changePct: number;
+    /** real (never simulated/unverified) PriceHistory points behind this summary */
+    observations: number;
+    /** days between the first and last of those points */
+    daysSpan: number;
   } | null;
 }
 

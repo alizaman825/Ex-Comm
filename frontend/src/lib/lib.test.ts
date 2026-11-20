@@ -114,10 +114,16 @@ describe("api client", () => {
     expect(errorMessage(err)).toMatch(/Cannot reach the server/);
   });
 
-  it("falls back to a generic message for non-JSON errors", async () => {
+  it("falls back to a friendly message for a non-JSON server error", async () => {
     vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("<html>Bad gateway</html>", { status: 502 })));
     const err = (await api("/health").catch((e) => e)) as ApiError;
-    expect(err.message).toBe("Request failed (502)");
+    expect(err.message).toBe("The server had a problem. Please try again shortly.");
+  });
+
+  it("falls back to a friendly message for a non-JSON 429 (e.g. host-level throttling)", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("Too Many Requests", { status: 429 })));
+    const err = (await api("/health").catch((e) => e)) as ApiError;
+    expect(err.message).toBe("Too many attempts. Please wait a few minutes and try again.");
   });
 });
 

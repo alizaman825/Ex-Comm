@@ -5,7 +5,7 @@
 // Listing.price is compared across stores as PKR everywhere else in the app.
 const scrapers = require('../scrapers');
 const { SearchCache, Setting } = require('../models');
-const { parseQuery, relevanceScore } = require('./relevance');
+const { parseQuery, relevanceScore, isRelevant } = require('./relevance');
 const { ingestListings } = require('./ingest');
 const { liveKeyOf } = require('./search');
 
@@ -18,9 +18,28 @@ async function checkEbay(q) {
   const fx = await Setting.getAll();
   const priced = r.listings.map((l) => ({ ...l, price: Math.round(l.priceUsd * fx.usdToPkr), currency: 'PKR' }));
 
-  const ranked = priced
+  // eBay's own search is loose (it returns accessories/other models alongside the real match); unlike
+  // ordinary live search, these results are ingested straight into an existing product's listings, so an
+  // irrelevant title here would attach as a wrong "Compare stores" row rather than just ranking low.
+  const relevant = priced.filter((l) => isRelevant(parsed, l.title));
+
+  // Only one eBay listing can attach to a product (ingest.js: one listing per store per product), so
+  // whichever result ranks first here is the price the user is shown. Title relevance alone is not
+  // enough to pick it: eBay mixes used/"for parts" listings in with new ones for the same search, and a
+  // terser used listing's title can out-score a longer, more fully-described new listing. Among
+  // closely-matching titles, prefer a listing eBay reports as New, and avoid one priced only for its
+  // cheapest buyer-selectable variation (multiVariant), so the price shown reflects the actual item.
+  const CONDITION_RANK = { new: 0, refurbished: 1, unknown: 2, used: 3 };
+  const ranked = relevant
     .map((l, i) => ({ l, i, score: relevanceScore(parsed, l.title) }))
-    .sort((a, b) => b.score - a.score || a.i - b.i)
+    .sort((a, b) => {
+      if (Math.abs(a.score - b.score) < 0.05) {
+        const condDiff = (CONDITION_RANK[a.l.condition] ?? 2) - (CONDITION_RANK[b.l.condition] ?? 2);
+        if (condDiff) return condDiff;
+        if (a.l.multiVariant !== b.l.multiVariant) return a.l.multiVariant ? 1 : -1;
+      }
+      return b.score - a.score || a.i - b.i;
+    })
     .map((x) => x.l);
   const { productIdByListing } = await ingestListings(ranked);
 
