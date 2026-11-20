@@ -3,7 +3,7 @@ const { Product, Listing, PriceHistory, Wishlist, Alert } = require('../models')
 const AppError = require('../utils/AppError');
 const search = require('../services/search');
 const { resolveCategory } = require('../services/categories');
-const { excludeSeededInProd } = require('../services/publicData');
+const { excludeSeededInProd, realHistoryFilter } = require('../services/publicData');
 const { statusOf } = require('../services/priceStatus');
 const { config } = require('../config/env');
 
@@ -133,9 +133,10 @@ async function getHistory(req, res) {
   const product = await loadProduct(req.params.id);
   const { days } = req.validQuery;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  // PLAN.md item 1/5: a chart or "N observations" count built from simulated/unverified points would
-  // overstate how much real history actually backs it - only real scrapes count here.
-  const rows = await PriceHistory.find({ productId: product._id, scrapedAt: { $gte: since }, source: 'real' }).sort({ scrapedAt: 1 }).lean();
+  // PLAN.md item 1/5: in production, a chart or "N observations" count built from simulated/unverified
+  // points would overstate how much real history actually backs it - only real scrapes count there.
+  // Outside production the seed catalog's honestly-simulated history is left alone (realHistoryFilter).
+  const rows = await PriceHistory.find(realHistoryFilter({ productId: product._id, scrapedAt: { $gte: since } })).sort({ scrapedAt: 1 }).lean();
   const listings = await Listing.find({ productId: product._id }).select('platform role').lean();
   const roleOf = Object.fromEntries(listings.map((l) => [l.platform, l.role || 'retail']));
 

@@ -1,7 +1,7 @@
 const { Product, Listing, PriceHistory } = require('../models');
 const { searchKeyOf } = require('./matching');
 const { isTrustworthy } = require('./priceStatus');
-const { excludeSeededInProd } = require('./publicData');
+const { excludeSeededInProd, realHistoryFilter, isHeadlineEligible } = require('./publicData');
 
 const DAY = 24 * 60 * 60 * 1000;
 
@@ -27,12 +27,14 @@ const preferInStock = (list) => {
 // PLAN.md item 3: a listing that isn't currently price-status "checked_recently" (stale, unavailable,
 // check-failed or unknown) must never be called "cheapest" or feed a deal - only trustworthy listings
 // count toward the headline price. When nothing is trustworthy, the headline is null (an honest empty
-// state) rather than falling back to data nobody has confirmed recently.
+// state) rather than falling back to data nobody has confirmed recently. Outside production, seeded
+// demo/test data is exempt from this (isHeadlineEligible) - it's never re-scraped on a schedule, so
+// gating it on freshness would hide prices on the project's own seed catalog and test fixtures.
 function computeStats(product, listings, pastPrice, now = Date.now()) {
   if (!listings.length) {
     return { listingCount: 0, platforms: [], minPrice: null, maxPrice: null, retailMinPrice: null, supplierMinPrice: null, altTitles: [] };
   }
-  const trusted = listings.filter((l) => isTrustworthy(l, now));
+  const trusted = listings.filter((l) => isHeadlineEligible(l, isTrustworthy, now));
   const retail = trusted.filter((l) => !isSupplier(l));
   const supplier = trusted.filter(isSupplier);
   const headline = preferInStock(retail.length ? retail : supplier);
@@ -92,10 +94,11 @@ async function refreshProductsStats(productIds) {
   ]);
   const now = Date.now();
   const weekAgo = new Date(now - 7 * DAY);
-  // 7-day price-change math must only trust real scrapes, never a simulated or unverified point - a
-  // 'source' missing entirely (written before this field existed) is treated as unverified, not real.
+  // 7-day price-change math must only trust real scrapes in production, never a simulated or unverified
+  // point - a 'source' missing entirely (written before this field existed) is treated as unverified, not
+  // real. Outside production, the seed catalog's honestly-simulated history is left alone (realHistoryFilter).
   const past = await PriceHistory.aggregate([
-    { $match: { listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $lte: weekAgo }, source: 'real' } },
+    { $match: realHistoryFilter({ listingId: { $in: listings.map((l) => l._id) }, scrapedAt: { $lte: weekAgo } }) },
     { $sort: { scrapedAt: -1 } },
     { $group: { _id: '$listingId', price: { $first: '$price' } } },
   ]);

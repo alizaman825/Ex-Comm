@@ -3,7 +3,7 @@
 const { Alert, Listing, Notification, Product, User } = require('../models');
 const mailer = require('./mailer');
 const { isTrustworthy } = require('./priceStatus');
-const { excludeSeededInProd } = require('./publicData');
+const { excludeSeededInProd, isHeadlineEligible } = require('./publicData');
 
 const COOLDOWN_MS = 24 * 60 * 60 * 1000;
 const PLATFORM_LABEL = { daraz: 'Daraz', priceoye: 'PriceOye', aliexpress: 'AliExpress' };
@@ -11,10 +11,11 @@ const rs = (n) => `Rs ${Math.round(n).toLocaleString('en-PK')}`;
 
 // The price an alert watches: the cheapest in-stock listing on the chosen platform,
 // or (no platform chosen) on any retail store. Returns { price, platform } or null.
-// PLAN.md item 3: stale, failed and unknown listings never trigger an alert - only a listing that is
-// currently "checked_recently" is trusted enough to fire a price drop against.
+// PLAN.md item 3: in production, stale, failed and unknown listings never trigger an alert - only a
+// listing that is currently "checked_recently" is trusted enough to fire a price drop against. Outside
+// production, seeded demo/test data is exempt (isHeadlineEligible) for the same reason computeStats is.
 function watchedOffer(alert, listings, now = Date.now()) {
-  let pool = listings.filter((l) => l.inStock && isTrustworthy(l, now));
+  let pool = listings.filter((l) => l.inStock && isHeadlineEligible(l, isTrustworthy, now));
   if (alert.platform) pool = pool.filter((l) => l.platform === alert.platform);
   else pool = pool.filter((l) => l.role !== 'supplier');
   if (!pool.length) return null;

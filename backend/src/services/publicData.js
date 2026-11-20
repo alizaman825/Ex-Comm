@@ -9,4 +9,20 @@ function excludeSeededInProd(filter = {}) {
   return config.isProd ? { ...filter, seeded: { $ne: true } } : filter;
 }
 
-module.exports = { excludeSeededInProd };
+// PLAN.md item 1: a 'cheapest'/7-day-change/history calculation must only trust source: 'real'
+// PriceHistory points in production. The seed catalog's history is honestly simulated (seed/seed.js
+// generates a plausible series around a real anchor price - it was never a real time series), so in
+// development/test/demo it's left untouched rather than filtered to nothing, the same non-prod carve-out
+// excludeSeededInProd already gives seeded listings.
+function realHistoryFilter(filter = {}) {
+  return config.isProd ? { ...filter, source: 'real' } : filter;
+}
+
+// A listing counts toward a product's headline price ("cheapest", deals, alerts) when it's been checked
+// recently enough to trust (services/priceStatus.js), OR - outside production only - when it's seeded
+// demo/test data, which is never continuously re-scraped and so would otherwise always read as stale.
+function isHeadlineEligible(listing, isTrustworthy, now) {
+  return isTrustworthy(listing, now) || (!config.isProd && Boolean(listing.seeded));
+}
+
+module.exports = { excludeSeededInProd, realHistoryFilter, isHeadlineEligible };
