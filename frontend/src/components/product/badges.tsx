@@ -26,7 +26,7 @@ export function DataSourceBadge({ source, className }: { source: DataSource; cla
     );
   }
   return (
-    <span className={clsx("badge-warning", className)} title="Saved data: stored sample or cached price, not read from the store right now">
+    <span className={clsx("badge-warning", className)} title="Saved reference or cached price, not read from the store right now">
       <Database className="h-3 w-3" aria-hidden /> Saved
     </span>
   );

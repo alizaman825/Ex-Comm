@@ -60,10 +60,17 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
       <SectionHeading number="02" className="mb-1">
         <span id="offers-heading">Compare across stores</span>
       </SectionHeading>
-      <p className="mb-4 text-[12.5px] text-white/55">
+      <p className="mb-1 text-[12.5px] text-white/55">
         Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers; eBay listings can be new, used or refurbished, shown above.
         Shipping cost and cash-on-delivery availability vary by seller and aren&apos;t tracked here — check the store page before ordering. AliExpress/eBay prices exclude
         international shipping and customs duties.
+      </p>
+      <p className="mb-4 text-[12.5px] text-white/40">
+        Prices can change at any time. Confirm the current price on the store before you buy — see how we check prices in our{" "}
+        <a href="/methodology" className="underline hover:text-white/60">
+          Methodology
+        </a>
+        .
       </p>
       <ul className="space-y-2.5">
         {groups.map((g) =>

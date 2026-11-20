@@ -8,7 +8,7 @@ export const metadata: Metadata = { title: "About", description: "What Ex-Comm i
 const FAQ = [
   { q: "Why does a product sometimes show only one store?", a: "Stores name products differently, so Ex-Comm matches them by brand, model and key specs. When the match is not confident the products stay separate. You can always add products to the compare tray and compare them manually." },
   { q: "How fresh are the prices?", a: "Searches check Daraz and PriceOye live and keep the result for a few hours. Telex.pk is synced in the background every few hours rather than checked on every search. Every result says whether it is live, synced or saved data, and shows when it was updated." },
-  { q: "Is the price history real?", a: "Price history recorded after a product is searched, tracked or synced is real. The history for the built-in sample products was generated to demonstrate the chart, and is labelled as sample data." },
+  { q: "Is the price history real?", a: "Price history recorded after a product is searched, tracked or synced is real, timestamped data. AliExpress supplier prices are kept as a saved reference rather than checked live, and are labelled as such wherever they're shown. See our Methodology page for the full detail." },
   { q: "Do you sell anything?", a: "No. Ex-Comm only compares prices and links to the store. You buy from the store." },
 ];
 
@@ -18,7 +18,7 @@ export default function AboutPage() {
       <header className="mb-12">
         <h1 className="t-h1">About Ex-Comm</h1>
         <p className="t-lead mt-3 max-w-2xl">
-          Ex-Comm is a price comparison platform for online shopping in Pakistan. It was built as a university final-year project to help shoppers and small online sellers find the best price and the best time to buy.
+          Ex-Comm is a price comparison platform for online shopping in Pakistan, helping shoppers and small online sellers find the best price and the best time to buy.
         </p>
       </header>
 
@@ -72,14 +72,18 @@ export default function AboutPage() {
               <DataSourceBadge source="saved" className="ml-auto" />
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              Stored sample data, used for <strong>AliExpress</strong> supplier prices and as a fallback when a store cannot be reached. <strong>eBay</strong> supplier prices are always checked live (converted from USD) rather than saved. Prices shown as saved may be out of date.
+              A kept reference price, used for <strong>AliExpress</strong> supplier prices and as a fallback when a store cannot be reached. <strong>eBay</strong> supplier prices are always checked live (converted from USD) rather than saved. Saved prices may be out of date — see our{" "}
+              <Link href="/methodology" className="underline">
+                Methodology
+              </Link>{" "}
+              page for exactly what each price label means.
             </p>
           </div>
         </div>
         <div className="mt-5 flex gap-3 rounded-2xl border border-slate-200 bg-surface p-4 text-sm text-slate-600">
           <ShieldCheck className="mt-0.5 h-5 w-5 shrink-0 text-brand-600" aria-hidden />
           <p>
-            <strong className="text-ink">Known limits.</strong> Matching products across stores is fuzzy and can miss or mix up items. Prices change often, and sample-data price history is generated for demonstration. Always confirm the price on the store before you buy.
+            <strong className="text-ink">Known limits.</strong> Matching products across stores is fuzzy and can miss or mix up items. Prices change often, and saved reference prices are not checked live. Always confirm the price on the store before you buy.
           </p>
         </div>
       </section>
