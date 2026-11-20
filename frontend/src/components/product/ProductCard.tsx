@@ -120,7 +120,7 @@ export function ProductCardSkeleton() {
 
 export function ProductGridSkeleton({ count = 8 }: { count?: number }) {
   return (
-    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4" role="status" aria-label="Loading products">
+    <div className="grid grid-cols-1 gap-6 sm:grid-cols-2 xl:grid-cols-3" role="status" aria-label="Loading products">
       {Array.from({ length: count }, (_, i) => (
         <ProductCardSkeleton key={i} />
       ))}
