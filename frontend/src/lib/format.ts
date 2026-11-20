@@ -3,6 +3,7 @@ import type { Platform } from "./types";
 export const PLATFORM_LABEL: Record<Platform, string> = {
   daraz: "Daraz",
   priceoye: "PriceOye",
+  telex: "Telex.pk",
   aliexpress: "AliExpress",
   ebay: "eBay",
 };
@@ -10,14 +11,16 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
 export const PLATFORM_COLOR: Record<Platform, string> = {
   daraz: "#F57224",
   priceoye: "#1E88E5",
+  telex: "#7C3AED",
   aliexpress: "#E5322D",
   ebay: "#0064D2",
 };
 
-/** retail: local stores, searched live. supplier: international reference price (checked on demand). */
+/** retail: local stores. supplier: international reference price (checked on demand). */
 export const PLATFORM_ROLE: Record<Platform, "retail" | "supplier"> = {
   daraz: "retail",
   priceoye: "retail",
+  telex: "retail",
   aliexpress: "supplier",
   ebay: "supplier",
 };
