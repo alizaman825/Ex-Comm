@@ -110,22 +110,29 @@ at the given URL). No evidence either deploys from anything but `main` — see �
 
 ## 3. Data truth check
 
-**Not measured** — no database access this phase (no Atlas shell, no local checkout, as expected).
-Cannot report counts of products/stores/offers/price observations, the sample-vs-real split, freshness
-distribution, or store-link validity. What *is* verifiable without DB access:
+**Phase 1 update (2026-11-20):** still **not measured** — this sandbox has no database access this round
+either (no Atlas shell, no local checkout, and outbound access to Atlas and to `fastdl.mongodb.org` is
+blocked here, so `mongodb-memory-server` can't even run a local throwaway database; see STATUS.md's
+"every prior round" note). What changed this phase: a read-only, pre-approved `workflow_dispatch` GitHub
+Action (`.github/workflows/data-truth-report.yml` → `backend/scripts/data-truth-report.js`) now exists to
+print exactly these counts (products, stores, listings seeded vs. live, price-history points by `source`,
+freshness buckets, listings with a valid store link) against the real `MONGO_URI` secret. It can only be
+run from the default branch, so **this is the next action once this PR merges** — run it from the Actions
+tab and paste the output back into this section; nothing here is a number until that happens.
 
-- The catalog-sync and price-check jobs are live and currently running against Daraz and PriceOye (§1),
-  so at least some fraction of offers is genuinely live-scraped, not sample data — but the proportion is
-  **not measured**.
-- `seed/catalog.js` and `seed/seed.js` exist and seed sample data on first start (per CLAUDE.md); listings
-  carry a `seeded` boolean and `dataSource: 'seed'|'live'` field (`models/Listing.js`), so the split is
-  technically queryable — this is a one-line DB query once someone has Atlas access; recommend doing this
-  in Phase 1 before writing the honest methodology/data page the brief requires.
-- Price history mixes real scrape points and `simulate`-mode fabricated points in the same collection with
-  no field that marks a point as simulated (checked `models/PriceHistory.js` — no `source` or `mode`
-  field). **This is a real risk**, not a hypothesis: if `mode: 'simulate'` has ever been run against
-  production data (its own endpoint, `POST /api/jobs/price-check {"mode":"simulate"}`, documented in
-  CLAUDE.md as a demo command), fabricated price history is indistinguishable from real history today.
+Also fixed this phase, ahead of having the real counts:
+- `PriceHistory` now has a `source: 'real' | 'simulated' | 'unverified'` field (previously missing
+  entirely, confirmed in Phase 0 below), and every place that reads price history for a "cheapest",
+  7-day-change or alert decision now filters to `source: 'real'` — see item 1 below. A point written
+  before this field existed defaults to `'unverified'`, never silently to `'real'`.
+- `services/jobs/priceCheck.js`'s `simulate` mode now refuses to run at all outside a non-production
+  setting (`ALLOW_SIMULATE=true`), closing the exact risk flagged in Phase 0 below for any run from now on.
+  Whether `simulate` mode was ever actually run against production *before* this fix is **still
+  unverified** — GitHub's Actions history and Render's job logs are the only record of that, and this
+  session has access to neither; flagging as a question for ali rather than guessing.
+- Seeded/sample listings are now excluded from search, cards, deals, compare and alerts whenever
+  `NODE_ENV=production` (`services/publicData.js`), so even before the counts are known, seed data cannot
+  reach a real shopper in production.
 
 ---
 

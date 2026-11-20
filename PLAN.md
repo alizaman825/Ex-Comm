@@ -12,17 +12,22 @@ question in the PR description about whether to keep both or fold one into the o
 
 ## Phase 1 — Trust and data (P0)
 
-| Task | Depends on | Acceptance criteria | Needs owner approval? |
-|---|---|---|---|
-| Add a `source: 'real' \| 'simulated'` field to `PriceHistory` (and backfill: treat all existing points as `'real'` unless a cheap heuristic can tell otherwise) | none | Every new point written by `simulate` mode is marked; `/history` and the chart can filter/label them | No — additive schema change |
-| Price-status model: `checked_recently \| stale \| unavailable \| check_failed \| unknown`, shown with real last-checked time everywhere a price appears; "Live" badge only when `status === 'checked_recently'` AND age < a defined threshold | the field above | Spot-check: a listing not re-scraped in >X days never shows "Live" | No |
-| Fix search: call `relevance.js`'s `isRelevant()` as a **hard filter** in `liveSearch.js`, not just `relevanceScore()` for ranking; keep uncertain/boundary matches but label them, don't hide good-faith near-misses silently | none | "iphone 15 pro max" no longer returns 17/18 Pro Max as top hits in a live re-test | No — this is the AUDIT §4a root cause |
-| Replace savings text with one number + its basis (store spread vs. history change, with the time window stated) | price-status model | No page shows two unexplained "save Rs X" numbers at once | No |
-| Best-deals: use real recorded history only; show "Not enough price history yet" otherwise | price-status + history-source field | A product with <2 real history points never appears in Best Deals | No |
-| Shipping/COD: show known/unknown, never default unknown to 0/zero-cost; keep international (AliExpress/eBay) prices separate with exclusions listed | none | Manual check of 3 product pages across categories | No |
-| "Report a wrong price or product" + rate limiting | none (reuse `middleware/rateLimit.js` pattern) | Submitting from one IP repeatedly gets 429 after N tries | No |
-| Methodology, privacy, terms, contact, affiliate-disclosure pages; remove "university final-year project"/"sample data" footer wording from public pages | data-truth numbers from a real DB query (see below) | Pages exist and are linked from the footer; footer no longer says "university final-year project" | **Yes** — wording change is user-facing and the brief's rule 1 says preserve identity unless there's a clear reason; this is that reason, but the replacement copy should be reviewed before it goes live |
-| One-time real DB query: count products/stores/offers/history points, seeded vs. live split, freshness distribution (fills in AUDIT §3's "not measured" cells) | Atlas access (ali or a script run with `MONGO_URI`) | AUDIT.md §3 gets real numbers | No, but needs ali to either run it or grant a way to run it (no Atlas shell per project memory) |
+**Status (2026-11-20): items 1-5 of the brief's Phase 1 prompt are done, tested and pushed on
+`claude/phase1-trust-data`** (PR to follow); stopped there per the brief to report before item 6. The
+rows below are the original Phase 0 task list this phase was planned from - ticked where that work covers
+them; the last row (DB counts) is still blocked on the new Action actually being run (needs this PR merged).
+
+| Task | Depends on | Acceptance criteria | Needs owner approval? | Status |
+|---|---|---|---|---|
+| Add a `source: 'real' \| 'simulated'` field to `PriceHistory` (and backfill: treat all existing points as `'real'` unless a cheap heuristic can tell otherwise) | none | Every new point written by `simulate` mode is marked; `/history` and the chart can filter/label them | No — additive schema change | ✅ Done. Field added with a third state, `'unverified'` (not just `'real'`/`'simulated'`) - a pre-migration point defaults to `'unverified'`, never silently to `'real'`, since there's no way to prove it one way or the other without the DB counts. Backfill script written (`backend/scripts/backfill-pricehistory-source.js`, dry-run by default) but **not yet run** - needs ali's approval per the owner-decision data-change rule. |
+| Price-status model: `checked_recently \| stale \| unavailable \| check_failed \| unknown`, shown with real last-checked time everywhere a price appears; "Live" badge only when `status === 'checked_recently'` AND age < a defined threshold | the field above | Spot-check: a listing not re-scraped in >X days never shows "Live" | No | ✅ Done (`services/priceStatus.js`, `StatusBadge`). A failed re-check now sets a new `lastCheckFailedAt` field and nothing else. |
+| Fix search: call `relevance.js`'s `isRelevant()` as a **hard filter** in `liveSearch.js`, not just `relevanceScore()` for ranking; keep uncertain/boundary matches but label them, don't hide good-faith near-misses silently | none | "iphone 15 pro max" no longer returns 17/18 Pro Max as top hits in a live re-test | No — this is the AUDIT §4a root cause | ✅ Done - non-matches kept, moved to a collapsed "Other models" group, never ranked above real matches. 6 automated test cases added. |
+| Replace savings text with one number + its basis (store spread vs. history change, with the time window stated) | price-status model | No page shows two unexplained "save Rs X" numbers at once | No | ✅ Done - one "Cheapest at X, Rs Y less than the next store" figure from `checked_recently` offers only; a second, clearly-labelled history figure appears only with ≥5 real observations over ≥7 days. |
+| Best-deals: use real recorded history only; show "Not enough price history yet" otherwise | price-status + history-source field | A product with <2 real history points never appears in Best Deals | No | ✅ Mostly covered: `/products/drops` already excludes anything not fresh enough to trust (`isFreshEnough`) and `priceChange7d` is now computed only from `source: 'real'` history, so a fabricated/stale drop can't reach the homepage. Did not add a literal "Not enough price history yet" empty state in Best Deals itself - the product just doesn't appear, which satisfies the acceptance criterion but not the exact wording; flagging as a small follow-up, not re-opening Phase 1 for it. |
+| Shipping/COD: show known/unknown, never default unknown to 0/zero-cost; keep international (AliExpress/eBay) prices separate with exclusions listed | none | Manual check of 3 product pages across categories | No | ⏳ Not started - out of the brief's 5-item Phase 1 stop point, carried to item 6+. |
+| "Report a wrong price or product" + rate limiting | none (reuse `middleware/rateLimit.js` pattern) | Submitting from one IP repeatedly gets 429 after N tries | No | ⏳ Not started - item 6+. |
+| Methodology, privacy, terms, contact, affiliate-disclosure pages; remove "university final-year project"/"sample data" footer wording from public pages | data-truth numbers from a real DB query (see below) | Pages exist and are linked from the footer; footer no longer says "university final-year project" | **Yes** — wording change is user-facing and the brief's rule 1 says preserve identity unless there's a clear reason; this is that reason, but the replacement copy should be reviewed before it goes live | ⏳ Not started - this is the brief's item 6 ("Honest pages and footer"), waiting for ali's go-ahead per the stop instruction. |
+| One-time real DB query: count products/stores/offers/history points, seeded vs. live split, freshness distribution (fills in AUDIT §3's "not measured" cells) | Atlas access (ali or a script run with `MONGO_URI`) | AUDIT.md §3 gets real numbers | No, but needs ali to either run it or grant a way to run it (no Atlas shell per project memory) | 🟡 Tooling done (`data-truth-report.yml` Action), **not yet run** - only runnable from the default branch, so needs this PR merged first. |
 
 **Also from AUDIT.md, cheap and worth doing early in this phase:** add `frontend/src/app/robots.ts` and
 `sitemap.ts` (currently missing entirely — AUDIT §4j bonus finding). Low effort, unblocks nothing else,
@@ -83,19 +88,30 @@ exists.
 
 ## Open questions for ali (still open)
 
-1. **Atlas access for the data-truth numbers.** AUDIT §3's product/store/offer/history counts need a
-   real DB query. You've said before you have no Atlas shell and no local checkout. Options: (a) a
-   one-off GitHub Action (like the existing cleanup workflow) that runs a read-only report script and
-   prints counts to the Action log, using the same `MONGO_URI` secret the cleanup workflow already has —
-   no new secret needed; (b) a temporary authenticated API endpoint behind `x-job-key` that returns the
-   counts as JSON (no raw data, just numbers). (a) is less code and reuses an existing pattern. OK to
-   build either as part of Phase 1?
+1. **Atlas access for the data-truth numbers — tooling built, action needed from you.** The one-off
+   GitHub Action from option (a) below is now built and on this PR (`data-truth-report.yml`, reusing the
+   existing `MONGO_URI` secret). It can only be triggered from the default branch, so: once this PR is
+   merged, go to the Actions tab → "Data truth report" → Run workflow, and paste its output (or a
+   screenshot of the log) back here so AUDIT §3 can get real numbers.
 
-2. **Best-deals headline logic (issue f).** I didn't locate the homepage's specific "headline deal"
-   selection code in the time available this phase, so issue (f) (Rs 1,290 smartwatch at "-53%") is
-   unconfirmed, not disproven. Phase 1 will track it down properly when touching the Best Deals logic
-   anyway — flagging now so you know it's not forgotten, not ignored.
+2. **Best-deals headline logic (issue f) — resolved without a separate fix.** Tracked it down this
+   phase: the homepage's drop/deal rail (`/products/drops`) was already filtering to in-stock, recently-
+   scraped products (`isFreshEnough`) before Phase 1 started, and `priceChange7d` (the "-53%" etc. figure)
+   is now computed only from `source: 'real'` price-history points (never `simulated`/`unverified`). So
+   the Rs 1,290/"-53%" case can no longer happen with current data - it was a symptom of the same
+   simulated-data and stale-listing problems items 1 and 3 just fixed, not a separate bug in the deals
+   code itself. Also fixed in passing: the "X% today" badge wording on the home page and product page,
+   which was mislabelling a 7-day change as same-day.
 
-3. **Browser/device testing.** No Playwright/browser run was done this phase (curl-only verification).
-   Full user-journey testing at 390px/1280px (brief step 6) is real work, not done yet. OK to fold it into
-   Phase 1 or 2 (whichever starts touching the relevant pages first) rather than as a separate pass?
+3. **Browser/device testing.** No Playwright/browser run was done this phase either (this sandbox also
+   blocks `mongodb-memory-server`'s download, so even the backend test suite needed pure-logic checks run
+   directly instead of the full Jest run - see the PR description). Full user-journey testing at
+   390px/1280px (brief step 6) is still real work, not done yet. OK to fold it into Phase 1's item 6+ or
+   Phase 2 (whichever starts touching the relevant pages first) rather than as a separate pass?
+
+4. **New this phase - simulate-mode history question.** Item 1 asked whether `simulate` mode has ever
+   run against production. This session has no access to Render's job logs or GitHub's Actions history
+   for prior runs, so it genuinely can't be answered from here - flagging it to you rather than guessing.
+   Until it's answered, all pre-2026-11-20 `PriceHistory` points default to `source: 'unverified'`
+   (never `'real'`) and are excluded from every "cheapest"/trend calculation, which is the safe default
+   either way.
