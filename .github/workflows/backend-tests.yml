@@ -1,0 +1,23 @@
+name: Backend tests
+
+# Runs the backend Jest suite (mongodb-memory-server, no Atlas access needed - the test DB is a throwaway
+# in-memory instance downloaded fresh each run). Added because development sandboxes used on this project
+# can't reach fastdl.mongodb.org to download that binary themselves (see STATUS.md); CI can, so this is
+# where the full suite - including the DB-backed tests - actually gets to run.
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - run: npm test
+        working-directory: backend

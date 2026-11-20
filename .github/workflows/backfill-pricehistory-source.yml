@@ -1,0 +1,29 @@
+name: Backfill PriceHistory source
+
+# One-off migration (PLAN.md item 1c, owner-approved 2026-11-20): labels pre-migration PriceHistory
+# points 'unverified' or 'real' by the owner's verified cutoff (2026-10-07T12:20 UTC). Writes to
+# production data, so it requires manual workflow_dispatch and defaults to a dry run - set `apply` to
+# actually write. Requires the same MONGO_URI repository secret the other data workflows use.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Write the labels (unchecked = dry run, counts only, nothing written)'
+        type: boolean
+        default: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Run the backfill (dry run unless apply is checked)
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/backfill-pricehistory-source.js ${{ inputs.apply && '--apply' || '' }}

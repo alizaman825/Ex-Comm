@@ -36,7 +36,7 @@ function lowestOffer(p: ProductCardData) {
 function badgeFor(p: ProductCardData) {
   const low = lowestOffer(p);
   if (low?.dataSource === "saved") return { text: "Saved", cls: "bg-[#e0e7ff]/95 text-[#2e2a70]" };
-  if (p.priceChange7d <= -1) return { text: `${Math.round(p.priceChange7d)}%`, cls: "bg-[#fcd34d]/95 text-[#3f2d05]" };
+  if (p.priceChange7d <= -1) return { text: `${Math.round(p.priceChange7d)}% this wk`, cls: "bg-[#fcd34d]/95 text-[#3f2d05]" };
   return { text: "Lowest", cls: "bg-emerald-400/90 text-[#06281c]" };
 }
 
@@ -58,7 +58,7 @@ function HeroVisual({ product, variant }: { product: ProductCardData | undefined
       <span className={clsx("absolute rounded-full bg-emerald-400/90 font-extrabold text-[#06281c]", badgeTextCls, badgeTopCls)}>Lowest price</span>
       {low && (
         <span className={clsx("absolute rounded-full bg-[#fcd34d]/95 font-extrabold text-[#3f2d05]", badgeTextCls, badgeBottomCls)}>
-          {product.priceChange7d <= -1 ? `${Math.round(product.priceChange7d)}% today` : "Checked today"}
+          {product.priceChange7d <= -1 ? `${Math.round(product.priceChange7d)}% this week` : "Checked today"}
         </span>
       )}
     </div>
@@ -164,6 +164,9 @@ function DropCard({ product }: { product: ProductCardData }) {
 function DropsSection() {
   const { data, isLoading } = useDrops(4);
   const products = data?.products ?? [];
+  // Owner decision (2026-11-20): deals require >=5 real observations over >=7 days (services/productStats.js
+  // via /products/drops); hide the whole section rather than show it empty or back-fill with unverified data.
+  if (!isLoading && !products.length) return null;
   return (
     <section className="px-5 pb-6 pt-1 sm:px-6 lg:px-10 lg:pb-14">
       <div className="mx-auto max-w-[85rem]">
@@ -259,6 +262,8 @@ function TrendingSection() {
 function BestDealsPreview() {
   const { data, isLoading } = useDrops(8);
   const products = data?.products ?? [];
+  // Owner decision (2026-11-20): same deals rule as DropsSection - hide rather than show empty.
+  if (!isLoading && !products.length) return null;
   return (
     <section className="px-5 pb-8 pt-1 sm:px-6 lg:px-10 lg:pb-16">
       <div className="mx-auto max-w-[85rem]">

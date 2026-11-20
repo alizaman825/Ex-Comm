@@ -2,9 +2,9 @@ const { z } = require('zod');
 const { Product, Listing, PriceHistory, Wishlist, Alert } = require('../models');
 const AppError = require('../utils/AppError');
 const search = require('../services/search');
-const { parseQuery } = require('../services/relevance');
-const { significantTokens } = require('../services/matching');
 const { resolveCategory } = require('../services/categories');
+const { excludeSeededInProd, realHistoryFilter, excludeStaleInProd } = require('../services/publicData');
+const { statusOf } = require('../services/priceStatus');
 const { config } = require('../config/env');
 
 const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
@@ -30,7 +30,7 @@ function categoryFilter(category) {
 
 async function cardsFor(products) {
   if (!products.length) return [];
-  const listings = await Listing.find({ productId: { $in: products.map((p) => p._id) } }).lean();
+  const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: products.map((p) => p._id) } }))).lean();
   const by = new Map();
   for (const l of listings) {
     const k = String(l.productId);
@@ -63,6 +63,9 @@ const fullListing = (l) => ({
   inStock: l.inStock,
   dataSource: l.dataSource,
   lastScrapedAt: l.lastScrapedAt,
+  // Replaces the old always-"Live"/"Saved" badge (PLAN.md item 3): checked_recently | stale |
+  // unavailable | check_failed | unknown, computed fresh from lastScrapedAt/inStock/lastCheckFailedAt.
+  status: statusOf(l),
   sellerName: l.sellerName || null,
   sellerLocation: l.sellerLocation || null,
   condition: l.condition || 'unknown',
@@ -98,10 +101,14 @@ async function trending(req, res) {
   res.json({ products: await availableCardsFor(pool, limit) });
 }
 
-// GET /api/products/drops: biggest price drops over the last 7 days, in-stock only.
+// GET /api/products/drops: biggest price drops over the last 7 days, in-stock only, and only products
+// with enough real history behind the number (owner decision, 2026-11-20: >=5 real observations over
+// >=7 days - services/productStats.js's dealEligible). Expect very few results while the catalog is
+// still mostly unverified history; an empty list here is the frontend's cue to hide the section rather
+// than back-fill it with unverified data.
 async function drops(req, res) {
   const { limit, category } = req.validQuery;
-  const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 } })
+  const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 }, dealEligible: true })
     .sort({ priceChange7d: 1 })
     .limit(limit * 3)
     .lean();
@@ -111,7 +118,7 @@ async function drops(req, res) {
 // GET /api/products/:id: product with every listing (and the user's wishlist/alert state if signed in).
 async function getProduct(req, res) {
   const product = await loadProduct(req.params.id);
-  const listings = await Listing.find({ productId: product._id }).sort({ price: 1 }).lean();
+  const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: product._id }))).sort({ price: 1 }).lean();
   const [card] = await cardsFor([product]);
   const out = { ...card, retailMinPrice: product.retailMinPrice || null, supplierMinPrice: product.supplierMinPrice || null, listings: listings.map(fullListing) };
   if (req.user) {
@@ -130,7 +137,10 @@ async function getHistory(req, res) {
   const product = await loadProduct(req.params.id);
   const { days } = req.validQuery;
   const since = new Date(Date.now() - days * 24 * 60 * 60 * 1000);
-  const rows = await PriceHistory.find({ productId: product._id, scrapedAt: { $gte: since } }).sort({ scrapedAt: 1 }).lean();
+  // PLAN.md item 1/5: in production, a chart or "N observations" count built from simulated/unverified
+  // points would overstate how much real history actually backs it - only real scrapes count there.
+  // Outside production the seed catalog's honestly-simulated history is left alone (realHistoryFilter).
+  const rows = await PriceHistory.find(realHistoryFilter({ productId: product._id, scrapedAt: { $gte: since } })).sort({ scrapedAt: 1 }).lean();
   const listings = await Listing.find({ productId: product._id }).select('platform role').lean();
   const roleOf = Object.fromEntries(listings.map((l) => [l.platform, l.role || 'retail']));
 
@@ -157,12 +167,23 @@ async function getHistory(req, res) {
   const first = prices[0];
   const last = prices[prices.length - 1];
   const lowIdx = prices.length ? prices.indexOf(Math.min(...prices)) : -1;
+  const sortedPrices = [...prices].sort((a, b) => a - b);
+  const median = sortedPrices.length
+    ? sortedPrices.length % 2
+      ? sortedPrices[(sortedPrices.length - 1) / 2]
+      : Math.round((sortedPrices[sortedPrices.length / 2 - 1] + sortedPrices[sortedPrices.length / 2]) / 2)
+    : null;
+  const daysSpan = overallPoints.length > 1
+    ? Math.round((new Date(overallPoints[overallPoints.length - 1].date) - new Date(overallPoints[0].date)) / (24 * 60 * 60 * 1000))
+    : 0;
 
   res.json({
     productId: String(product._id),
     days,
     series,
     overall: overallPoints,
+    // PLAN.md item 5: a second, history-based savings figure is only meaningful (and only ever shown)
+    // once there's enough real data behind it - the frontend gates on observations/daysSpan itself.
     summary: prices.length
       ? {
           current: last,
@@ -170,19 +191,26 @@ async function getHistory(req, res) {
           lowestDate: overallPoints[lowIdx].date,
           highest: Math.max(...prices),
           average: Math.round(prices.reduce((s, p) => s + p, 0) / prices.length),
+          median,
           changePct: Math.round(((last - first) / first) * 1000) / 10,
+          observations: rows.length,
+          daysSpan,
         }
       : null,
   });
 }
 
-// GET /api/products/:id/similar: suggestions for manual comparison when automatic matching found few stores.
+// GET /api/products/:id/similar: other products in the same family - same category, and same brand when
+// known - never a different model number pulled in just because it shares a non-model word. (PLAN.md
+// item 5: the old version stripped every digit from the title before searching, so "iPhone 15 Pro Max"
+// and "iPhone 17 Pro Max" matched each other - a different, much pricier/cheaper model shown as "similar"
+// with its own truthful-but-misleading "Best price" badge.)
 async function similar(req, res) {
   const product = await loadProduct(req.params.id);
-  const tokens = significantTokens(`${product.brand || ''} ${product.title}`).filter((t) => !/[0-9]/.test(t)).slice(0, 3);
-  const found = await search.localSearch(parseQuery(tokens.join(' ')), { category: product.category });
-  const others = found.filter((p) => String(p._id) !== String(product._id)).slice(0, 8);
-  res.json({ products: await cardsFor(others) });
+  const filter = { _id: { $ne: product._id }, ...categoryFilter(product.category) };
+  if (product.brand) filter.brand = product.brand;
+  const pool = await Product.find(filter).sort({ popularity: -1 }).limit(8).lean();
+  res.json({ products: await cardsFor(pool) });
 }
 
 // GET /api/compare?ids=a,b,c: side-by-side data for 1 product (stores as columns) or up to 4 products.
@@ -191,7 +219,7 @@ async function compare(req, res) {
   const products = await Product.find({ _id: { $in: ids } }).lean();
   if (products.length !== ids.length) throw new AppError(404, 'One or more products were not found');
   const ordered = ids.map((id) => products.find((p) => String(p._id) === id));
-  const listings = await Listing.find({ productId: { $in: ids } }).sort({ price: 1 }).lean();
+  const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: ids } }))).sort({ price: 1 }).lean();
 
   const columns = ordered.map((p) => {
     const mine = listings.filter((l) => String(l.productId) === String(p._id));

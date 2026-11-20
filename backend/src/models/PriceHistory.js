@@ -7,6 +7,10 @@ const priceHistorySchema = new mongoose.Schema({
   platform: { type: String, enum: PLATFORMS, required: true },
   price: { type: Number, required: true },
   scrapedAt: { type: Date, required: true, default: Date.now },
+  // 'real' = a genuine scrape (live search or a scheduled job); 'simulated' = simulate mode's fabricated
+  // demo move; 'unverified' = a point written before this field existed, with no proof either way (see
+  // config.priceHistory.verifiedCutoff). Charts, deals, "lowest price" and alerts must only trust 'real'.
+  source: { type: String, enum: ['real', 'simulated', 'unverified'], default: 'unverified' },
 });
 
 priceHistorySchema.index({ listingId: 1, scrapedAt: -1 });

@@ -91,7 +91,7 @@ async function storeMatch(item, found, now) {
   else if (listing.externalId !== found.externalId) await PriceHistory.deleteMany({ listingId: listing._id }); // another store item: its history is not ours
   Object.assign(listing, fieldsOf(found, now), { externalId: found.externalId });
   await listing.save();
-  await appendHistory(listing, found.price, now, { force: changed });
+  await appendHistory(listing, found.price, now, { force: changed, source: 'real' });
   await refreshProductsStats([product._id]);
   return product;
 }
@@ -105,12 +105,17 @@ async function runTask(task, now, summary) {
   // 1. a listing already linked to a real product page: re-fetch it by its link
   if (stored && scrapers.canRefetch(stored)) {
     const r = await scrapers.fetchCurrentListing(stored);
-    if (r.status !== 'success') return { blocked: true, error: r.error };
+    if (r.status !== 'success') {
+      // Same rule as priceCheck.js: a failed re-check never changes price/stock, only records the attempt.
+      stored.lastCheckFailedAt = now;
+      await stored.save();
+      return { blocked: true, error: r.error };
+    }
     if (r.listing) {
       const changed = r.listing.price !== stored.price;
       Object.assign(stored, fieldsOf(r.listing, now));
       await stored.save();
-      await appendHistory(stored, r.listing.price, now, { force: changed });
+      await appendHistory(stored, r.listing.price, now, { force: changed, source: 'real' });
       summary.refreshed += 1;
       if (changed) summary.pricesChanged += 1;
     } else {

@@ -117,14 +117,16 @@ describe('live ingestion', () => {
     { platform: 'daraz', externalId: 'dz-3', title: 'Samsung Galaxy A57 5G 12GB 256GB', price: 163999, url: 'https://www.daraz.pk/products/a57-i3.html', currency: 'PKR', reviewCount: 0, inStock: true },
   ];
 
-  test('shows everything the store returned (accessories and other models too), ranked best first, and adopts the sample listing', async () => {
+  test('keeps everything the store returned (nothing dropped), but only the exact model counts as a main result - accessories and other models are collapsed into "other"', async () => {
     const productsBefore = await Product.countDocuments();
     mockScrapers({ daraz, priceoye: async () => [] });
     const res = await get('q=samsung galaxy a55');
     expect(res.body.source).toBe('live');
-    expect(res.body.total).toBe(3); // the phone, the case and the A57: nothing is filtered out
-    expect(res.body.platformStatus.daraz).toMatchObject({ scraped: 3, loaded: 3 });
-    expect(res.body.results[0].title).toMatch(/A55/); // the real match is ranked first
+    expect(res.body.total).toBe(1); // only the real A55 match
+    expect(res.body.otherTotal).toBe(2); // the case and the A57: close/loose matches, not hidden, not counted as a result
+    expect(res.body.platformStatus.daraz).toMatchObject({ scraped: 3, loaded: 3 }); // the store's own count is unaffected
+    expect(res.body.results[0].title).toMatch(/A55/);
+    expect(res.body.otherResults.map((r) => r.title).sort()).toEqual(['Samsung Galaxy A55 Back Cover Case Transparent', 'Samsung Galaxy A57 5G 12GB 256GB']);
 
     expect(await Product.countDocuments()).toBe(productsBefore + 2); // the phone joined the sample product; case and A57 are new
     const product = await Product.findOne({ title: 'Samsung Galaxy A55 5G 8GB 256GB' });
@@ -153,6 +155,74 @@ describe('live ingestion', () => {
     expect(await Listing.countDocuments({ platform: 'priceoye', externalId: 'dup-1' })).toBe(1);
     const doc = await Listing.findOne({ externalId: 'dup-1' });
     expect(await PriceHistory.countDocuments({ listingId: doc._id })).toBe(1); // unchanged price, same hour
+  });
+});
+
+describe('PLAN.md item 4: search fix (strict relevance filter + "other models" group)', () => {
+  const listing = (externalId, title, price) => ({ platform: 'daraz', externalId, title, price, url: `https://www.daraz.pk/${externalId}`, currency: 'PKR', reviewCount: 5, inStock: true });
+
+  test('"iphone 15 pro max": wrong models (17/18 Pro Max) never appear in the main results', async () => {
+    mockScrapers({
+      daraz: [
+        listing('ip15', 'Apple iPhone 15 Pro Max 256GB', 450000),
+        listing('ip17', 'Apple iPhone 17 Pro Max 256GB', 500000),
+        listing('ip18', 'Apple iPhone 18 Pro Max 256GB', 550000),
+      ],
+      priceoye: async () => [],
+    });
+    const res = await get('q=iphone 15 pro max');
+    expect(res.body.results.length).toBeGreaterThan(0);
+    expect(res.body.results.some((r) => /15 Pro Max/.test(r.title))).toBe(true);
+    expect(res.body.results.some((r) => /17|18/.test(r.title))).toBe(false);
+    expect(res.body.otherResults.some((r) => /17 Pro Max/.test(r.title))).toBe(true);
+    expect(res.body.otherResults.some((r) => /18 Pro Max/.test(r.title))).toBe(true);
+  });
+
+  test('a typo ("ihpone 15") finds nothing confidently relevant, rather than surfacing an unrelated model as if it matched', async () => {
+    mockScrapers({ daraz: [listing('ip18b', 'Apple iPhone 18 Pro Max 256GB', 550000)], priceoye: async () => [] });
+    const res = await get('q=ihpone 15');
+    expect(res.status).toBe(200);
+    expect(res.body.total).toBe(0);
+  });
+
+  test('"samsung a55" ranks the exact model and keeps the A57 out of the main results', async () => {
+    mockScrapers({
+      daraz: [listing('sa55', 'Samsung Galaxy A55 5G 8GB 256GB', 118500), listing('sa57', 'Samsung Galaxy A57 5G 12GB 256GB', 163999)],
+      priceoye: async () => [],
+    });
+    const res = await get('q=samsung a55');
+    expect(res.body.results.every((r) => !/A57/.test(r.title))).toBe(true);
+    expect(res.body.results.some((r) => /A55/.test(r.title))).toBe(true);
+    expect(res.body.otherResults.some((r) => /A57/.test(r.title))).toBe(true);
+  });
+
+  test('"rtx 4060" does not rank an RTX 4070 as a match', async () => {
+    mockScrapers({
+      daraz: [listing('gpu60', 'NVIDIA GeForce RTX 4060 8GB Graphics Card', 89999), listing('gpu70', 'NVIDIA GeForce RTX 4070 12GB Graphics Card', 139999)],
+      priceoye: async () => [],
+    });
+    const res = await get('q=rtx 4060');
+    expect(res.body.results.every((r) => !/4070/.test(r.title))).toBe(true);
+    expect(res.body.results.some((r) => /4060/.test(r.title))).toBe(true);
+    expect(res.body.otherResults.some((r) => /4070/.test(r.title))).toBe(true);
+  });
+
+  test('"macbook air m2" does not rank a MacBook Pro as a match', async () => {
+    mockScrapers({
+      daraz: [listing('mba', 'Apple MacBook Air M2 8GB 256GB', 289999), listing('mbp', 'Apple MacBook Pro M2 8GB 256GB', 349999)],
+      priceoye: async () => [],
+    });
+    const res = await get('q=macbook air m2');
+    expect(res.body.results.every((r) => !/MacBook Pro/.test(r.title))).toBe(true);
+    expect(res.body.results.some((r) => /MacBook Air/.test(r.title))).toBe(true);
+    expect(res.body.otherResults.some((r) => /MacBook Pro/.test(r.title))).toBe(true);
+  });
+
+  test('a nonexistent product returns an empty list, not an error', async () => {
+    mockScrapers({ daraz: async () => [], priceoye: async () => [] });
+    const res = await get('q=zzqqnonexistentwidget99');
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({ total: 0, otherTotal: 0, results: [], otherResults: [] });
   });
 });
 

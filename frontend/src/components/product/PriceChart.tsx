@@ -128,6 +128,14 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
                 <Stat label={`Change, ${days} days`} value={formatPercent(data.summary.changePct)} tone={data.summary.changePct < -0.5 ? "good" : data.summary.changePct > 0.5 ? "bad" : undefined} />
               </div>
             )}
+            {/* PLAN.md item 5: a second, history-based savings figure - shown only once there's enough
+                real data behind it (>=5 real observations over >=7 days; threshold is stated here so
+                it's never an unexplained second "save" number next to the main one on the product page). */}
+            {data.summary && data.summary.median !== null && data.summary.observations >= 5 && data.summary.daysSpan >= 7 && data.summary.median > data.summary.current && (
+              <p className="mt-3 text-xs font-medium text-emerald-700" data-testid="history-savings">
+                Rs {Math.round(data.summary.median - data.summary.current).toLocaleString("en-PK")} below the {days}-day median, based on {data.summary.observations} real price checks over {data.summary.daysSpan} days.
+              </p>
+            )}
             <div className="chart-draw mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${data.series.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>

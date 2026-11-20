@@ -21,7 +21,49 @@ const config = {
     priceCheckCron: process.env.PRICE_CHECK_CRON || '0 */6 * * *',
     key: process.env.JOB_KEY || '',
     maxListingsPerRun: Number(process.env.PRICE_CHECK_MAX_LISTINGS) || 60,
+    // Phase 1 "stop fake data": simulate mode (fabricated price moves, no real scrape) must never run
+    // against production data silently. Allowed by default outside production (local dev/demo); in
+    // production it needs this explicit opt-in on top of still being production, so turning it on there
+    // is a deliberate, visible choice, not an accident of a stray `{"mode":"simulate"}` call.
+    allowSimulate: process.env.ALLOW_SIMULATE === 'true' || env !== 'production',
   },
+  // Price points written before this date predate the source field below and have no way to prove they
+  // came from a real scrape. Set by the owner (2026-11-20, PLAN.md) from the actual data: the first real
+  // scrape ran 2026-10-07T12:25 UTC; everything before 2026-10-07T12:20 UTC is confirmed seed-generated
+  // (round, once-a-day timestamps), so that's the cutoff - not the day this field was added. Used by
+  // backfill-pricehistory-source.js to label pre-migration points 'unverified' (before) vs 'real' (at/after).
+  // See AUDIT.md section 3.
+  priceHistory: {
+    verifiedCutoff: new Date(process.env.PRICE_HISTORY_VERIFIED_CUTOFF || '2026-10-07T12:20:00.000Z'),
+  },
+  // Price-status windows, per store (owner decision, 2026-11-20): Daraz/PriceOye/eBay default to 72h
+  // "checked recently" and 14 days (336h) "stale", overridable per store with
+  // PRICE_STATUS_RECENT_HOURS_<PLATFORM> / PRICE_STATUS_STALE_HOURS_<PLATFORM>. Any platform without its
+  // own override falls back to `default`. AliExpress has no window here - services/priceStatus.js always
+  // labels it a saved reference instead, regardless of these numbers.
+  priceStatus: {
+    default: {
+      recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS) || 72,
+      staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS) || 336,
+    },
+    windows: {
+      daraz: {
+        recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_DARAZ) || 72,
+        staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_DARAZ) || 336,
+      },
+      priceoye: {
+        recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_PRICEOYE) || 72,
+        staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_PRICEOYE) || 336,
+      },
+      ebay: {
+        recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_EBAY) || 72,
+        staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_EBAY) || 336,
+      },
+    },
+  },
+  // A listing older than this never shows in public results, cheapest or deals/alerts, even as "unknown"
+  // (owner decision, 2026-11-20) - it stays in the database and comes back once it's refreshed.
+  listingMaxAgeDays: Number(process.env.LISTING_MAX_AGE_DAYS) || 30,
   catalogSync: {
     // Slow background sync of the sample catalog's store listings (see jobs/catalogSync.js).
     cron: process.env.CATALOG_SYNC_CRON || '*/30 * * * *',

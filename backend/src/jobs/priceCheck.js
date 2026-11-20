@@ -32,7 +32,7 @@ async function checkListing(listing, mode, now, summary) {
       listing.price = price;
       listing.lastScrapedAt = now;
       await listing.save();
-      await appendHistory(listing, price, now, { force: true });
+      await appendHistory(listing, price, now, { force: true, source: 'simulated' });
       summary.pricesChanged += 1;
     }
     return;
@@ -49,6 +49,10 @@ async function checkListing(listing, mode, now, summary) {
   }
   if (r.status !== 'success') {
     summary.failures += 1;
+    // A failed check must never change the price or mark the item out of stock (PLAN.md item 3) - only
+    // record that the attempt failed, so price-status can show "check failed" instead of a stale "Live".
+    listing.lastCheckFailedAt = now;
+    await listing.save();
     return;
   }
   if (!r.listing) {
@@ -68,13 +72,16 @@ async function checkListing(listing, mode, now, summary) {
     seeded: false,
   });
   await listing.save();
-  await appendHistory(listing, fresh.price, now, { force: changed });
+  await appendHistory(listing, fresh.price, now, { force: changed, source: 'real' });
   if (changed) summary.pricesChanged += 1;
 }
 
 // Returns { status, summary } or { status: 'skipped', reason } when another run is in progress.
 async function runPriceCheck({ mode = 'live', trigger = 'schedule' } = {}) {
   if (running) return { status: 'skipped', reason: 'A price check is already running' };
+  if (mode === 'simulate' && !config.jobs.allowSimulate) {
+    return { status: 'blocked', reason: 'Simulate mode is disabled (production needs ALLOW_SIMULATE=true)' };
+  }
   running = true;
   const startedAt = new Date();
   const summary = { products: 0, listingsChecked: 0, pricesChanged: 0, alertsTriggered: 0, failures: 0, skipped: 0, notFound: 0, unlinked: 0, truncated: false };

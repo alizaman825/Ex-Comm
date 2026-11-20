@@ -9,6 +9,8 @@ const { normalizeText, searchKeyOf } = require('./matching');
 const { resolveCategory } = require('./categories');
 const { parseQuery, isRelevantAny, bestScore, TOKEN_SYNONYMS } = require('./relevance');
 const liveSearch = require('./liveSearch');
+const { excludeSeededInProd, excludeStaleInProd } = require('./publicData');
+const { statusOf } = require('./priceStatus');
 
 const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -86,6 +88,7 @@ function offersFor(listings) {
       url: l.url,
       dataSource: l.dataSource,
       lastScrapedAt: l.lastScrapedAt,
+      status: statusOf(l), // see services/priceStatus.js - replaces the old always-"Live" badge
       condition: l.condition || 'unknown',
       multiVariant: Boolean(l.multiVariant),
     }));
@@ -145,9 +148,13 @@ async function search(params) {
   }
 
   const products = liveInfo ? await productsInOrder(liveInfo.productIds) : await localSearch(parsed, { category });
+  // PLAN.md item 4: live search's "other models" group (close/loose matches that failed the strict
+  // relevance check) - same card-building rules, kept separate so they never rank above a real match.
+  const otherProducts = liveInfo && liveInfo.otherProductIds.length ? await productsInOrder(liveInfo.otherProductIds) : [];
+  const allProducts = [...products, ...otherProducts];
   const listingsByProduct = new Map();
-  if (products.length) {
-    const all = await Listing.find({ productId: { $in: products.map((p) => p._id) } }).lean();
+  if (allProducts.length) {
+    const all = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: allProducts.map((p) => p._id) } }))).lean();
     for (const l of all) {
       const k = String(l.productId);
       if (!listingsByProduct.has(k)) listingsByProduct.set(k, []);
@@ -158,25 +165,31 @@ async function search(params) {
   // Filters apply to the offers of the selected platforms.
   const wanted = platform && platform.length ? new Set(platform) : null;
   const categorySlug = category ? resolveCategory(category) || '__none__' : null;
-  let cards = [];
-  for (const p of products) {
-    if (liveInfo && categorySlug && p.category !== categorySlug) continue; // (stored search filters by category in the query)
-    let listings = listingsByProduct.get(String(p._id)) || [];
-    if (wanted) listings = listings.filter((l) => wanted.has(l.platform));
-    if (minPrice !== undefined) listings = listings.filter((l) => l.price >= minPrice);
-    if (maxPrice !== undefined) listings = listings.filter((l) => l.price <= maxPrice);
-    if (minRating !== undefined) listings = listings.filter((l) => (l.rating || 0) >= minRating);
-    if (!listings.length) continue;
-    const card = toCard(p, listings);
-    if (wanted || minPrice !== undefined || maxPrice !== undefined || minRating !== undefined) {
-      // Headline price = the retail listings that matched (supplier prices only headline when nothing else matched).
-      const retail = listings.filter((l) => l.role !== 'supplier');
-      const headline = retail.length ? retail : listings;
-      card.minPrice = Math.min(...headline.map((l) => l.price));
-      card.maxPrice = Math.max(...headline.map((l) => l.price));
+  function buildCards(pool) {
+    const built = [];
+    for (const p of pool) {
+      if (liveInfo && categorySlug && p.category !== categorySlug) continue; // (stored search filters by category in the query)
+      let listings = listingsByProduct.get(String(p._id)) || [];
+      if (wanted) listings = listings.filter((l) => wanted.has(l.platform));
+      if (minPrice !== undefined) listings = listings.filter((l) => l.price >= minPrice);
+      if (maxPrice !== undefined) listings = listings.filter((l) => l.price <= maxPrice);
+      if (minRating !== undefined) listings = listings.filter((l) => (l.rating || 0) >= minRating);
+      if (!listings.length) continue;
+      const card = toCard(p, listings);
+      if (wanted || minPrice !== undefined || maxPrice !== undefined || minRating !== undefined) {
+        // Headline price = the retail listings that matched (supplier prices only headline when nothing else matched).
+        const retail = listings.filter((l) => l.role !== 'supplier');
+        const headline = retail.length ? retail : listings;
+        card.minPrice = Math.min(...headline.map((l) => l.price));
+        card.maxPrice = Math.max(...headline.map((l) => l.price));
+      }
+      built.push(card);
     }
-    cards.push(card);
+    return built;
   }
+  let cards = buildCards(products);
+  // Collapsed, capped group - a shopper can open it, but it is never what "N results" counts as.
+  const otherCards = buildCards(otherProducts).slice(0, 20);
   if (SORTS[sort]) cards.sort(SORTS[sort]); // sorts what is loaded; "best match first" is the stores' order with matches ranked up
 
   const total = cards.length;
@@ -213,6 +226,10 @@ async function search(params) {
     page: shownPage,
     pages,
     pageSize,
+    // PLAN.md item 4: loose/close matches (wrong model, no recognisable model number, etc.) that failed
+    // the strict relevance check - never counted in `total`, never shown above `results`, but not hidden.
+    otherTotal: otherCards.length,
+    otherResults: otherCards,
     results: cards,
   };
 }

@@ -5,6 +5,9 @@ const searchCacheSchema = new mongoose.Schema({
   queryKey: { type: String, required: true, unique: true },
   query: String,
   productIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
+  // Subset of productIds whose matching listing passed relevance.js's strict isRelevant() check (PLAN.md
+  // item 4). The rest (same products, loose/ranking-only matches) are shown collapsed as "Other models".
+  relevantProductIds: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }],
   source: { type: String, enum: ['live', 'cache', 'fallback'] },
   // e.g. { daraz: { status: 'success', count: 40, ms: 900 }, priceoye: { status: 'failed', error: 'timeout' } }
   platformStatus: { type: mongoose.Schema.Types.Mixed, default: {} },

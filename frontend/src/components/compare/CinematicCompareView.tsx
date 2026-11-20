@@ -7,11 +7,11 @@ import useSWR from "swr";
 import { Crown, ExternalLink, Plus, Scale, Star, X } from "lucide-react";
 import clsx from "clsx";
 import { ApiError, fetcher } from "@/lib/api";
-import { PLATFORM_LABEL, PLATFORM_ROLE, formatPrice, timeAgo } from "@/lib/format";
+import { PLATFORM_LABEL, PLATFORM_ROLE, formatPrice } from "@/lib/format";
 import type { CompareResponse, Listing, ProductCard as ProductCardData } from "@/lib/types";
 import { PLATFORMS } from "@/lib/search";
 import { Button, EmptyState, ErrorState, PageHeader, Skeleton } from "@/components/ui/primitives";
-import { DataSourceBadge, PlatformDot, PriceChange, Rating } from "@/components/product/badges";
+import { PlatformDot, PriceChange, Rating, StatusBadge } from "@/components/product/badges";
 import { ProductImage } from "@/components/product/ProductImage";
 import { MAX_COMPARE, useCompare } from "./CompareProvider";
 
@@ -137,16 +137,7 @@ function StoresTable({ data }: { data: CompareResponse }) {
           ))}
           {row("Reviews", (l) => <span className="tabular-nums">{l.reviewCount ? l.reviewCount.toLocaleString("en-PK") : "–"}</span>)}
           {row("Availability", (l) => (l.inStock ? <span className="badge-success">In stock</span> : <span className="badge-neutral">Out of stock</span>))}
-          {row(
-            "Data",
-            (l) => (
-              <>
-                <DataSourceBadge source={l.dataSource} />
-                <span className="mt-1 block text-xs text-slate-400">{timeAgo(l.lastScrapedAt)}</span>
-              </>
-            ),
-            "how recent"
-          )}
+          {row("Data", (l) => <StatusBadge status={l.status} lastScrapedAt={l.lastScrapedAt} />, "how recent")}
           {row("Buy", (l, i) => (
             <a href={l.url} target="_blank" rel="noopener noreferrer" className={clsx(lowest.has(i) ? "btn-primary" : "btn-secondary", "btn-sm")}>
               {l.dataSource === "saved" ? "View on" : "Go to"} {PLATFORM_LABEL[l.platform]} <ExternalLink className="h-3.5 w-3.5" aria-hidden />
