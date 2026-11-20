@@ -88,11 +88,17 @@ exists.
 
 ## Open questions for ali (still open)
 
-1. **Atlas access for the data-truth numbers — tooling built, action needed from you.** The one-off
-   GitHub Action from option (a) below is now built and on this PR (`data-truth-report.yml`, reusing the
-   existing `MONGO_URI` secret). It can only be triggered from the default branch, so: once this PR is
-   merged, go to the Actions tab → "Data truth report" → Run workflow, and paste its output (or a
-   screenshot of the log) back here so AUDIT §3 can get real numbers.
+1. **Atlas access for the data-truth numbers — resolved, real numbers are in.** A sibling thread had Atlas
+   connector access and ran the read-only queries directly; AUDIT.md §3 now has real counts (1,999
+   products, 2,103 listings, 5,762 price-history points, freshness/seeded/source breakdowns, and firm
+   evidence - synthetic daily timestamps, not just the Render-log check - that history before 2026-10-07
+   was simulated/backfilled and real scraping started 2026-10-07). The `data-truth-report.yml` Action still
+   stays in the repo as a repeatable way to get a fresh read later; no action needed from you right now.
+   One thing the numbers surfaced worth knowing: **all** `ebay`/`aliexpress` listings are currently marked
+   `seeded: false`/`dataSource: 'live'` even though they're meant to be the seeded supplier source per the
+   2026-10-07 decision log - there's no field yet distinguishing a seeded supplier listing from a live one.
+   Doesn't affect items 1-5's correctness (those gate on `PriceHistory.source` and freshness, not this
+   field), flagging as a small follow-up for a later phase.
 
 2. **Best-deals headline logic (issue f) — resolved without a separate fix.** Tracked it down this
    phase: the homepage's drop/deal rail (`/products/drops`) was already filtering to in-stock, recently-

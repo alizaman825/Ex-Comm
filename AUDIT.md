@@ -110,15 +110,50 @@ at the given URL). No evidence either deploys from anything but `main` — see �
 
 ## 3. Data truth check
 
-**Phase 1 update (2026-11-20):** still **not measured** — this sandbox has no database access this round
-either (no Atlas shell, no local checkout, and outbound access to Atlas and to `fastdl.mongodb.org` is
-blocked here, so `mongodb-memory-server` can't even run a local throwaway database; see STATUS.md's
-"every prior round" note). What changed this phase: a read-only, pre-approved `workflow_dispatch` GitHub
-Action (`.github/workflows/data-truth-report.yml` → `backend/scripts/data-truth-report.js`) now exists to
-print exactly these counts (products, stores, listings seeded vs. live, price-history points by `source`,
-freshness buckets, listings with a valid store link) against the real `MONGO_URI` secret. It can only be
-run from the default branch, so **this is the next action once this PR merges** — run it from the Actions
-tab and paste the output back into this section; nothing here is a number until that happens.
+**Phase 1 update, with real numbers (2026-11-20 ~06:56 UTC), via direct read-only Atlas queries against
+`ClusterFYP`/db `excomm` (a sibling thread had Atlas connector access; the `data-truth-report.yml` Action
+below is still there as a repeatable way to get these same numbers from CI going forward):**
+
+- **Products:** 1,999 total.
+- **Stores:** no separate `stores` collection — seller info (`sellerName`/`sellerId`/`sellerLocation`)
+  lives directly on `listings`. 12 collections total: `settings, scrapelogs, listings, alerts, jobruns,
+  users, wishlists, categories, products, searchcaches, notifications, pricehistory`.
+- **Listings:** 2,103 total — `daraz` 1,291 (retail), `priceoye` 415 (retail), `ebay` 277 (supplier),
+  `aliexpress` 120 (supplier). **All 2,103 are marked `dataSource: 'live'` and `seeded: false`**, including
+  every `ebay`/`aliexpress` listing — there is currently no field distinguishing a seeded/sample supplier
+  listing from a genuinely live one, despite the brief calling for that distinction. Flagging as a gap for
+  a future round (out of this phase's 5-item scope); it doesn't change items 1-5's correctness since those
+  gate on `PriceHistory.source` and price-status freshness, not on this field.
+- **Price history:** 5,762 points, **0 of which have a `source` field at all** (confirmed by direct count —
+  only `platform` is set on every point). This is expected, not a bug: item 1 added the `source` field and
+  the `backfill-pricehistory-source.js` script to populate it, but that script is dry-run-only until ali
+  approves running it with `--apply` (still pending — see PLAN.md). Every point currently reads as
+  `'unverified'` by the code's default-safe behavior, exactly as designed, until that backfill runs.
+  By platform: `daraz` 2,636, `priceoye` 2,729, `ebay` 277, `aliexpress` 120. Earliest point 2026-07-10,
+  latest 2026-11-20.
+- **Simulated vs. real history — direct evidence, not just inference from Render:** all 120 `aliexpress`
+  points were written in one 7-minute window on 2026-10-07 (a one-time import, not scraping). Sampling the
+  top `daraz`/`priceoye` listings (93-96 points each) shows nearly every point from 2026-07-10 up to
+  2026-10-07 has `scrapedAt` at exactly `T05:00:00.000Z`, one per day — a synthetic daily timestamp, not a
+  real scrape time. From 2026-10-07 onward, timestamps turn irregular (real scrape times), matching the
+  decision log's "live scrapers on" date. So: **history before 2026-10-07 is simulated/backfilled, history
+  from 2026-10-07 onward is real** — this is firmer than the earlier Render-log check (which could only
+  rule out `simulate` running on the *live service*, and had a blind spot for 2026-10-07 to 2026-10-21); the
+  synthetic-timestamp pattern shows the pre-10-07 data was never live-scraped at all, regardless of what
+  ran on Render. Also confirmed: all 54 `jobruns` are `mode: 'live'` — no persisted `simulate` run exists.
+- **Listing freshness** (`lastScrapedAt`, from today): <1 day: 277, 1-7 days: 522, 7-30 days: 145, >30 days:
+  1,159 (0 missing `lastScrapedAt`). More than half the catalog hasn't been re-checked in over a month —
+  expected for a project-stage scrape schedule, but worth keeping in mind for Phase 3's job-hardening work.
+- **Store-link integrity:** 2,103/2,103 listings (100%) have a non-empty `url`, and 100% resolve to an
+  existing `products` doc via `productId` (0 orphaned listings).
+
+This also resolves PLAN.md's open question 1 (Atlas access) — no further Action run needed for these
+numbers, though the Action stays in the repo as a repeatable way to get them again later.
+
+What changed this phase, ahead of having these real counts: a read-only, pre-approved `workflow_dispatch`
+GitHub Action (`.github/workflows/data-truth-report.yml` → `backend/scripts/data-truth-report.js`) exists to
+print these same counts against the real `MONGO_URI` secret, runnable from the Actions tab on the default
+branch whenever a fresh read is wanted.
 
 Also fixed this phase, ahead of having the real counts:
 - `PriceHistory` now has a `source: 'real' | 'simulated' | 'unverified'` field (previously missing
