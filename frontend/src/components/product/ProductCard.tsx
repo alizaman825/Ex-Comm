@@ -63,22 +63,22 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
           </p>
         )}
 
-        <ul className="mt-3 space-y-1.5 rounded-2xl bg-slate-50 px-3 py-2.5" aria-label="Prices by store">
+        <ul className="mt-3 space-y-1.5 rounded-2xl bg-white/[0.06] px-3 py-2.5 ring-1 ring-white/10 backdrop-blur-sm" aria-label="Prices by store">
           {offers.map((o) => (
             <li key={o.listingId} className="flex items-center justify-between gap-2 text-xs">
-              <span className="flex min-w-0 items-center gap-2 text-slate-600">
+              <span className="flex min-w-0 items-center gap-2 text-white/70">
                 <PlatformDot platform={o.platform} />
                 <span className="truncate">{PLATFORM_LABEL[o.platform]}</span>
-                {o.role === "supplier" && <span className="shrink-0 rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-600">supplier</span>}
+                {o.role === "supplier" && <span className="shrink-0 rounded bg-white/10 px-1 py-px text-[10px] font-medium text-white/65">supplier</span>}
                 {o.condition !== "unknown" && o.condition !== "new" && (
-                  <span className="shrink-0 rounded bg-amber-100 px-1 py-px text-[10px] font-medium text-amber-700">{o.condition}</span>
+                  <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-[10px] font-medium text-amber-300">{o.condition}</span>
                 )}
-                {o.dataSource === "saved" && <span className="shrink-0 rounded bg-amber-100 px-1 py-px text-[10px] font-medium text-amber-700">saved</span>}
+                {o.dataSource === "saved" && <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-[10px] font-medium text-amber-300">saved</span>}
                 {!o.inStock && (
-                  <span className="rounded bg-slate-100 px-1 py-px text-[10px] font-medium text-slate-500">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
+                  <span className="rounded bg-white/10 px-1 py-px text-[10px] font-medium text-white/55">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
                 )}
               </span>
-              <span className={clsx("shrink-0 whitespace-nowrap tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-700" : "text-slate-600")}>{formatPrice(o.price)}</span>
+              <span className={clsx("shrink-0 whitespace-nowrap tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-300" : "text-white/70")}>{formatPrice(o.price)}</span>
             </li>
           ))}
         </ul>
@@ -88,10 +88,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
             type="button"
             onClick={() => compare.toggle(product.id)}
             aria-pressed={selected}
-            className={clsx(
-              "relative z-10 inline-flex w-full items-center justify-center gap-1.5 rounded-full px-3 py-2.5 text-xs font-bold transition duration-200 ease-soft active:scale-[0.98]",
-              selected ? "bg-brand-600 text-onbrand" : "bg-slate-100 text-slate-700 hover:bg-brand-600 hover:text-onbrand"
-            )}
+            className={clsx("relative z-10 w-full !py-2.5 !text-xs !font-bold", selected ? "btn-primary" : "btn-secondary")}
           >
             {selected ? <Check className="h-3.5 w-3.5" aria-hidden /> : <Plus className="h-3.5 w-3.5" aria-hidden />}
             {selected ? "Added to compare" : "Add to compare"}

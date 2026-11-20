@@ -55,8 +55,8 @@ function EditTarget({ alert, onClose, onSaved }: { alert: AlertItem; onClose: ()
   return (
     <Modal open onClose={onClose} title="Change target price" description={alert.product.title}>
       <form onSubmit={submit} noValidate className="space-y-4">
-        <p className="rounded-2xl bg-slate-50 px-3.5 py-2.5 text-sm text-slate-600">
-          Current price: <strong className="text-ink">{formatPrice(alert.currentPrice)}</strong>
+        <p className="rounded-2xl bg-white/[0.06] px-3.5 py-2.5 text-sm text-white/70 ring-1 ring-white/10">
+          Current price: <strong className="text-white">{formatPrice(alert.currentPrice)}</strong>
           {alert.currentPlatform && <> on {PLATFORM_LABEL[alert.currentPlatform]}</>}
         </p>
         <Field label="Notify me when the price is" name="targetPrice" inputMode="numeric" value={value} onChange={(e) => setValue(e.target.value)} error={error} autoFocus autoComplete="off" />
@@ -222,8 +222,8 @@ export function AlertsView() {
         <>
           <div className="mb-5 flex flex-wrap gap-2" role="tablist" aria-label="Filter alerts">
             {TABS.map((t) => (
-              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={clsx("rounded-full border px-4 py-1.5 text-sm font-medium transition", tab === t.id ? "border-brand-600 bg-brand-600 text-onbrand" : "border-slate-200 bg-surface text-slate-600 hover:border-slate-300")}>
-                {t.label} <span className={clsx("ml-1 tabular-nums", tab === t.id ? "text-brand-100" : "text-slate-400")}>{counts[t.id]}</span>
+              <button key={t.id} type="button" role="tab" aria-selected={tab === t.id} onClick={() => setTab(t.id)} className={clsx("rounded-full border px-4 py-1.5 text-sm font-medium transition", tab === t.id ? "border-brand-600 bg-brand-600 text-onbrand" : "border-white/15 bg-white/10 text-white/70 hover:border-white/25 hover:bg-white/15")}>
+                {t.label} <span className={clsx("ml-1 tabular-nums", tab === t.id ? "text-brand-100" : "text-white/40")}>{counts[t.id]}</span>
               </button>
             ))}
           </div>

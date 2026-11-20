@@ -644,6 +644,7 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
   }
 }
 .nav-chip {
+  padding: 0.5rem 1rem;
   border-radius: 9999px;
   background: transparent;
   border: 1px solid transparent;
@@ -704,3 +705,42 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
 }
 .tag-pill-best { background: rgb(60 214 150 / 0.18); color: rgb(110 231 183); }
 .tag-pill-drop { background: rgb(255 104 96 / 0.18); color: rgb(253 164 175); }
+.tag-pill-neutral { background: rgb(var(--glass-bg-strong)); color: #fff; }
+.tag-pill-warn { background: rgb(255 216 77 / 0.2); color: rgb(255 216 77); }
+
+/* ------------------------------------------------------------------
+   Focus treatment shared by every glass text input (hero search, the navbar's compact search,
+   and every plain .input — login/register fields, the filter price boxes): no harsh default
+   browser outline/ring, a soft warm glow instead (using the same --glow-a accent as the rest of
+   the cinematic palette), and a caret colour that is actually visible against the dark glass.
+------------------------------------------------------------------- */
+.cine-search-pill {
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.cine-search-pill:focus-within {
+  border-color: rgb(var(--glow-a) / 0.6);
+  box-shadow: 0 1px 0 rgb(255 255 255 / 0.4) inset, 0 16px 38px rgb(0 0 0 / 0.35), 0 0 0 3px rgb(var(--glow-a) / 0.28);
+}
+.cine-search-pill input {
+  caret-color: rgb(var(--glow-a));
+}
+.nav-search-cine input:focus {
+  outline: none;
+  border-color: rgb(var(--glow-a) / 0.6) !important;
+  box-shadow: 0 0 0 3px rgb(var(--glow-a) / 0.28);
+  caret-color: rgb(var(--glow-a));
+}
+.input:focus {
+  border-color: rgb(var(--glow-a) / 0.6) !important;
+  box-shadow: 0 0 0 3px rgb(var(--glow-a) / 0.25) !important;
+  outline: none;
+  caret-color: rgb(var(--glow-a));
+}
+
+/* Native checkboxes/radios (search filters): tint them with the accent instead of leaving the
+   browser's plain black/blue default, which read as leftover old-theme styling against the glass
+   panels around them. */
+input[type="checkbox"],
+input[type="radio"] {
+  accent-color: rgb(var(--glow-a));
+}

@@ -39,21 +39,21 @@ export function CategoriesView() {
         <section key={c.slug} className="card card-pad flex flex-col" aria-labelledby={`cat-${c.slug}`} data-testid="category-section">
           <div className="flex items-start justify-between gap-4">
             <div className="flex items-center gap-4">
-              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-brand-50 text-brand-600">
+              <span className="flex h-14 w-14 items-center justify-center rounded-2xl bg-white/10 text-brand-500 ring-1 ring-white/15 backdrop-blur-sm">
                 <CategoryIcon slug={c.slug} className="h-7 w-7" />
               </span>
               <div>
                 <h2 id={`cat-${c.slug}`} className="t-h2">
                   {c.name}
                 </h2>
-                <p className="text-sm text-slate-500">{c.productCount} products compared</p>
+                <p className="text-sm text-white/55">{c.productCount} products compared</p>
               </div>
             </div>
             <Link href={`/search?category=${c.slug}`} className="btn-secondary btn-sm shrink-0">
               Browse all <ArrowRight className="h-3.5 w-3.5" aria-hidden />
             </Link>
           </div>
-          <p className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wider text-slate-400">Popular searches</p>
+          <p className="mb-3 mt-6 text-xs font-semibold uppercase tracking-wider text-white/40">Popular searches</p>
           <div className="flex flex-wrap gap-2">
             {c.keywords.map((k) => (
               <Link key={k} href={`/search?q=${encodeURIComponent(k)}&category=${c.slug}`} className="chip">
