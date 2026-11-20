@@ -103,11 +103,38 @@ exists.
    code itself. Also fixed in passing: the "X% today" badge wording on the home page and product page,
    which was mislabelling a 7-day change as same-day.
 
-3. **Browser/device testing.** No Playwright/browser run was done this phase either (this sandbox also
-   blocks `mongodb-memory-server`'s download, so even the backend test suite needed pure-logic checks run
-   directly instead of the full Jest run - see the PR description). Full user-journey testing at
-   390px/1280px (brief step 6) is still real work, not done yet. OK to fold it into Phase 1's item 6+ or
-   Phase 2 (whichever starts touching the relevant pages first) rather than as a separate pass?
+3. **Browser/device testing.** No Playwright/browser run was done this phase (no sandbox used on this
+   project can reach Edge/Chromium's download host either). Full user-journey testing at 390px/1280px
+   (brief step 6) is still real work, not done yet. OK to fold it into Phase 1's item 6+ or Phase 2
+   (whichever starts touching the relevant pages first) rather than as a separate pass?
+   **Update:** the backend Jest suite itself is no longer blocked - added `.github/workflows/backend-tests.yml`
+   on PR 35, so `npm test` now runs for real in GitHub Actions (where `mongodb-memory-server`'s download
+   isn't blocked), not just the pure-logic checks the PR description describes. See item 5 below for what
+   that first real run found.
+
+5. **First-ever real run of the backend Jest suite (CI, PR 35) found pre-existing bugs, not caused by this
+   phase's changes - flagging rather than fixing, to stay inside Phase 1's scope.** The full suite had
+   never actually executed before (every sandbox on this project is blocked from `fastdl.mongodb.org`), so
+   this is the first time these got to run at all:
+   - `relevance.js`'s `ACCESSORY_WORDS` list includes `headphone(s)`/`earphone(s)`/`earbud(s)` - meant to
+     stop a phone-accessory listing being mistaken for the device, but it also fires when the query itself
+     *is* a pair of headphones/earbuds with no accessory word (e.g. "sony wh-1000xm5"), so `isRelevant()`
+     wrongly rejects the product itself (`tests/search.test.js`, "model codes with hyphens", 4 cases).
+   - `GET /api/platforms` only ever lists `daraz`/`priceoye`/`aliexpress`; eBay is a real platform
+     elsewhere in the codebase (`src/scrapers/ebay.js`, `src/controllers/ebayCheck.js` etc.) but missing
+     from that endpoint - looks like the route was never updated when eBay was added
+     (`tests/categories.test.js`, "GET /api/platforms lists stores with their role").
+   - `tests/singlestore.test.js`'s "same store never merged" describe block has 3 failures that trace to
+     test-isolation, not product code: that file never clears `Product`/`Listing` between tests (by
+     design - several tests depend on state earlier tests left behind), so a later test's query can match
+     a product an earlier test already created with the same normalized title/brand (e.g. "iphone 16 pro
+     max", "samsung galaxy a55"), pulling in listings/prices the test didn't expect. One of the three also
+     throws a `TypeError` on `toMatchObject` that looks like the same root cause surfacing differently,
+     not yet fully traced.
+   None of these three are something this PR's trust-gating or relevance-hard-filter changes caused (the
+   accessory-word list and the `/platforms` route are untouched by this phase; the test-isolation issue is
+   about how the test file was written, not about any source file this phase touched) - flagging for a
+   follow-up rather than expanding this PR's scope.
 
 4. **Simulate-mode history question - checked via Render, answer in AUDIT §3.** Short version: no
    evidence found that `simulate` mode ever ran in production, but Render's logs only go back to
