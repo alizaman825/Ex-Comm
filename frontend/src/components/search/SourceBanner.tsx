@@ -1,9 +1,22 @@
-import { AlertTriangle, CheckCircle2, Database, Loader2, RefreshCw } from "lucide-react";
+import { AlertTriangle, CheckCircle2, Clock, Database, Loader2, RefreshCw } from "lucide-react";
 import clsx from "clsx";
 import { PLATFORM_LABEL, timeAgo } from "@/lib/format";
 import type { Platform, SearchResponse } from "@/lib/types";
 import { PlatformDot } from "@/components/product/badges";
 import { storeProblems } from "@/lib/stores";
+
+/** Telex.pk is synced in the background on a schedule, not checked per search, so it never
+ * appears in data.platformStatus. Find its freshness from the results themselves instead. */
+function latestTelexSync(data: SearchResponse): string | undefined {
+  let latest: string | undefined;
+  for (const product of data.results) {
+    for (const offer of product.offers) {
+      if (offer.platform !== "telex" || !offer.lastScrapedAt) continue;
+      if (!latest || offer.lastScrapedAt > latest) latest = offer.lastScrapedAt;
+    }
+  }
+  return latest;
+}
 
 const TONE = {
   live: { chip: "Live", chipCls: "tag-pill tag-pill-best", icon: CheckCircle2 },
@@ -37,6 +50,7 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
   const stores = Object.entries(data.platformStatus) as [Platform, NonNullable<SearchResponse["platformStatus"][Platform]>][];
   const canRefresh = Boolean(onRefresh) && !data.demoMode;
   const problems = data.demoMode ? [] : storeProblems(data.platformStatus);
+  const telexSyncedAt = data.demoMode ? undefined : latestTelexSync(data);
   return (
     <div className="glass-panel flex flex-col gap-3 rounded-3xl px-5 py-3.5 text-sm text-white/80 lg:flex-row lg:items-center lg:justify-between" data-testid="source-banner" data-source={data.source} data-demo={data.demoMode || undefined}>
       <div className="flex items-start gap-2.5">
@@ -68,6 +82,16 @@ export function SourceBanner({ data, onRefresh, refreshing = false }: Props) {
               </li>
             ))}
           </ul>
+        )}
+        {telexSyncedAt && (
+          <span
+            className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-2.5 py-1 text-xs font-medium text-white/80 ring-1 ring-white/15 backdrop-blur-sm"
+            data-testid="telex-sync-chip"
+            title="Telex.pk is synced on a schedule in the background, not checked live on every search."
+          >
+            <Clock className="h-3 w-3 text-white/60" aria-hidden />
+            Telex.pk synced {timeAgo(telexSyncedAt)}
+          </span>
         )}
         {canRefresh && (
           <button type="button" onClick={onRefresh} disabled={refreshing} className="btn-secondary btn-sm" data-testid="refresh-results">

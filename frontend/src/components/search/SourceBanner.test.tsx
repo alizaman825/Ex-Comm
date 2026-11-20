@@ -1,10 +1,42 @@
 import { describe, expect, it, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
-import type { SearchResponse } from "@/lib/types";
+import type { Offer, ProductCard, SearchResponse } from "@/lib/types";
 import { SourceBanner, bannerMessage } from "./SourceBanner";
 
 const ago = (minutes: number) => new Date(Date.now() - minutes * 60_000).toISOString();
+const offer = (over: Partial<Offer>): Offer => ({
+  listingId: "l1",
+  platform: "telex",
+  role: "retail",
+  price: 1000,
+  priceUsd: null,
+  originalPrice: null,
+  rating: null,
+  reviewCount: 0,
+  inStock: true,
+  url: "https://telex.pk/x",
+  dataSource: "live",
+  lastScrapedAt: ago(0),
+  status: "checked_recently",
+  condition: "unknown",
+  multiVariant: false,
+  ...over,
+});
+const product = (offers: Offer[]): ProductCard => ({
+  id: "p1",
+  title: "Phone",
+  brand: null,
+  category: null,
+  image: null,
+  minPrice: 1000,
+  maxPrice: 1000,
+  rating: null,
+  reviewCount: 0,
+  priceChange7d: 0,
+  platforms: offers.map((o) => o.platform),
+  offers,
+});
 const response = (over: Partial<SearchResponse>): SearchResponse => ({
   query: "iphone",
   source: "live",
@@ -96,5 +128,31 @@ describe("SourceBanner store chips (live mirror)", () => {
     render(<SourceBanner data={response({ mode: "live", platformStatus: { daraz: { status: "success", loaded: 40, total: 4063 }, priceoye: { status: "success", loaded: 24, total: 1920, approximate: true } } })} />);
     expect(screen.getByText("40 of 4,063")).toBeInTheDocument();
     expect(screen.getByText("24 of about 1,920")).toBeInTheDocument();
+  });
+});
+
+describe("SourceBanner Telex sync chip", () => {
+  it("shows Telex as synced (not live), from the results, even though it's never in platformStatus", () => {
+    render(<SourceBanner data={response({ source: "live", results: [product([offer({ lastScrapedAt: ago(90) })])] })} onRefresh={() => {}} />);
+    const chip = screen.getByTestId("telex-sync-chip");
+    expect(chip).toHaveTextContent("Telex.pk synced");
+    expect(chip).toHaveTextContent("hour");
+    expect(chip).not.toHaveTextContent("Live");
+  });
+
+  it("is not part of the refreshable store list and isn't disabled while refreshing", () => {
+    render(<SourceBanner data={response({ source: "cache", results: [product([offer({ lastScrapedAt: ago(5) })])] })} onRefresh={() => {}} refreshing />);
+    expect(screen.getByTestId("telex-sync-chip")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Checking the stores…" })).toBeDisabled();
+  });
+
+  it("shows no Telex chip when nothing in the results came from Telex", () => {
+    render(<SourceBanner data={response({ source: "live", results: [] })} />);
+    expect(screen.queryByTestId("telex-sync-chip")).not.toBeInTheDocument();
+  });
+
+  it("shows no Telex chip in demo mode", () => {
+    render(<SourceBanner data={response({ source: "fallback", demoMode: true, results: [product([offer({ lastScrapedAt: ago(5) })])] })} />);
+    expect(screen.queryByTestId("telex-sync-chip")).not.toBeInTheDocument();
   });
 });
