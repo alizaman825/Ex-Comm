@@ -19,17 +19,28 @@ jobs:
   refresh:
     runs-on: ubuntu-latest
     steps:
+      # RENDER_API_URL has caused silent 404s before when it carried a trailing slash or an
+      # extra path segment (e.g. ".../api/health/api/health" or ".../api/api/health"). Strip
+      # everything but the scheme+host here so every later step uses the same clean origin, and
+      # print just the host so a bad value is visible without ever printing the secret itself.
+      - name: Resolve the API origin
+        id: api
+        run: |
+          origin=$(echo "${{ secrets.RENDER_API_URL }}" | sed -E 's#^(https?://[^/]+).*#\1#')
+          echo "api_url=$origin" >> "$GITHUB_OUTPUT"
+          echo "Resolved host: $(echo "$origin" | sed -E 's#^https?://##')"
+
       - name: Wake the API
-        run: curl -fsS --max-time 90 "${{ secrets.RENDER_API_URL }}/api/health" || true
+        run: curl -fsS --max-time 90 "${{ steps.api.outputs.api_url }}/api/health" || true
 
       - name: Run one catalog-sync batch
         run: |
-          curl -fsS --max-time 60 -X POST "${{ secrets.RENDER_API_URL }}/api/jobs/catalog-sync" \
+          curl -fsS --max-time 60 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/catalog-sync" \
             -H "x-job-key: ${{ secrets.JOB_KEY }}"
 
       - name: Run a price check for wishlisted/alerted products
         run: |
-          curl -fsS --max-time 60 -X POST "${{ secrets.RENDER_API_URL }}/api/jobs/price-check" \
+          curl -fsS --max-time 60 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/price-check" \
             -H "x-job-key: ${{ secrets.JOB_KEY }}" \
             -H "Content-Type: application/json" \
             -d '{"mode":"live"}'
