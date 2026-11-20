@@ -14,6 +14,7 @@ beforeAll(startDb);
 afterAll(stopDb);
 beforeEach(async () => {
   await clearDb();
+  axios.get.mockReset(); // jest.mock('axios')'s call history is not cleared by restoreAllMocks()
   config.telexSync = { ...saved, enabled: true, maxPagesPerRun: 10, minDelayMs: 0, maxDelayMs: 0, maxRetries: 2 };
 });
 afterEach(() => {

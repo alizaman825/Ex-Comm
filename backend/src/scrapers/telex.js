@@ -64,16 +64,20 @@ async function getWithBackoff(url, { attempt = 0 } = {}) {
   return res;
 }
 
+// Sitemap XML entity-escapes "&" in <loc> as "&amp;" (telex.pk's own sub-sitemap URLs carry a real
+// query string, e.g. "?from=...&to=..."), so it must be unescaped before the URL is used for anything.
+const unescapeXml = (s) => String(s).replace(/&amp;/g, '&').replace(/&lt;/g, '<').replace(/&gt;/g, '>').replace(/&quot;/g, '"').replace(/&#39;/g, "'");
+
 // Sitemap index -> product sub-sitemap URLs only (ignores the page/collection sitemaps listed
 // alongside them: nothing there is a product).
 function parseSitemapIndex(xml) {
-  const locs = [...String(xml).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const locs = [...String(xml).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => unescapeXml(m[1]));
   return locs.filter((u) => /sitemap_products_/.test(u));
 }
 
 // One product sub-sitemap -> product page URLs.
 function parseProductSitemap(xml) {
-  const locs = [...String(xml).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => m[1]);
+  const locs = [...String(xml).matchAll(/<loc>([^<]+)<\/loc>/g)].map((m) => unescapeXml(m[1]));
   return locs.filter((u) => /\/products\//.test(u));
 }
 
