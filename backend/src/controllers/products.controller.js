@@ -11,7 +11,9 @@ const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
 const idParams = z.object({ id: objectId });
 
 const listQuerySchema = z.object({
-  limit: z.coerce.number().int().min(1).max(30).default(10),
+  // Default stays small for the homepage rails; 300 is a sensible cap for the sitemap's bulk request
+  // (/api/products/trending), well under the full catalog (~2000 products).
+  limit: z.coerce.number().int().min(1).max(300).default(10),
   category: z.string().trim().max(60).optional(),
 });
 const historyQuerySchema = z.object({ days: z.enum(['7', '30', '90']).default('30').transform(Number) });
