@@ -124,16 +124,22 @@ function Art({ slug }: { slug?: string | null }) {
   }
 }
 
-/** Gradient tile with a category illustration: shown when a product has no image or it fails to load. */
+/** Glass tile with a category illustration: shown when a product has no image or it fails to load.
+ * A faint category-tinted glow sits over the same glass base as the rest of the cinematic design
+ * (not a flat pastel-gradient block, which under the dark cinematic tokens rendered as a solid
+ * near-black square — the exact kind of leftover old-theme look flagged in the design audit). */
 export function CategoryTile({ category, label, className }: { category?: string | null; label: string; className?: string }) {
   const t = themeFor(category);
   return (
     <div
       {...(label ? { role: "img", "aria-label": label } : { "aria-hidden": true })}
-      className={clsx("flex items-center justify-center overflow-hidden", className)}
-      style={{ backgroundImage: `linear-gradient(135deg, rgb(var(--${t.from})), rgb(var(--${t.to})))` }}
+      className={clsx("flex items-center justify-center overflow-hidden border border-white/10 backdrop-blur-sm", className)}
+      style={{
+        backgroundImage: `linear-gradient(135deg, rgb(var(--${t.from}) / 0.5), rgb(var(--${t.to}) / 0.3)), linear-gradient(rgb(var(--glass-bg-strong)), rgb(var(--glass-bg-strong)))`,
+        borderRadius: IMAGE_RADIUS,
+      }}
     >
-      <svg viewBox="0 0 120 120" className="h-3/5 w-3/5 max-h-44 max-w-44 drop-shadow-[0_10px_14px_rgba(60,40,10,0.18)]" aria-hidden>
+      <svg viewBox="0 0 120 120" className="h-3/5 w-3/5 max-h-44 max-w-44 drop-shadow-[0_10px_14px_rgba(0,0,0,0.35)]" aria-hidden>
         <Art slug={category} />
       </svg>
     </div>
@@ -148,6 +154,15 @@ interface Props {
   /** "contain" for product photos on white, "cover" for banners */
   fit?: "contain" | "cover";
 }
+
+/** Corner radius for every product photo, ported from the concept board's own card radius
+ * (the board's "ec-card" rail cards use border-radius:20px; the cinematic .product-card-cine
+ * panel uses the same 1.25rem) so a bare photo's own corners read as rounded consistently
+ * everywhere it appears (home hero/cards, product detail hero), not just inside a card that
+ * happens to clip it with overflow-hidden. Inline style on purpose: it must win over whatever
+ * radius utility (or none) a caller's `className` passes, so the rounding is never silently
+ * dropped by class-order conflicts. */
+const IMAGE_RADIUS = "1.25rem";
 
 /** Product photo (multiply-blended on its backdrop in light mode, on a light tile in dark mode), or a category tile when there is no image. */
 export function ProductImage({ src, alt, category, className, fit = "contain" }: Props) {
@@ -165,6 +180,7 @@ export function ProductImage({ src, alt, category, className, fit = "contain" }:
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src as string)}
+      style={{ borderRadius: IMAGE_RADIUS }}
       className={clsx("photo", fit === "contain" ? "object-contain" : "object-cover", className)}
     />
   );

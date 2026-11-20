@@ -29,7 +29,7 @@ export function CineSearchBar({ large = false, autoFocus }: { large?: boolean; a
     <form onSubmit={onSubmit} role="search" className="w-full">
       <div
         className={clsx(
-          "flex items-center gap-2.5 rounded-full border border-white/30 bg-white/[0.12] shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_16px_38px_rgba(0,0,0,0.35)] backdrop-blur-2xl",
+          "cine-search-pill flex items-center gap-2.5 rounded-full border border-white/30 bg-white/[0.12] shadow-[0_1px_0_rgba(255,255,255,0.4)_inset,0_16px_38px_rgba(0,0,0,0.35)] backdrop-blur-2xl",
           large ? "py-2 pl-5 pr-2 sm:py-2.5" : "py-3 pl-[18px] pr-2.5"
         )}
       >

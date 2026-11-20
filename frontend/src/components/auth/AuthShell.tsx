@@ -12,31 +12,31 @@ const POINTS = [
 export function AuthShell({ title, subtitle, children, footer }: { title: string; subtitle: string; children: ReactNode; footer: ReactNode }) {
   return (
     <div className="grid min-h-[calc(100vh-4rem)] lg:grid-cols-[minmax(0,5fr)_minmax(0,6fr)]">
-      <aside className="relative m-4 hidden overflow-hidden rounded-[2.5rem] bg-gradient-to-br from-peach via-butter to-mint p-12 lg:flex lg:flex-col lg:justify-between">
-        <div className="pointer-events-none absolute -right-10 top-10 h-64 w-64 rotate-12 rounded-[3rem] bg-lilac/80" aria-hidden />
-        <div className="pointer-events-none absolute -bottom-16 right-10 h-56 w-56 rounded-full bg-sky/80" aria-hidden />
+      <aside className="glass-panel relative m-4 hidden overflow-hidden rounded-[2.5rem] p-12 lg:flex lg:flex-col lg:justify-between">
+        <div className="pointer-events-none absolute -right-10 top-10 h-64 w-64 rotate-12 rounded-[3rem] bg-[rgb(120_104_255/0.16)]" aria-hidden />
+        <div className="pointer-events-none absolute -bottom-16 right-10 h-56 w-56 rounded-full bg-[rgb(255_94_133/0.14)]" aria-hidden />
         <div className="relative">
           <CategoryTile category="mobiles" label="" className="float-right !h-40 !w-40 rounded-[2rem] shadow-float animate-float" />
         </div>
         <div className="relative">
-          <h2 className="max-w-md font-display text-5xl font-extrabold leading-[1] tracking-tight text-ink">
+          <h2 className="max-w-md font-display text-5xl font-extrabold leading-[1] tracking-tight text-white">
             Stop overpaying. <span className="swash">Compare first.</span>
           </h2>
           <ul className="mt-10 space-y-5">
             {POINTS.map(({ icon: Icon, title: t, text }) => (
               <li key={t} className="flex gap-4">
-                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-surface shadow-card">
-                  <Icon className="h-5 w-5 text-ink" aria-hidden />
+                <span className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-white/10 ring-1 ring-white/20 backdrop-blur-sm">
+                  <Icon className="h-5 w-5 text-white" aria-hidden />
                 </span>
                 <div>
-                  <p className="font-display font-bold text-ink">{t}</p>
-                  <p className="text-sm text-slate-700">{text}</p>
+                  <p className="font-display font-bold text-white">{t}</p>
+                  <p className="text-sm text-white/70">{text}</p>
                 </div>
               </li>
             ))}
           </ul>
         </div>
-        <p className="relative mt-8 flex items-center gap-2 text-sm text-slate-700">
+        <p className="relative mt-8 flex items-center gap-2 text-sm text-white/70">
           <ShieldCheck className="h-4 w-4" aria-hidden /> Your password is hashed and your session is kept in a secure cookie.
         </p>
       </aside>
