@@ -178,6 +178,70 @@ Also fixed this phase, ahead of having the real counts:
 
 ---
 
+## 4b. Phase 1 continuation re-test (2026-11-20, against production)
+
+Re-tested each item below against the live site/API (`https://ex-comm.vercel.app`,
+`https://ex-comm-api.onrender.com`) after this phase's merges (PRs #36-#43; #41 trust pages
+still **open**, awaiting ali's copy review, so its changes are not yet live).
+
+- **(a) Search relevance (iPhone 15 Pro Max → 18 Pro Max).** **Partly fixed.** `liveSearch.js`
+  now calls `isRelevant()` (PLAN.md item 4) and the three wrong phones (18 Pro Max, 15 128GB,
+  18 Pro) are correctly pushed into `otherResults`, not the top `results`. But a live re-test of
+  the exact same query (`iphone 15 pro max`) now returns, as the single "relevant" top result,
+  an **iPhone case** ("IP 15 Pro Max Phone Case" family) — because the catalog has no real
+  "iPhone 15 Pro Max" phone, and a case's compatibility-list title ("...13, 13 Pro, 13 Pro Max,
+  14, 14 Pro, 14 Pro Max, 15, 15 Pro, 15 Pro Max...") satisfies `isRelevant()`'s digit-token
+  check just as well as a real phone would. The original defect (wrong phone model shown as the
+  answer) is fixed; a new, narrower one remains (an accessory can still outrank "no real match"
+  and read as if it were the product). Not fixed this phase — flagging for a future pass, not
+  touched here per the "report only, Step F is re-test not new fixes" framing.
+- **(b) "Live" badge never expiring.** **Fixed.** `badges.tsx`'s `StatusBadge` (replacing the
+  old always-"Live" `DataSourceBadge`) now always shows the real age — "Checked 18 hours ago",
+  "Saved reference · Checked 17 hours ago", etc. — computed from `priceStatus.js`'s 6-state
+  model. Spot-checked on a live product page: both listings show "Checked N hours ago", no bare
+  "Live" with a stale age next to it.
+- **(c) Two contradictory savings figures.** **Fixed.** Spot-checked a live product page: one
+  clear line ("Cheapest at Daraz, Rs 14,596 less than the next store.") plus a single 7-day
+  change badge on the price — no second, conflicting "save Rs X" figure found on the same page.
+- **(d) Unrelated cheaper model shown as "similar" with a misleading "Best price" badge.**
+  **Fixed, spot-checked.** `similar()` now filters by category **and** brand when known
+  (`products.controller.js`); on a live iPhone 16 page, the similar-products rail shows other
+  Apple phones, each with its own correct price and its own "Best price"/percent badge (only on
+  the one actually cheapest at its own cheapest store) — no card claims to be the best price for
+  a different model.
+- **(e) History's lowest price dated the audit's own day (simulated data suspected).**
+  **Fixed.** `PriceHistory.source` now exists (`real`/`simulated`/`unverified`); the 2026-10-07
+  AliExpress import was relabelled from `real` to `unverified` (PR #40); production history reads
+  (`realHistoryFilter`) only count `source: 'real'` points. Spot-checked: a live product's
+  "lowest" date landed on an earlier real date (19 Nov), not "today", consistent with genuine
+  ongoing scraping rather than a same-day synthetic point.
+- **(f) Implausible "-53%" headline deal.** **Fixed by design, not reproduced.** `drops()`
+  now requires `dealEligible` (≥5 real observations over ≥7 days). Live homepage currently shows
+  a modest, plausible headline deal ("-7% this wk"); no wild percentage reproduced.
+- **(g) Confusing "Daraz 40 of 2,844" / "PriceOye 0 of about 24" counts.** **Not fixed.**
+  Re-tested live: `daraz: {scraped:240,total:2840}`, `priceoye: {scraped:0,total:24,
+  approximate:true}` — same shape, no explanatory copy added in the UI. Out of scope for this
+  phase's brief; still open for a future pass.
+- **(h) eBay/AliExpress need a manual "Check" button.** **Unchanged, by design** — same as
+  Phase 0's finding; this is the intended Decisions-log behavior, not a defect.
+- **(i) Footer "university final-year project" / "sample data" text.** **Fix drafted, not yet
+  live.** PR #41 removes this and adds Methodology/Privacy/Terms/Contact/Affiliate-disclosure
+  pages, but it is **open awaiting ali's copy review** per the brief ("put the drafts in one PR
+  so I can review the copy") — re-tested live and the old text is still being served today,
+  exactly as expected until that PR merges.
+- **(j) Empty server-rendered HTML; no robots.txt/sitemap.xml.** **Fixed for robots.txt/
+  sitemap.xml** — both now return real content live (`robots.txt`: `Allow: /`, disallows
+  account pages, points to the sitemap; `sitemap.xml`: valid XML with the static pages). One
+  operational catch found during re-test: at the moment of testing, the sitemap's product URLs
+  were empty (only the 6 static paths) even though `/api/products/trending?limit=300` itself
+  returned 262 products when called directly — `sitemap.ts`'s best-effort fetch (PR #42, limit
+  raised 30→300) most likely hit Render's free-tier cold-start delay before the ISR revalidation
+  completes; it is designed to fail soft rather than break the whole sitemap, and should include
+  products again on its next hourly regeneration. The broader server-rendered-empty-HTML finding
+  itself (client-rendered product/price content) is **unchanged** — not in this phase's scope.
+
+---
+
 ## 4. Known issues — verified or disproven with evidence
 
 **a. "iPhone 15 pro max" returns "iPhone 18 Pro Max" / "iPhone 17 Pro".** **CONFIRMED, live, just now.**
