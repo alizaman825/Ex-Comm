@@ -9,6 +9,7 @@ import { fetcher } from "@/lib/api";
 import { PLATFORM_COLOR, PLATFORM_LABEL, formatDate, formatPercent, formatPrice } from "@/lib/format";
 import type { HistoryResponse, Platform } from "@/lib/types";
 import { EmptyState, ErrorState, Skeleton } from "@/components/ui/primitives";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 const RANGES = [7, 30, 90] as const;
 
@@ -84,12 +85,9 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
   return (
     <section className="card card-pad" aria-labelledby="history-heading" data-testid="price-chart">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-        <h2 id="history-heading" className="heading-numeral t-h2">
-          <span className="t-numeral pointer-events-none select-none" aria-hidden="true">
-            03
-          </span>
-          Price history
-        </h2>
+        <SectionHeading number="03" className="mb-0">
+          <span id="history-heading">Price history</span>
+        </SectionHeading>
         <div className="inline-flex rounded-full border border-white/[0.18] bg-white/[0.08] p-1" role="group" aria-label="History range">
           {RANGES.map((r) => (
             <button
@@ -110,7 +108,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
           <ErrorState title="Could not load price history" onRetry={() => mutate()} className="border-0 shadow-none" />
         ) : isLoading && !data ? (
           <div role="status" aria-label="Loading price history" className="space-y-4">
-            <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5">
+            <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}>
               {Array.from({ length: 5 }, (_, i) => (
                 <Skeleton key={i} className="h-[74px]" />
               ))}
@@ -122,7 +120,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
         ) : (
           <>
             {data.summary && (
-              <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-3 lg:grid-cols-5" data-testid="history-summary">
+              <div className="grid gap-2.5" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }} data-testid="history-summary">
                 <Stat label="Current (lowest)" value={formatPrice(data.summary.current)} />
                 <Stat label="Lowest in period" value={formatPrice(data.summary.lowest)} sub={formatDate(data.summary.lowestDate)} tone="good" />
                 <Stat label="Highest in period" value={formatPrice(data.summary.highest)} />
@@ -132,14 +130,50 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
             )}
             <div className="chart-draw mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${data.series.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
               <ResponsiveContainer width="100%" height="100%">
-                <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 0, left: 0 }}>
+                <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke="rgb(var(--slate-200))" strokeDasharray="3 3" vertical={false} />
-                  <XAxis dataKey="date" tickFormatter={shortDate} tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }} tickLine={false} axisLine={{ stroke: "rgb(var(--slate-200))" }} minTickGap={32} />
-                  <YAxis tickFormatter={axisPrice} tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }} tickLine={false} axisLine={false} width={44} domain={["auto", "auto"]} />
+                  <XAxis
+                    dataKey="date"
+                    tickFormatter={shortDate}
+                    tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }}
+                    tickLine={false}
+                    axisLine={{ stroke: "rgb(var(--slate-200))" }}
+                    minTickGap={32}
+                    padding={{ left: 20, right: 20 }}
+                    tickMargin={10}
+                  />
+                  <YAxis
+                    tickFormatter={axisPrice}
+                    tick={{ fontSize: 12, fill: "rgb(var(--slate-500))" }}
+                    tickLine={false}
+                    axisLine={false}
+                    width={48}
+                    tickMargin={6}
+                    domain={["auto", "auto"]}
+                    padding={{ bottom: 16 }}
+                  />
                   <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(var(--slate-400))", strokeDasharray: "3 3" }} />
                   <Legend content={() => null} />
                   {data.series.map((s) => (
-                    <Line key={s.platform} type="monotone" dataKey={s.platform} name={PLATFORM_LABEL[s.platform]} stroke={PLATFORM_COLOR[s.platform]} strokeWidth={2.25} strokeDasharray={s.role === "supplier" ? "6 4" : undefined} dot={false} activeDot={{ r: 4 }} connectNulls hide={hidden.has(s.platform)} isAnimationActive={false} />
+                    <Line
+                      key={s.platform}
+                      type="monotone"
+                      dataKey={s.platform}
+                      name={PLATFORM_LABEL[s.platform]}
+                      stroke={PLATFORM_COLOR[s.platform]}
+                      strokeWidth={2.25}
+                      strokeDasharray={s.role === "supplier" ? "6 4" : undefined}
+                      // A series with only one data point draws no visible line (recharts needs >= 2
+                      // points to connect), and with dot={false} that single point was then rendered as
+                      // nothing at all — the store's line vanished entirely even though it was in the
+                      // legend and technically "present" in the data. Show a dot for that case so a
+                      // single-point (or otherwise sparse) series is still visible on the chart.
+                      dot={s.points.length < 2 ? { r: 3, fill: PLATFORM_COLOR[s.platform], strokeWidth: 0 } : false}
+                      activeDot={{ r: 4 }}
+                      connectNulls
+                      hide={hidden.has(s.platform)}
+                      isAnimationActive={false}
+                    />
                   ))}
                 </LineChart>
               </ResponsiveContainer>

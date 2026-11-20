@@ -326,7 +326,7 @@ export function CinematicProductView({ id }: { id: string }) {
         </p>
       )}
 
-      <div className="mt-10 grid gap-6 lg:grid-cols-2 lg:items-start">
+      <div className="mt-10 flex flex-col gap-6">
         <OfferTable listings={product.listings} />
         <PriceChart productId={product.id} hasSavedData={view.hasSaved} />
       </div>

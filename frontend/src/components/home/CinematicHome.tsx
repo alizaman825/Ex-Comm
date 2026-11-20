@@ -10,6 +10,7 @@ import { PLATFORM_LABEL, formatPrice } from "@/lib/format";
 import type { ProductCard as ProductCardData } from "@/lib/types";
 import { CategoryIcon, ProductImage } from "@/components/product/ProductImage";
 import { CineSearchBar } from "./CineSearchBar";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 /**
  * The home page — a literal port of the approved concept board (Main.dc.html for mobile,
@@ -155,7 +156,7 @@ function DropsSection() {
   return (
     <section className="px-5 pb-6 pt-1 sm:px-6 lg:px-10 lg:pb-14">
       <div className="mx-auto max-w-[85rem]">
-        <p className="spec-label mb-3 text-[9.5px] text-white/60 sm:mb-4 lg:text-[10.5px]">02 — Biggest price drops today</p>
+        <SectionHeading number="02">Biggest price drops today</SectionHeading>
         <div className="-mx-5 flex gap-3.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:grid lg:grid-cols-4 lg:gap-[18px] lg:overflow-visible [&::-webkit-scrollbar]:hidden">
           {isLoading && !data
             ? Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-[13.5rem] w-[9.4rem] shrink-0 !rounded-[1.25rem] sm:w-auto" aria-hidden />)
@@ -190,12 +191,16 @@ function CategoriesSection() {
   return (
     <section className="px-5 pb-8 pt-1 sm:px-6 lg:px-10 lg:pb-14">
       <div className="mx-auto max-w-[85rem]">
-        <div className="mb-3 flex items-center justify-between sm:mb-4">
-          <p className="spec-label text-[9.5px] text-white/60 lg:text-[10.5px]">03 — Shop by category</p>
-          <Link href="/categories" className="spec-label text-[9.5px] text-white/60 hover:text-white">
-            All categories →
-          </Link>
-        </div>
+        <SectionHeading
+          number="03"
+          action={
+            <Link href="/categories" className="spec-label shrink-0 text-[9.5px] text-white/60 hover:text-white">
+              All categories →
+            </Link>
+          }
+        >
+          Shop by category
+        </SectionHeading>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-6">
           {isLoading && !data
             ? Array.from({ length: 6 }, (_, i) => <div key={i} className="skeleton h-[7.5rem] !rounded-[1.25rem]" aria-hidden />)
@@ -227,7 +232,7 @@ function TrendingSection() {
   return (
     <section className="px-5 pb-6 pt-1 sm:px-6 lg:px-10 lg:pb-14">
       <div className="mx-auto max-w-[85rem]">
-        <p className="spec-label mb-2.5 text-[9.5px] text-white/60 sm:mb-3.5 lg:text-[10.5px]">04 — Trending searches</p>
+        <SectionHeading number="04">Trending searches</SectionHeading>
         <div className="grid grid-cols-2 gap-2.5 sm:grid-cols-4 lg:grid-cols-8">
           {isLoading && !data
             ? Array.from({ length: 8 }, (_, i) => <div key={i} className="skeleton h-28 !rounded-2xl lg:h-36" aria-hidden />)
@@ -246,12 +251,16 @@ function BestDealsPreview() {
   return (
     <section className="px-5 pb-8 pt-1 sm:px-6 lg:px-10 lg:pb-16">
       <div className="mx-auto max-w-[85rem]">
-        <div className="mb-3 flex items-center justify-between sm:mb-4">
-          <p className="spec-label text-[9.5px] text-white/60 lg:text-[10.5px]">05 — Best deals preview</p>
-          <Link href="/best-deals" className="spec-label text-[9.5px] text-white/60 hover:text-white">
-            Browse best deals →
-          </Link>
-        </div>
+        <SectionHeading
+          number="05"
+          action={
+            <Link href="/best-deals" className="spec-label shrink-0 text-[9.5px] text-white/60 hover:text-white">
+              Browse best deals →
+            </Link>
+          }
+        >
+          Best deals preview
+        </SectionHeading>
         <div className="-mx-5 flex gap-3.5 overflow-x-auto px-5 pb-1 [scrollbar-width:none] sm:mx-0 sm:px-0 lg:grid lg:grid-cols-4 lg:gap-[18px] lg:overflow-visible [&::-webkit-scrollbar]:hidden">
           {isLoading && !data
             ? Array.from({ length: 4 }, (_, i) => <div key={i} className="skeleton h-[13.5rem] w-[9.4rem] shrink-0 !rounded-[1.25rem] sm:w-auto" aria-hidden />)

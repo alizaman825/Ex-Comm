@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { PLATFORM_COLOR, PLATFORM_LABEL, formatPrice, formatUsd, timeAgo } from "@/lib/format";
 import type { Listing, Platform } from "@/lib/types";
 import { ConditionBadge, DataSourceBadge, Rating } from "./badges";
+import { SectionHeading } from "@/components/ui/SectionHeading";
 
 interface SellerGroup {
   platform: Platform;
@@ -56,12 +57,9 @@ export function OfferTable({ listings }: { listings: Listing[] }) {
 
   return (
     <section className="glass-panel rounded-[1.1rem] p-4 sm:p-5" aria-labelledby="offers-heading" data-testid="offer-table">
-      <h2 id="offers-heading" className="heading-numeral mb-1">
-        <span className="t-numeral pointer-events-none select-none !text-[1.75rem] sm:!text-[2rem]" aria-hidden="true">
-          02
-        </span>
-        <span className="spec-label text-[10.5px]">Compare across stores</span>
-      </h2>
+      <SectionHeading number="02" className="mb-1">
+        <span id="offers-heading">Compare across stores</span>
+      </SectionHeading>
       <p className="mb-4 text-[12.5px] text-white/55">
         Prices for this product, lowest first. AliExpress and eBay are shown as supplier prices for sellers; eBay listings can be new, used or refurbished, shown above.
       </p>
