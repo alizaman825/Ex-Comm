@@ -1,6 +1,9 @@
 # Status
 
-_Last updated: 2026-11-21 — Phase 3: live-site review fixes (PR #57)_
+_Last updated: 2026-11-21 — Phase 3 backfill: pre-fix Telex/Mega orphans re-matched (PR #58)_
+
+## Built
+- **Backfill for pre-fix Telex/Mega matching orphans (2026-11-21), PR #58:** PR #57's C1/C4 fix only prevents the Telex/Mega matching bug going forward - a product already created as an unmatched duplicate before the fix (ali's exact "Apple iPhone 18 Pro" scenario) stays a duplicate until something re-matches it. `backend/scripts/backfill-telex-mega-matching.js` finds every product whose listings are all telex/mega (never matched to anything else), re-runs the same exact-then-fuzzy match the sync jobs now use, and moves its listing(s) + matching `PriceHistory` rows onto the established product it should have joined. Nothing deleted (hard limit 4) - the orphan is left with zero listings, already invisible to search/trending/drops the same way any zero-listing product is; no new "hidden"/"merged" field needed. Dry run reviewed first (36 orphan products checked, 16 sane listing merges, e.g. "Samsung Galaxy A55 Dual Sim with Official Warranty" -> "Samsung Galaxy A55") before applying. Applied on production: **moved 16 listings**. Verified live: "Infinix Note 60" now shows 3 stores tracked including Telex.pk as the cheapest. Same `workflow_dispatch` + `MONGO_URI` secret pattern as the existing `cleanup-mismatched-listings.js`/`.yml`.
 
 ## Built
 - **Phase 3: fixes from ali's live-site review (2026-11-21), PR #57 (`claude/project-thread-7mtvzo` → `main`):** autonomous pass over ali's Phase 3 brief. Part C treated as top priority per ali's urgent follow-up (the live "Apple iPhone 18 Pro" card showing only Daraz/PriceOye while a Telex product page listed it in stock).
