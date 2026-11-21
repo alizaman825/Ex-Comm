@@ -34,6 +34,10 @@ export const kindOf = (data: SearchResponse): Kind => (data.demoMode ? "demo" : 
 
 export function bannerMessage(data: SearchResponse): string {
   if (data.demoMode) return "Demo mode: live store search is switched off, so you are seeing saved data.";
+  // Phase 4 Part A1: a brand-new query (no cache entry yet) answers instantly from saved data (if any)
+  // while Daraz/PriceOye are checked in the background - say so plainly rather than the fallback
+  // "could not be checked" wording below, which would otherwise be shown while that check is still running.
+  if (data.liveStatus === "pending") return data.total > 0 ? "Showing saved results while we check Daraz and PriceOye live for this search…" : "This is a new search - checking Daraz and PriceOye now…";
   if (data.source === "live") return `Live results from the stores, checked ${timeAgo(data.fetchedAt)}.`;
   if (data.source === "cache") return `Live results from the stores, checked ${timeAgo(data.fetchedAt)}. Prices may have changed since: refresh to check the stores again.`;
   return "The stores could not be checked just now, so you are seeing saved data. Prices may be out of date.";

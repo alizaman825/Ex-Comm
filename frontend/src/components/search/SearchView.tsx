@@ -192,6 +192,16 @@ export function SearchView() {
               </div>
               <ProductGridSkeleton count={PAGE_SIZE} />
             </div>
+          ) : data && data.total === 0 && data.liveStatus === "pending" ? (
+            // Phase 4 Part A1: a brand-new query with no saved match yet, DB check back instantly but the
+            // live Daraz/PriceOye check is still running in the background (polled via refreshInterval
+            // above) - never show "No results found" while that check hasn't actually finished.
+            <div className="space-y-4" data-testid="pending-live-search">
+              <div className="flex items-center gap-2.5 rounded-full bg-surface px-5 py-3 text-sm text-slate-600 shadow-card" role="status">
+                <Loader2 className="h-4 w-4 animate-spin text-brand-600" aria-hidden /> This is a new search - checking Daraz and PriceOye live. This can take a few seconds.
+              </div>
+              <ProductGridSkeleton count={PAGE_SIZE} />
+            </div>
           ) : data && data.total === 0 ? (
             <NoResults query={state.q} filterCount={filterCount} onReset={reset} />
           ) : data ? (
