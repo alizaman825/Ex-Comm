@@ -146,6 +146,31 @@ const config = {
     liveBudgetMs: Number(process.env.SEARCH_LIVE_BUDGET_MS) || 25000, // slow connections need time for up to 4 polite requests per store
     maxIngestPerPlatform: 40, // one full store page: nothing relevant on it is dropped
     rateLimitMax: Number(process.env.SEARCH_RATE_LIMIT_MAX) || 60,
+    // Phase 2 Part E (stale-while-revalidate): once a cached live result is older than cacheTtlMs but
+    // still younger than cacheTtlMs + staleWhileRevalidateMs, it is served immediately (with its real,
+    // unchanged fetchedAt - hard limit 8) while a refresh runs in the background for the NEXT request to
+    // pick up. 0 disables this and falls back to the old behaviour (a blocking re-scrape once the cache
+    // expires). Only applies when the cached entry actually has results - an empty result has nothing
+    // useful to serve stale, so it still blocks on emptyCacheTtlMs as before.
+    staleWhileRevalidateMs: Number(process.env.SEARCH_STALE_WHILE_REVALIDATE_MS) || 10 * 60 * 1000,
+    // Verbose per-search stage timings (db/scrape/total ms) to stdout, for measuring Part E's effect.
+    // Off by default (would be noisy in production logs); see scripts/bench-search.js.
+    logTiming: process.env.SEARCH_LOG_TIMING === 'true',
+    // How long a SearchCache document for a query nobody has searched in a long time is kept before
+    // Mongo's TTL monitor purges it (keeps the collection - and therefore every search's index scan -
+    // from growing forever on a long-running deployment). Entries still inside their normal ttl/SWR
+    // window are completely unaffected; this only prunes long-abandoned queries.
+    cacheRetentionDays: Number(process.env.SEARCH_CACHE_RETENTION_DAYS) || 14,
+  },
+  // Phase 2 Part E: short in-memory cache for the read-mostly homepage endpoints (trending, drops,
+  // categories, platforms) so a burst of concurrent visitors (or React re-renders) shares one DB read
+  // instead of each repeating it. Short enough that it never makes a price/listing look fresher than it
+  // is - the cached JSON's own lastScrapedAt/fetchedAt fields are computed once and never touched again,
+  // so a cache hit simply replays the same truthful snapshot a few seconds sooner.
+  homeCache: {
+    // Off in tests: several existing tests mutate data and immediately re-request the same endpoint
+    // expecting the change to show up, which a short-TTL cache would otherwise mask.
+    ttlMs: env === 'test' ? 0 : Number(process.env.HOME_CACHE_TTL_MS) || 30 * 1000,
   },
   scraper: {
     livePlatforms: (process.env.LIVE_PLATFORMS || 'daraz,priceoye').split(',').map((s) => s.trim()).filter(Boolean),

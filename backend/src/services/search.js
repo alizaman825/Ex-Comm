@@ -145,11 +145,17 @@ async function productsInOrder(ids) {
 async function search(params) {
   const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, limit = 24, live = true, refresh = false } = params;
   const parsed = parseQuery(q);
+  // Phase 2 Part E (E1): coarse stage timing, logged only when SEARCH_LOG_TIMING=true - see
+  // scripts/bench-search.js for the before/after numbers this produced.
+  const t0 = Date.now();
+  let tLive = t0;
+  let tDb = t0;
 
   let meta = { source: 'fallback', platformStatus: {}, fetchedAt: null };
   let liveInfo = null;
   if (parsed.tokens.length && live && !config.demoMode) {
     const attempt = await liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKeyOf(q) });
+    tLive = Date.now();
     if (attempt.anySuccess) {
       liveInfo = attempt;
       meta = { source: attempt.fetchedNow ? 'live' : 'cache', platformStatus: attempt.platformStatus, fetchedAt: attempt.fetchedAt };
@@ -157,6 +163,8 @@ async function search(params) {
       // no store answered: stored data is shown, with the reason for each store
       meta = { source: 'fallback', platformStatus: attempt.platformStatus, fetchedAt: null };
     }
+  } else {
+    tLive = Date.now();
   }
 
   const products = liveInfo ? await productsInOrder(liveInfo.productIds) : await localSearch(parsed, { category });
@@ -173,6 +181,7 @@ async function search(params) {
       listingsByProduct.get(k).push(l);
     }
   }
+  tDb = Date.now();
 
   // Filters apply to the offers of the selected platforms.
   const wanted = platform && platform.length ? new Set(platform) : null;
@@ -222,6 +231,14 @@ async function search(params) {
     const update = { $set: { query: q.trim().toLowerCase(), lastSearchedAt: new Date() }, $inc: { hits: 1 } };
     if (total > 0) update.$set.productIds = products.slice(0, 50).map((p) => p._id);
     await SearchCache.updateOne({ queryKey: queryKeyOf(q) }, update, { upsert: true });
+  }
+
+  if (config.search.logTiming) {
+    const tEnd = Date.now();
+    // eslint-disable-next-line no-console
+    console.log(
+      `[search-timing] q=${JSON.stringify(q)} source=${meta.source} liveMs=${tLive - t0} dbMs=${tDb - tLive} buildMs=${tEnd - tDb} totalMs=${tEnd - t0}`
+    );
   }
 
   return {
