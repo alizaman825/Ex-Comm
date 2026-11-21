@@ -114,7 +114,7 @@ function HeroVisual({ product }: { product: ProductDetail }) {
   return (
     <div className="relative flex h-[14rem] w-full max-w-[16rem] shrink-0 items-center justify-center sm:h-[18rem] sm:max-w-[18rem] lg:h-[22rem] lg:w-[22rem] lg:max-w-none">
       <div data-tilt className="relative flex h-full w-full items-center justify-center">
-        <ProductImage src={product.image} alt={product.title} category={product.category} className="h-[85%] w-[85%] drop-shadow-[0_30px_50px_rgba(0,0,0,0.4)]" />
+        <ProductImage src={product.image} alt={product.title} category={product.category} priority className="h-[85%] w-[85%] drop-shadow-[0_30px_50px_rgba(0,0,0,0.4)]" />
       </div>
       <span className="absolute left-2 top-4 rounded-full bg-emerald-400/90 px-3 py-1.5 text-xs font-extrabold text-[#06281c] sm:left-4">Lowest price</span>
       {product.priceChange7d <= -1 && (

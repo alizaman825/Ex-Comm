@@ -29,7 +29,8 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
           src={product.image}
           alt={product.title}
           category={product.category}
-          className={clsx("h-full w-full p-6 transition duration-500 ease-soft group-hover:scale-[1.07]", priority && "")}
+          priority={priority}
+          className="h-full w-full p-6 transition duration-500 ease-soft group-hover:scale-[1.07]"
         />
         <div className="absolute left-3 top-3 flex flex-col items-start gap-1.5">
           {lowest && spread > 0 && (

@@ -140,6 +140,93 @@ describe('fallback and cache', () => {
   });
 });
 
+describe('Phase 4 Part A2: fastLocal (opt-in fast local-first search)', () => {
+  test('a brand-new query with a matching local product returns it immediately, pending, and kicks off a background live check', async () => {
+    const spy = jest.fn(async () => []);
+    mockScrapers({ daraz: spy, priceoye: async () => [] });
+    const res = await get('q=galaxy a55&fastLocal=true');
+    expect(res.body.liveStatus).toBe('pending');
+    expect(res.body.source).toBe('fallback');
+    expect(res.body.results[0].title).toMatch(/A55/);
+    // the background check was kicked off (not awaited) - wait for it to actually finish before the
+    // next test's afterEach clears SearchCache, so it can never leak into another test.
+    await new Promise((r) => setTimeout(r, 50));
+    expect(spy).toHaveBeenCalled();
+  });
+
+  test('without fastLocal, the same cold query blocks on the live check as before (no behaviour change for other callers)', async () => {
+    const spy = jest.fn(async () => []);
+    mockScrapers({ daraz: spy, priceoye: async () => [] });
+    const res = await get('q=galaxy a55');
+    expect(res.body.liveStatus).toBeNull();
+    expect(res.body.source).toBe('live');
+  });
+
+  test('once a cache entry exists for the query, fastLocal defers to the normal (fast) cache path instead of forcing another local-only response', async () => {
+    mockScrapers({ daraz: async () => [], priceoye: async () => [] });
+    await get('q=galaxy a55'); // creates a cache entry (source: live, empty)
+    const res = await get('q=galaxy a55&fastLocal=true');
+    expect(res.body.liveStatus).toBeNull();
+    expect(['live', 'cache']).toContain(res.body.source);
+  });
+
+  test('a brand-new query with no matching local product falls through to the ordinary blocking live check', async () => {
+    mockScrapers({ daraz: async () => [], priceoye: async () => [] });
+    const res = await get('q=zzz nonexistent gadget 9999&fastLocal=true');
+    expect(res.body.liveStatus).toBeNull();
+  });
+});
+
+describe('Phase 4 Part C2: disambiguating identical card titles', () => {
+  const { disambiguateTitles, distinguishingSpec } = require('../src/services/search');
+
+  test('distinguishingSpec pulls a RAM/storage spec from the product\'s own titles', () => {
+    expect(distinguishingSpec({ title: 'Infinix Note 60', altTitles: ['Infinix Note 60 - 8GB RAM 256GB ROM'] })).toBe('8GB/256GB');
+    expect(distinguishingSpec({ title: 'Infinix Note 60', altTitles: [] })).toBeNull();
+  });
+
+  test('appends the spec only to cards whose title collides with another in the same list', () => {
+    const cards = [
+      { title: 'Infinix Note 60', _spec: '8GB/256GB' },
+      { title: 'Infinix Note 60', _spec: '12GB/512GB' },
+      { title: 'Infinix Note 60 Pro', _spec: '8GB/256GB' }, // no collision - left alone
+    ];
+    disambiguateTitles(cards);
+    expect(cards[0].title).toBe('Infinix Note 60 8GB/256GB');
+    expect(cards[1].title).toBe('Infinix Note 60 12GB/512GB');
+    expect(cards[2].title).toBe('Infinix Note 60 Pro');
+    expect(cards.every((c) => !('_spec' in c))).toBe(true); // internal field never leaks into the response
+  });
+
+  test('a collision with no spec on either side is left as-is - nothing invented', () => {
+    const cards = [{ title: 'Generic Gadget', _spec: null }, { title: 'Generic Gadget', _spec: null }];
+    disambiguateTitles(cards);
+    expect(cards[0].title).toBe('Generic Gadget');
+    expect(cards[1].title).toBe('Generic Gadget');
+  });
+
+  test('end-to-end: two stored products with the same title get distinguished in a search result', async () => {
+    const a = await Product.create({
+      title: 'Infinix Note 60', brand: 'Infinix', category: 'mobiles', searchKey: 'infinixnote60', matchKey: 'dup-test-a',
+      altTitles: ['Infinix Note 60 - 8GB RAM 256GB ROM'], minPrice: 100000, maxPrice: 100000, platforms: ['daraz'],
+    });
+    const b = await Product.create({
+      title: 'Infinix Note 60', brand: 'Infinix', category: 'mobiles', searchKey: 'infinixnote60', matchKey: 'dup-test-b',
+      altTitles: ['Infinix Note 60 - 12GB RAM 512GB ROM'], minPrice: 130000, maxPrice: 130000, platforms: ['daraz'],
+    });
+    await Listing.create({ productId: a._id, platform: 'daraz', externalId: 'dup-a', title: a.title, price: 100000, url: 'https://daraz.pk/a', currency: 'PKR', inStock: true, dataSource: 'live' });
+    await Listing.create({ productId: b._id, platform: 'daraz', externalId: 'dup-b', title: b.title, price: 130000, url: 'https://daraz.pk/b', currency: 'PKR', inStock: true, dataSource: 'live' });
+
+    const res = await get('q=infinix note 60&live=false');
+    const titles = res.body.results.filter((r) => r.id === String(a._id) || r.id === String(b._id)).map((r) => r.title);
+    expect(titles).toContain('Infinix Note 60 8GB/256GB');
+    expect(titles).toContain('Infinix Note 60 12GB/512GB');
+
+    await Product.deleteMany({ _id: { $in: [a._id, b._id] } });
+    await Listing.deleteMany({ productId: { $in: [a._id, b._id] } });
+  });
+});
+
 describe('live ingestion', () => {
   const daraz = [
     { platform: 'daraz', externalId: 'dz-1', title: 'Samsung Galaxy A55 5G - 8GB 256GB - PTA Approved', price: 118500, originalPrice: 130000, url: 'https://www.daraz.pk/products/a55-i1.html', image: 'https://img/a55.png', rating: 4.6, reviewCount: 120, currency: 'PKR', inStock: true },

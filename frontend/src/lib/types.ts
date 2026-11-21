@@ -114,6 +114,10 @@ export interface SearchResponse {
   estimatedTotal?: number;
   hasMore?: boolean;
   fetchedAt: string | null;
+  /** Phase 4 Part A2: 'pending' means these are database results shown while a first-ever live check for
+   * this query runs in the background (sent only when the request asked for fastLocal) - poll again
+   * shortly for the live update. */
+  liveStatus?: "pending" | null;
   platformStatus: Partial<Record<Platform, PlatformStatus>>;
   total: number;
   page: number;

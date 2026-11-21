@@ -36,9 +36,18 @@ export function SearchView() {
 
   const tooShort = state.q.length > 0 && state.q.length < 2 && !state.category;
   const hasQuery = Boolean((state.q && !tooShort) || state.category);
-  const queryParams = { q: state.q, category: state.category, platform: state.platform.join(","), minPrice: state.minPrice, maxPrice: state.maxPrice, minRating: state.minRating, sort: state.sort, page: state.page, pageSize: PAGE_SIZE, limit: state.show };
+  // Phase 4 Part A2: fastLocal asks the server to answer from the database immediately for a brand-new
+  // query (instead of blocking on Daraz/PriceOye) while it checks the stores in the background; while the
+  // response says that check is still pending, poll again shortly so the live results replace it as soon
+  // as they land - never show only skeletons while local results already exist.
+  const queryParams = { q: state.q, category: state.category, platform: state.platform.join(","), minPrice: state.minPrice, maxPrice: state.maxPrice, minRating: state.minRating, sort: state.sort, page: state.page, pageSize: PAGE_SIZE, limit: state.show, fastLocal: true };
   const key = hasQuery ? (["/search", queryParams] as const) : null;
-  const { data, error, isLoading, isValidating, mutate } = useSWR<SearchResponse>(key, fetcher as never, { keepPreviousData: true, revalidateOnFocus: false, shouldRetryOnError: false });
+  const { data, error, isLoading, isValidating, mutate } = useSWR<SearchResponse>(key, fetcher as never, {
+    keepPreviousData: true,
+    revalidateOnFocus: false,
+    shouldRetryOnError: false,
+    refreshInterval: (latest) => (latest?.liveStatus === "pending" ? 900 : 0),
+  });
 
   // Ask the server to check the stores again (it ignores any earlier live result), then show the new results.
   async function refresh() {
