@@ -12,5 +12,6 @@ module.exports = {
   Setting: require('./Setting'),
   JobRun: require('./JobRun'),
   Report: require('./Report'),
+  ContactMessage: require('./ContactMessage'),
   PLATFORMS: require('./plugins').PLATFORMS,
 };

@@ -41,7 +41,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="t-h3">How long we keep information</h2>
           <p className="mt-2">
-            Account data is kept while your account is active. You can delete your account at any time from your <a href="/profile" className="underline">Profile</a> page, or by contacting us through the Contact form and we will delete it for you. Reports are kept long enough to act on them and then as a record of the issue.
+            Account data is kept while your account is active. You can delete your account at any time from your <a href="/profile" className="underline">Profile</a> page, or contact us through the <a href="/contact" className="underline">Contact</a> form and we will delete your account. Reports are kept long enough to act on them and then as a record of the issue.
           </p>
         </section>
 

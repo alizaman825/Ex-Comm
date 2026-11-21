@@ -32,3 +32,9 @@ services:
         sync: false # optional: free keys at developer.ebay.com; leave unset to disable "Check on eBay"
       - key: EBAY_CLIENT_SECRET
         sync: false
+      - key: CONTACT_RECIPIENT_EMAIL
+        sync: false # the owner's own inbox (see docs/DEPLOY.md); leave unset to disable the email notification
+      - key: CONTACT_IP_HASH_SALT
+        generateValue: true
+      - key: RESEND_API_KEY
+        sync: false # optional: free key at resend.com; leave unset to disable the email notification
