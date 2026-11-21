@@ -7,7 +7,7 @@ export default function PrivacyPage() {
     <div className="page max-w-3xl">
       <header className="mb-10">
         <h1 className="t-h1">Privacy policy</h1>
-        <p className="t-lead mt-3">Last updated: [OWNER TO CONFIRM — set the date this page goes live].</p>
+        <p className="t-lead mt-3">Last updated: 21 November 2026.</p>
       </header>
 
       <div className="prose-section space-y-8 text-sm leading-relaxed text-slate-700">
@@ -41,14 +41,14 @@ export default function PrivacyPage() {
         <section>
           <h2 className="t-h3">How long we keep information</h2>
           <p className="mt-2">
-            Account data is kept while your account is active. You can delete your account at any time from [OWNER TO CONFIRM — link to account deletion, once that feature exists] / by contacting us (see <a href="/contact" className="underline">Contact</a>). Reports are kept long enough to act on them and then as a record of the issue.
+            Account data is kept while your account is active. You can delete your account at any time from your <a href="/profile" className="underline">Profile</a> page, or by contacting us through the Contact form and we will delete it for you. Reports are kept long enough to act on them and then as a record of the issue.
           </p>
         </section>
 
         <section>
           <h2 className="t-h3">Your rights</h2>
           <p className="mt-2">
-            You can ask to see, correct or delete the personal information we hold about you by contacting us (see <a href="/contact" className="underline">Contact</a>). [OWNER TO CONFIRM — if Ex-Comm is registered or required to register under Pakistan&apos;s data protection rules, add the specific legal basis and any regulator contact here; do not state a legal status we haven&apos;t confirmed.]</p>
+            You can ask to see, correct or delete the personal information we hold about you by contacting us through the <a href="/contact" className="underline">Contact</a> form, or by using the account tools on your Profile page. Ex-Comm is operated by an individual in Pakistan, not a registered company; we make no claim about registration under, or compliance with, any specific data protection law.</p>
         </section>
 
         <section>
@@ -59,7 +59,7 @@ export default function PrivacyPage() {
         <section>
           <h2 className="t-h3">Contact</h2>
           <p className="mt-2">
-            Questions about this policy go to [OWNER TO CONFIRM — contact email/address] or via our <a href="/contact" className="underline">Contact page</a>.
+            Questions about this policy go through our <a href="/contact" className="underline">Contact page</a>.
           </p>
         </section>
       </div>

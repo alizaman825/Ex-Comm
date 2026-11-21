@@ -6,6 +6,7 @@ import clsx from "clsx";
 import { PLATFORM_LABEL, PLATFORM_ROLE } from "@/lib/format";
 import { PLATFORMS, SUPPLIER_PLATFORMS, activeFilterCount, priceRangeError, type SearchState } from "@/lib/search";
 import type { Category, Platform } from "@/lib/types";
+import { usePlatforms } from "@/lib/hooks";
 import { PlatformDot } from "@/components/product/badges";
 
 interface Props {
@@ -15,6 +16,9 @@ interface Props {
   onReset: () => void;
   /** supplier platforms (AliExpress, eBay) to list as a store filter: only once checked for this search */
   checkedSuppliers?: Platform[];
+  /** false when the caller already shows a "Filters" title of its own (the mobile Drawer's header),
+   * so this component doesn't repeat it. Default true for the desktop sidebar, which has no other title. */
+  showTitle?: boolean;
 }
 
 const RATINGS = [
@@ -77,8 +81,12 @@ function PriceRange({ state, onChange }: Pick<Props, "state" | "onChange">) {
   );
 }
 
-export function Filters({ state, categories, onChange, onReset, checkedSuppliers = [] }: Props) {
+export function Filters({ state, categories, onChange, onReset, checkedSuppliers = [], showTitle = true }: Props) {
   const count = activeFilterCount(state);
+  const { data: platformsData } = usePlatforms();
+  // A store with zero current listings (C4) is left out of the filter entirely - nothing in it for the
+  // user to filter to. Unknown while loading / on error: don't hide anything rather than hide everything.
+  const noListings = new Set((platformsData?.platforms ?? []).filter((p) => !p.hasListings).map((p) => p.id));
 
   function togglePlatform(p: Platform) {
     const next = state.platform.includes(p) ? state.platform.filter((x) => x !== p) : [...state.platform, p];
@@ -88,9 +96,13 @@ export function Filters({ state, categories, onChange, onReset, checkedSuppliers
   return (
     <div>
       <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-base font-semibold text-white/90">
-          Filters{count > 0 && <span className="ml-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-onbrand">{count}</span>}
-        </h2>
+        {showTitle ? (
+          <h2 className="text-base font-semibold text-white/90">
+            Filters{count > 0 && <span className="ml-2 rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-onbrand">{count}</span>}
+          </h2>
+        ) : (
+          count > 0 && <span className="rounded-full bg-brand-600 px-2 py-0.5 text-xs font-semibold text-onbrand">{count} active</span>
+        )}
         {count > 0 && (
           <button type="button" onClick={onReset} className="inline-flex items-center gap-1 text-xs font-medium text-brand-500 hover:underline">
             <RotateCcw className="h-3 w-3" aria-hidden /> Clear all
@@ -111,7 +123,7 @@ export function Filters({ state, categories, onChange, onReset, checkedSuppliers
                 onClick={() => onChange({ category: c.slug })}
                 className={clsx(
                   "flex w-full items-center justify-between rounded-2xl px-3 py-2 text-left text-sm transition",
-                  active ? "bg-white/15 font-semibold text-white ring-1 ring-white/20" : "text-white/65 hover:bg-white/10"
+                  active ? "bg-white/15 font-semibold text-white ring-1 ring-white/20" : "text-white/85 hover:bg-white/10"
                 )}
               >
                 {c.name}
@@ -123,12 +135,12 @@ export function Filters({ state, categories, onChange, onReset, checkedSuppliers
 
       <Section title="Store">
         <div className="space-y-2.5">
-          {PLATFORMS.filter((p) => !SUPPLIER_PLATFORMS.includes(p) || checkedSuppliers.includes(p) || state.platform.includes(p)).map((p) => (
-            <label key={p} className="flex cursor-pointer items-center gap-3 text-sm text-white/75">
+          {PLATFORMS.filter((p) => (!SUPPLIER_PLATFORMS.includes(p) || checkedSuppliers.includes(p) || state.platform.includes(p)) && (!noListings.has(p) || state.platform.includes(p))).map((p) => (
+            <label key={p} className="flex cursor-pointer items-center gap-3 text-sm text-white/85">
               <input type="checkbox" checked={state.platform.includes(p)} onChange={() => togglePlatform(p)} className="h-4 w-4 rounded border-white/30 bg-white/10" />
               <PlatformDot platform={p} />
               {PLATFORM_LABEL[p]}
-              {PLATFORM_ROLE[p] === "supplier" && <span className="text-xs text-white/45">(supplier)</span>}
+              {PLATFORM_ROLE[p] === "supplier" && <span className="text-xs text-white/70">(supplier)</span>}
             </label>
           ))}
         </div>
@@ -141,7 +153,7 @@ export function Filters({ state, categories, onChange, onReset, checkedSuppliers
       <Section title="Customer rating">
         <div className="space-y-2.5" role="radiogroup" aria-label="Minimum rating">
           {RATINGS.map((r) => (
-            <label key={r.label} className="flex cursor-pointer items-center gap-3 text-sm text-white/75">
+            <label key={r.label} className="flex cursor-pointer items-center gap-3 text-sm text-white/85">
               <input type="radio" name="min-rating" checked={state.minRating === r.value} onChange={() => onChange({ minRating: r.value })} className="h-4 w-4 border-white/30 bg-white/10" />
               {r.label}
             </label>

@@ -4,7 +4,7 @@ import Link from "next/link";
 import useSWR from "swr";
 import clsx from "clsx";
 import { fetcher } from "@/lib/api";
-import { useCategories } from "@/lib/hooks";
+import { useCategories, usePlatforms } from "@/lib/hooks";
 import { ArrowRight } from "lucide-react";
 import { PLATFORM_LABEL, formatPrice } from "@/lib/format";
 import type { ProductCard as ProductCardData } from "@/lib/types";
@@ -46,7 +46,7 @@ function HeroVisual({ product, variant }: { product: ProductCardData | undefined
   const isMobile = variant === "mobile";
   const sizeCls = isMobile ? "aspect-square w-40" : "aspect-square w-[22rem]";
   const visibilityCls = isMobile ? "flex lg:hidden" : "hidden lg:flex";
-  const badgeTextCls = isMobile ? "text-[9.5px] px-2.5 py-1" : "text-[11px] px-3 py-1.5";
+  const badgeTextCls = isMobile ? "text-xs px-2.5 py-1" : "text-xs px-3 py-1.5";
   const badgeTopCls = isMobile ? "left-1 top-3" : "left-2 top-6";
   const badgeBottomCls = isMobile ? "bottom-3 right-1" : "bottom-6 right-2";
 
@@ -68,6 +68,9 @@ function HeroVisual({ product, variant }: { product: ProductCardData | undefined
 function Hero() {
   const { data } = useDrops(1);
   const top = data?.products[0];
+  const { data: platformsData } = usePlatforms();
+  // Computed, not hardcoded (C4): retail stores that currently have something listed.
+  const storeCount = (platformsData?.platforms ?? []).filter((p) => p.role === "retail" && p.hasListings).length;
 
   return (
     <section className="relative overflow-x-clip px-5 pb-10 pt-8 sm:px-6 lg:px-10 lg:pb-16 lg:pt-6">
@@ -75,9 +78,9 @@ function Hero() {
         <div className="min-w-0 flex-1">
           <div className="mb-1.5 flex items-end gap-2.5 sm:mb-2 sm:gap-3.5">
             <span className="t-numeral select-none text-[4rem] leading-[0.78] text-white/90 sm:text-[4.5rem] lg:text-[6rem]">01</span>
-            <span className="spec-label pb-2 text-[9.5px] leading-tight text-white/60 sm:pb-2.5 sm:text-[10.5px] lg:pb-3.5">
+            <span className="spec-label pb-2 text-xs leading-tight text-white/60 sm:pb-2.5 sm:text-xs lg:pb-3.5">
               Today&apos;s best drop
-              <br className="lg:hidden" /> {"  "}across 3 stores
+              <br className="lg:hidden" /> {"  "}across {storeCount > 0 ? storeCount : "every"} store{storeCount === 1 ? "" : "s"}
             </span>
           </div>
           <h1
@@ -89,7 +92,7 @@ function Hero() {
             EVERY STORE.
           </h1>
           <p className="mb-6 hidden max-w-[26rem] text-[14.5px] text-white/70 lg:block">
-            Daraz, PriceOye and more, compared live — plus AliExpress as a checked, saved reference.
+            Daraz and PriceOye prices, checked and synced regularly — plus AliExpress and eBay as checked, saved reference prices.
           </p>
 
           <div className="mb-5 flex justify-center lg:hidden">
@@ -121,14 +124,14 @@ function CategoryChips() {
   const cats = data?.categories?.length ? data.categories.slice(0, 4) : CHIP_FALLBACK;
   return (
     <div className="-mx-5 mt-5 flex gap-2 overflow-x-auto px-5 pb-1 [scrollbar-width:none] lg:hidden [&::-webkit-scrollbar]:hidden">
-      <Link href="/categories" className="shrink-0 whitespace-nowrap rounded-full bg-white px-3.5 py-1.5 text-[11.5px] font-bold text-[#0b0812]">
+      <Link href="/categories" className="flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full bg-white px-3.5 py-1.5 text-xs font-bold text-[#0b0812]">
         All
       </Link>
       {cats.map((c) => (
         <Link
           key={c.slug}
           href={`/search?category=${c.slug}`}
-          className="shrink-0 whitespace-nowrap rounded-full border border-white/25 bg-white/[0.12] px-3.5 py-1.5 text-[11.5px] font-semibold text-white"
+          className="flex min-h-11 shrink-0 items-center whitespace-nowrap rounded-full border border-white/25 bg-white/[0.12] px-3.5 py-1.5 text-xs font-semibold text-white"
         >
           {c.name}
         </Link>
@@ -150,10 +153,10 @@ function DropCard({ product }: { product: ProductCardData }) {
     >
       <div data-tilt className="relative mb-3 flex h-[7.5rem] items-center justify-center">
         <ProductImage src={product.image} alt={product.title} category={product.category} className="h-full w-full" />
-        <span className={clsx("absolute bottom-1 left-1 rounded-full px-2 py-[3px] text-[9.5px] font-extrabold", badge.cls)}>{badge.text}</span>
+        <span className={clsx("absolute bottom-1 left-1 rounded-full px-2 py-[3px] text-xs font-extrabold", badge.cls)}>{badge.text}</span>
       </div>
       <p className="mb-1 line-clamp-1 text-[12px] font-bold text-white">{product.title}</p>
-      <p className="spec-label mb-1 text-[9.5px] text-white/60">
+      <p className="spec-label mb-1 text-xs text-white/60">
         {low ? PLATFORM_LABEL[low.platform] : "—"} · {low?.dataSource === "saved" ? "saved" : "lowest"}
       </p>
       <p className="t-price text-[13px] font-extrabold">{formatPrice(product.minPrice)}</p>
@@ -194,7 +197,7 @@ function CategoryTile({ slug, name, productCount }: { slug: string; name: string
         <CategoryIcon slug={slug} className="h-6 w-6 sm:h-7 sm:w-7" />
       </span>
       <span className="line-clamp-1 text-[12.5px] font-bold text-white">{name}</span>
-      <span className="spec-label text-[9px] text-white/50">{productCount} products</span>
+      <span className="spec-label text-xs text-white/75">{productCount} products</span>
     </Link>
   );
 }
@@ -208,7 +211,7 @@ function CategoriesSection() {
         <SectionHeading
           number="03"
           action={
-            <Link href="/categories" className="spec-label shrink-0 text-[9.5px] text-white/60 hover:text-white">
+            <Link href="/categories" className="spec-label flex min-h-11 shrink-0 items-center text-xs text-white/80 hover:text-white">
               All categories →
             </Link>
           }
@@ -234,8 +237,9 @@ function TrendingTile({ product }: { product: ProductCardData }) {
       <div className="mb-2 flex h-14 items-center justify-center lg:h-20">
         <ProductImage src={product.image} alt={product.title} category={product.category} className="h-full w-full" />
       </div>
-      <p className="mb-1 line-clamp-1 text-[11px] font-semibold text-white">{product.title}</p>
-      <span className={clsx("text-[9.5px] font-bold", badge.text === "Lowest" ? "text-emerald-300" : badge.text === "Saved" ? "text-indigo-200" : "text-rose-300")}>{badge.text}</span>
+      <p className="mb-1 line-clamp-2 text-xs font-semibold text-white">{product.title}</p>
+      <p className="t-price text-[13px] font-bold">{formatPrice(product.minPrice)}</p>
+      <span className={clsx("text-xs font-bold", badge.text === "Lowest" ? "text-emerald-300" : badge.text === "Saved" ? "text-indigo-200" : "text-rose-300")}>{badge.text}</span>
     </Link>
   );
 }
@@ -260,8 +264,10 @@ function TrendingSection() {
 /* ----------------------------------------------------- 05: best deals preview ----------------------------------------------------- */
 
 function BestDealsPreview() {
+  // Fetch past DropsSection's own top 4 and take the next 4, so the two sections never show the same
+  // products (both call the same "/products/drops" endpoint, sorted the same way).
   const { data, isLoading } = useDrops(8);
-  const products = data?.products ?? [];
+  const products = (data?.products ?? []).slice(4, 8);
   // Owner decision (2026-11-20): same deals rule as DropsSection - hide rather than show empty.
   if (!isLoading && !products.length) return null;
   return (
@@ -270,7 +276,7 @@ function BestDealsPreview() {
         <SectionHeading
           number="05"
           action={
-            <Link href="/best-deals" className="spec-label shrink-0 text-[9.5px] text-white/60 hover:text-white">
+            <Link href="/best-deals" className="spec-label flex min-h-11 shrink-0 items-center text-xs text-white/80 hover:text-white">
               Browse best deals →
             </Link>
           }

@@ -45,17 +45,17 @@ export function Footer() {
         <div className="grid gap-10 md:grid-cols-[1.4fr_repeat(4,1fr)]">
           <div>
             <Logo />
-            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/55">
+            <p className="mt-4 max-w-xs text-sm leading-relaxed text-white/70">
               Compare prices across Daraz, PriceOye, AliExpress and eBay, watch price history, and get alerted when a product drops to the price you want.
             </p>
           </div>
           {COLUMNS.map((col) => (
             <nav key={col.title} aria-label={col.title}>
               <h2 className="text-sm font-semibold text-white">{col.title}</h2>
-              <ul className="mt-4 space-y-2.5">
+              <ul className="mt-2">
                 {col.links.map((l) => (
                   <li key={l.href}>
-                    <Link href={l.href} className="text-sm text-white/55 transition hover:text-white">
+                    <Link href={l.href} className="flex min-h-11 items-center text-sm text-white/70 transition hover:text-white">
                       {l.label}
                     </Link>
                   </li>
@@ -64,7 +64,7 @@ export function Footer() {
             </nav>
           ))}
         </div>
-        <div className="mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-white/45 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-12 flex flex-col gap-2 border-t border-white/15 pt-6 text-xs text-white/65 sm:flex-row sm:items-center sm:justify-between">
           <p>© {new Date().getFullYear()} Ex-Comm.</p>
           <p>
             Prices are read from the stores or kept as a saved reference price — see our{" "}

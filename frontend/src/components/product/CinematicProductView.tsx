@@ -62,7 +62,10 @@ function ProductSkeleton() {
 
 function ContextBar({ product, lowestPrice }: { product: ProductDetail; lowestPrice: number }) {
   return (
-    <div className="glass-panel sticky top-[4.75rem] z-20 mb-6 flex items-center justify-between gap-3 rounded-full px-2 py-2 sm:px-3">
+    // Hidden below lg: this sticky bar duplicated the site's own fixed header as a second top bar on
+    // a phone screen (B5). Its back/wishlist actions are still reachable on mobile via the breadcrumb
+    // and the full Wishlist button lower in the hero.
+    <div className="glass-panel sticky top-[4.75rem] z-20 mb-6 hidden items-center justify-between gap-3 rounded-full px-2 py-2 sm:px-3 lg:flex">
       <Link
         href="/categories"
         aria-label="Back to results"
@@ -74,7 +77,7 @@ function ContextBar({ product, lowestPrice }: { product: ProductDetail; lowestPr
       <p className="min-w-0 flex-1 truncate text-center text-[12.5px] font-bold text-white sm:hidden">{product.title}</p>
       <span className="nav-wordmark hidden text-[18px] text-white sm:inline">EX·COMM</span>
       <div className="flex shrink-0 items-center gap-2">
-        <span className="spec-label hidden text-[10px] sm:inline">{formatPrice(lowestPrice)}</span>
+        <span className="spec-label hidden text-xs sm:inline">{formatPrice(lowestPrice)}</span>
         <WishlistButton productId={product.id} title={product.title} variant="icon" className="!h-9 !w-9 !bg-white !text-[#0b0812] hover:!scale-105" />
       </div>
     </div>
@@ -113,9 +116,9 @@ function HeroVisual({ product }: { product: ProductDetail }) {
       <div data-tilt className="relative flex h-full w-full items-center justify-center">
         <ProductImage src={product.image} alt={product.title} category={product.category} className="h-[85%] w-[85%] drop-shadow-[0_30px_50px_rgba(0,0,0,0.4)]" />
       </div>
-      <span className="absolute left-2 top-4 rounded-full bg-emerald-400/90 px-3 py-1.5 text-[11px] font-extrabold text-[#06281c] sm:left-4">Lowest price</span>
+      <span className="absolute left-2 top-4 rounded-full bg-emerald-400/90 px-3 py-1.5 text-xs font-extrabold text-[#06281c] sm:left-4">Lowest price</span>
       {product.priceChange7d <= -1 && (
-        <span className="absolute bottom-4 right-2 rounded-full bg-[#fcd34d]/95 px-3 py-1.5 text-[11px] font-extrabold text-[#3f2d05] sm:right-4">
+        <span className="absolute bottom-4 right-2 rounded-full bg-[#fcd34d]/95 px-3 py-1.5 text-xs font-extrabold text-[#3f2d05] sm:right-4">
           {Math.round(product.priceChange7d)}% this week
         </span>
       )}
@@ -160,7 +163,7 @@ function Hero({
         <div className="min-w-0 flex-1 text-center lg:text-left">
           <div className="mb-1.5 flex items-end justify-center gap-2.5 sm:gap-3.5 lg:justify-start">
             <span className="t-numeral select-none text-[3.5rem] leading-[0.78] text-white/90 sm:text-[4.5rem] lg:text-[5.5rem]">01</span>
-            <span className="spec-label pb-1.5 text-left text-[9.5px] leading-tight text-white/60 sm:pb-2.5 sm:text-[10.5px] lg:pb-3">
+            <span className="spec-label pb-1.5 text-left text-xs leading-tight text-white/60 sm:pb-2.5 sm:text-xs lg:pb-3">
               Lowest across
               <br />
               {storeCount} {storeCount === 1 ? "store" : "stores"} tracked
@@ -184,14 +187,23 @@ function Hero({
             <Rating value={product.rating} count={product.reviewCount} className="!text-white/70" />
           </div>
 
+          {/* On mobile, show the product photo right after the price (not after the spec grid/buy
+              buttons) so it's visible without scrolling at a 390x844 viewport - the lg+ layout
+              already puts the same photo in its own column via the HeroVisual sibling below. */}
+          <div className="mb-5 flex justify-center lg:hidden">
+            <HeroVisual product={product} />
+          </div>
+
           <SpecGrid product={product} categoryName={categoryName} storeCount={storeCount} />
 
           <div className="flex flex-wrap items-center justify-center gap-3 lg:justify-start">
+            {/* Hidden below lg: the fixed BuyBar at the bottom of the page already gives mobile/tablet
+                a "Buy at {store}" button, and showing both duplicated it on a 390px screen. */}
             <a
               href={cheapest.url}
               target="_blank"
               rel="noopener noreferrer"
-              className="flex items-center gap-2.5 rounded-full bg-white/[0.14] py-2.5 pl-5 pr-2.5 text-[13px] font-bold text-white"
+              className="hidden items-center gap-2.5 rounded-full bg-white/[0.14] py-2.5 pl-5 pr-2.5 text-[13px] font-bold text-white lg:flex"
             >
               {cheapest.dataSource === "saved" ? "View at" : "Buy at"} {PLATFORM_LABEL[cheapest.platform]} · {formatPrice(cheapest.price)}
               <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-white text-[#0b0812]">
@@ -204,7 +216,9 @@ function Hero({
           </div>
         </div>
 
-        <HeroVisual product={product} />
+        <div className="hidden lg:block">
+          <HeroVisual product={product} />
+        </div>
       </div>
     </section>
   );
@@ -220,7 +234,7 @@ function SimilarProducts({ id }: { id: string }) {
       <span className="t-numeral" aria-hidden>
         04
       </span>
-      <h2 id="similar-heading" className="spec-label mb-1 text-[10.5px]">
+      <h2 id="similar-heading" className="spec-label mb-1 text-xs">
         Compare with similar products
       </h2>
       <p className="mb-5 text-[13px] text-white/60">Not the same item? Add these to the compare tray to see them side by side.</p>
@@ -240,7 +254,7 @@ function BuyBar({ cheapest, platform, dataSource }: { cheapest: number; platform
         <p className="truncate text-[12px] font-bold text-white">
           {dataSource === "saved" ? "View at" : "Buy at"} {PLATFORM_LABEL[platform]}
         </p>
-        <p className="spec-label text-[9px]">{formatPrice(cheapest)} · lowest</p>
+        <p className="spec-label text-xs">{formatPrice(cheapest)} · lowest</p>
       </div>
       <span className="btn-round-arrow !h-9 !w-9">
         <ArrowRight className="h-4 w-4" aria-hidden strokeWidth={2.6} />

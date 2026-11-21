@@ -115,7 +115,7 @@ function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
             {l.multiVariant && <span className="mr-1 font-normal text-white/50">from</span>}
             {formatPrice(l.price)}
           </p>
-          <span className={clsx("text-[9px] font-bold", isLowest ? "text-[#6ee7b7]" : saved ? "text-indigo-200" : l.discountPct > 0 ? "text-rose-300" : "text-white/40")}>
+          <span className={clsx("text-xs font-bold", isLowest ? "text-[#6ee7b7]" : saved ? "text-indigo-200" : l.discountPct > 0 ? "text-rose-300" : "text-white/40")}>
             {isLowest ? "Lowest" : saved ? "Check live" : l.discountPct > 0 ? `+${l.discountPct}%` : "—"}
           </span>
         </div>
@@ -134,13 +134,16 @@ function OfferRow({ l, isLowest }: { l: Listing; isLowest: boolean }) {
           <StatusBadge status={l.status} lastScrapedAt={l.lastScrapedAt} className="!bg-white/10 !text-white/60" />
         </div>
         {l.discountPct > 0 && (
-          <p className="text-[11px] text-white/50">
-            <span className="line-through">{formatPrice(l.originalPrice)}</span> <span className="font-semibold text-emerald-300">{l.discountPct}% off</span>
+          // C3: this is the seller's own listed "before" price and discount claim on the store page,
+          // never something Ex-Comm checked or verified - labelled as such so the strike-through can't
+          // be read as Ex-Comm confirming a real discount.
+          <p className="text-xs text-white/50">
+            Seller&apos;s listed price: <span className="line-through">{formatPrice(l.originalPrice)}</span> <span className="font-semibold text-emerald-300">({l.discountPct}% off)</span>
           </p>
         )}
-        {l.role === "supplier" && l.priceUsd ? <span className="text-[11px] text-white/50">{formatUsd(l.priceUsd)} at the saved exchange rate</span> : null}
+        {l.role === "supplier" && l.priceUsd ? <span className="text-xs text-white/50">{formatUsd(l.priceUsd)} at the saved exchange rate</span> : null}
       </div>
-      {l.multiVariant && <p className="mt-1.5 text-[11px] text-amber-300">Has several options (size/colour/storage) — the price shown is for the cheapest one.</p>}
+      {l.multiVariant && <p className="mt-1.5 text-xs text-amber-300">Has several options (size/colour/storage) — the price shown is for the cheapest one.</p>}
 
       <a
         href={l.url}
@@ -172,9 +175,9 @@ function SellerGroupRow({ group, isLowest }: { group: SellerGroup; isLowest: boo
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-center gap-2">
             <span className="text-[12.5px] font-bold text-white">{PLATFORM_LABEL[group.platform]}</span>
-            {isLowest && <span className="text-[9px] font-bold text-[#6ee7b7]">Lowest</span>}
+            {isLowest && <span className="text-xs font-bold text-[#6ee7b7]">Lowest</span>}
             {group.role === "supplier" && <span className="badge-neutral !bg-white/10 !text-white/70">Supplier</span>}
-            <span className="text-[11px] text-white/50">{group.listings.length} sellers</span>
+            <span className="text-xs text-white/50">{group.listings.length} sellers</span>
           </div>
           <p className={clsx("mt-1 text-[13px] font-extrabold tabular-nums", isLowest ? "text-[#6ee7b7]" : "text-white")}>from {formatPrice(cheapest.price)}</p>
         </div>
@@ -187,10 +190,10 @@ function SellerGroupRow({ group, isLowest }: { group: SellerGroup; isLowest: boo
               <div className="flex flex-wrap items-start justify-between gap-x-4 gap-y-2">
                 <div className="min-w-0">
                   <p className="text-[12.5px] font-semibold text-white">{l.sellerName || PLATFORM_LABEL[l.platform]}</p>
-                  {l.sellerLocation && <p className="text-[11px] text-white/45">{l.sellerLocation}</p>}
+                  {l.sellerLocation && <p className="text-xs text-white/45">{l.sellerLocation}</p>}
                   <p className="mt-1 text-[13px] font-bold tabular-nums text-white">{formatPrice(l.price)}</p>
                 </div>
-                <a href={l.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-[11px] font-semibold text-white">
+                <a href={l.url} target="_blank" rel="noopener noreferrer" className="rounded-full border border-white/20 bg-white/10 px-3 py-1.5 text-xs font-semibold text-white">
                   Go to store <ExternalLink className="ml-1 inline h-3 w-3" aria-hidden />
                   <span className="sr-only">(opens in a new tab)</span>
                 </a>

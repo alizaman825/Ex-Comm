@@ -127,12 +127,14 @@ function StoresTable({ data }: { data: CompareResponse }) {
         </thead>
         <tbody className="divide-y divide-white/10">
           {row("Price", (l, i) => <span className={clsx("text-xl font-semibold tabular-nums", lowest.has(i) ? "text-emerald-400" : "text-ink")}>{formatPrice(l.price)}</span>)}
-          {row("Original price", (l) => <span className="tabular-nums text-slate-600">{l.originalPrice && l.originalPrice > l.price ? <span className="line-through">{formatPrice(l.originalPrice)}</span> : "–"}</span>)}
-          {row("Discount", (l) => (l.discountPct > 0 ? <span className="badge-success">{l.discountPct}% off</span> : <span className="text-slate-400">–</span>))}
+          {/* C3: the seller's own listed "before" price/discount claim on the store page, never
+              something Ex-Comm checked or verified. */}
+          {row("Seller's listed price", (l) => <span className="tabular-nums text-slate-600">{l.originalPrice && l.originalPrice > l.price ? <span className="line-through">{formatPrice(l.originalPrice)}</span> : "–"}</span>)}
+          {row("Seller's listed discount", (l) => (l.discountPct > 0 ? <span className="badge-success">{l.discountPct}% off</span> : <span className="text-slate-400">–</span>))}
           {row("Rating", (l, i) => (
             <span className="inline-flex items-center gap-1.5">
               <Rating value={l.rating} />
-              {ratings.has(i) && <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-300">Best</span>}
+              {ratings.has(i) && <span className="rounded bg-amber-400/20 px-1.5 py-0.5 text-xs font-bold uppercase tracking-wide text-amber-300">Best</span>}
             </span>
           ))}
           {row("Reviews", (l) => <span className="tabular-nums">{l.reviewCount ? l.reviewCount.toLocaleString("en-PK") : "–"}</span>)}

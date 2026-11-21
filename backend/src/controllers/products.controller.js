@@ -103,6 +103,19 @@ async function trending(req, res) {
   res.json({ products: await availableCardsFor(pool, limit) });
 }
 
+// A cheap accessory (phone case, cable, ...) swinging a few rupees can post a large *percentage* drop
+// that means nothing next to a real product's price cut; and a deal on something outside the launch
+// categories isn't one we're ready to promote yet. Both rules are configurable (config.deals), not
+// hardcoded, per the owner's ask (C1).
+function isPromotableDeal(product) {
+  const { minPrice, excludedKeywords, categories } = config.deals;
+  if (categories.length && !categories.includes(String(product.category || '').toLowerCase())) return false;
+  if ((product.minPrice ?? 0) < minPrice) return false;
+  const title = String(product.title || '').toLowerCase();
+  if (excludedKeywords.some((kw) => kw && title.includes(kw))) return false;
+  return true;
+}
+
 // GET /api/products/drops: biggest price drops over the last 7 days, in-stock only, and only products
 // with enough real history behind the number (owner decision, 2026-11-20: >=5 real observations over
 // >=7 days - services/productStats.js's dealEligible). Expect very few results while the catalog is
@@ -112,9 +125,9 @@ async function drops(req, res) {
   const { limit, category } = req.validQuery;
   const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 }, dealEligible: true })
     .sort({ priceChange7d: 1 })
-    .limit(limit * 3)
+    .limit(limit * 6)
     .lean();
-  res.json({ products: await availableCardsFor(pool, limit) });
+  res.json({ products: (await availableCardsFor(pool, limit * 6)).filter(isPromotableDeal).slice(0, limit) });
 }
 
 // GET /api/products/:id: product with every listing (and the user's wishlist/alert state if signed in).

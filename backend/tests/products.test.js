@@ -105,6 +105,29 @@ describe('product lists', () => {
     expect(changes).toEqual([...changes].sort((a, b) => a - b));
   });
 
+  test('drops quality rules (C1): excludes accessories, very low prices and categories outside the launch list', async () => {
+    const before = await request(app).get('/api/products/drops?limit=20');
+    expect(before.body.products.length).toBeGreaterThan(0);
+    const victim = before.body.products[0];
+
+    // An accessory title (keyword match) is excluded even though it otherwise qualifies.
+    await Product.updateOne({ _id: victim.id }, { $set: { title: `${victim.title} Case Cover` } });
+    let res = await request(app).get('/api/products/drops?limit=20');
+    expect(res.body.products.map((p) => p.id)).not.toContain(victim.id);
+    await Product.updateOne({ _id: victim.id }, { $set: { title: victim.title } });
+
+    // A category outside the configured launch list is excluded even though it otherwise qualifies.
+    await Product.updateOne({ _id: victim.id }, { $set: { category: 'fashion' } });
+    res = await request(app).get('/api/products/drops?limit=20');
+    expect(res.body.products.map((p) => p.id)).not.toContain(victim.id);
+    await Product.updateOne({ _id: victim.id }, { $set: { category: victim.category } });
+
+    // Confirm the restore actually brings it back, so the two assertions above are real exclusions,
+    // not an unrelated reason the product was already missing.
+    res = await request(app).get('/api/products/drops?limit=20');
+    expect(res.body.products.map((p) => p.id)).toContain(victim.id);
+  });
+
   test('similar suggests other products for manual comparison, never itself', async () => {
     const res = await request(app).get(`/api/products/${a55}/similar`);
     expect(res.status).toBe(200);

@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import useSWR from "swr";
-import { CartesianGrid, Legend, Line, LineChart, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
+import { CartesianGrid, Legend, Line, LineChart, ReferenceLine, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { LineChart as LineChartIcon } from "lucide-react";
 import clsx from "clsx";
 import { fetcher } from "@/lib/api";
@@ -19,7 +19,7 @@ const axisPrice = (v: number) => (v >= 1000 ? `${Math.round(v / 1000)}k` : Strin
 function Stat({ label, value, sub, tone }: { label: string; value: string; sub?: string; tone?: "good" | "bad" }) {
   return (
     <div className="rounded-2xl border border-white/[0.18] bg-white/[0.08] px-3 py-3 sm:px-4">
-      <p className="text-[11px] font-medium leading-snug text-white/55">{label}</p>
+      <p className="text-xs font-medium leading-snug text-white/55">{label}</p>
       <p
         className={clsx(
           "mt-0.5 whitespace-nowrap font-display text-[15px] font-bold tabular-nums sm:text-lg",
@@ -28,7 +28,7 @@ function Stat({ label, value, sub, tone }: { label: string; value: string; sub?:
       >
         {value}
       </p>
-      {sub && <p className="text-[11px] text-white/45">{sub}</p>}
+      {sub && <p className="text-xs text-white/45">{sub}</p>}
     </div>
   );
 }
@@ -74,11 +74,17 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
     return [...byDate.values()].sort((a, b) => (a.date < b.date ? -1 : 1));
   }, [data]);
 
+  // A store with nothing in the selected range shouldn't sit in the legend as a dead entry (C2) - and
+  // every array below (lines, legend, line-count a11y label) is built from this, never data.series
+  // directly, so it can never silently reappear.
+  const visibleSeries = useMemo(() => (data?.series ?? []).filter((s) => s.points.length > 0), [data]);
+  const firstObservedDate = rows[0]?.date as string | undefined;
+
   const toggle = (p: Platform) =>
     setHidden((cur) => {
       const next = new Set(cur);
       if (next.has(p)) next.delete(p);
-      else if (next.size < (data?.series.length ?? 1) - 1) next.add(p); // keep at least one line visible
+      else if (next.size < visibleSeries.length - 1) next.add(p); // keep at least one line visible
       return next;
     });
 
@@ -136,7 +142,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
                 Rs {Math.round(data.summary.median - data.summary.current).toLocaleString("en-PK")} below the {days}-day median, based on {data.summary.observations} real price checks over {data.summary.daysSpan} days.
               </p>
             )}
-            <div className="chart-draw mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${data.series.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
+            <div className="chart-draw mt-5 h-72 w-full" role="img" aria-label={`Price history over the last ${days} days for ${visibleSeries.map((s) => PLATFORM_LABEL[s.platform]).join(", ")}`}>
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 4, left: 4 }}>
                   <CartesianGrid stroke="rgb(var(--slate-200))" strokeDasharray="3 3" vertical={false} />
@@ -162,23 +168,32 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
                   />
                   <Tooltip content={<ChartTooltip />} cursor={{ stroke: "rgb(var(--slate-400))", strokeDasharray: "3 3" }} />
                   <Legend content={() => null} />
-                  {data.series.map((s) => (
+                  {firstObservedDate && (
+                    <ReferenceLine
+                      x={firstObservedDate}
+                      stroke="rgb(var(--slate-400))"
+                      strokeDasharray="4 4"
+                      label={{ value: `First checked ${shortDate(firstObservedDate)}`, position: "insideTopLeft", fontSize: 12, fill: "rgb(var(--slate-500))" }}
+                    />
+                  )}
+                  {visibleSeries.map((s) => (
                     <Line
                       key={s.platform}
-                      type="monotone"
+                      // Linear, not "monotone" (a smoothing spline) - these are real, discrete price
+                      // checks, not a continuous signal, and a smoothed curve between sparse points
+                      // implies more history than was actually observed (C2).
+                      type="linear"
                       dataKey={s.platform}
                       name={PLATFORM_LABEL[s.platform]}
                       stroke={PLATFORM_COLOR[s.platform]}
                       strokeWidth={2.25}
                       strokeDasharray={s.role === "supplier" ? "6 4" : undefined}
-                      // A series with only one data point draws no visible line (recharts needs >= 2
-                      // points to connect), and with dot={false} that single point was then rendered as
-                      // nothing at all — the store's line vanished entirely even though it was in the
-                      // legend and technically "present" in the data. Show a dot for that case so a
-                      // single-point (or otherwise sparse) series is still visible on the chart.
-                      dot={s.points.length < 2 ? { r: 3, fill: PLATFORM_COLOR[s.platform], strokeWidth: 0 } : false}
+                      // Every real data point gets a visible dot (not just sparse series) so the chart
+                      // reads as discrete checks, not an interpolated continuous line.
+                      dot={{ r: s.points.length < 2 ? 3 : 2.5, fill: PLATFORM_COLOR[s.platform], strokeWidth: 0 }}
                       activeDot={{ r: 4 }}
-                      connectNulls
+                      // No connectNulls: a date with no real check for this store is a real gap, not
+                      // something to paper over by drawing a line across it (C2).
                       hide={hidden.has(s.platform)}
                       isAnimationActive={false}
                     />
@@ -187,7 +202,7 @@ export function PriceChart({ productId, hasSavedData = false }: { productId: str
               </ResponsiveContainer>
             </div>
             <ul className="mt-3 flex flex-wrap gap-2" aria-label="Chart legend">
-              {data.series.map((s) => (
+              {visibleSeries.map((s) => (
                 <li key={s.platform}>
                   <button
                     type="button"

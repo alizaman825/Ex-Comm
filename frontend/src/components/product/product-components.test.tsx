@@ -117,7 +117,8 @@ describe("OfferTable", () => {
     expect(rows.map((r) => r.getAttribute("data-platform"))).toEqual(["priceoye", "daraz", "aliexpress"]); // retail by price, then supplier
     expect(within(rows[0]).getByText("Lowest")).toBeInTheDocument();
     expect(within(rows[1]).queryByText("Lowest")).not.toBeInTheDocument();
-    expect(within(rows[1]).getByText("7% off")).toBeInTheDocument();
+    expect(within(rows[1]).getByText("(7% off)")).toBeInTheDocument();
+    expect(within(rows[1]).getByText(/Seller's listed price/)).toBeInTheDocument();
     // PLAN.md item 3: the old always-"Live"/"Saved" dataSource label is gone - every row now shows its
     // real freshness status instead (StatusBadge), computed from lastScrapedAt, not from dataSource.
     expect(within(rows[1]).getByText(/Checked/)).toBeInTheDocument();
