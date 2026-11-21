@@ -117,6 +117,7 @@ describe('trending and platforms', () => {
       ['daraz', 'retail'],
       ['priceoye', 'retail'],
       ['telex', 'retail'],
+      ['mega', 'retail'],
       ['aliexpress', 'supplier'],
       ['ebay', 'supplier'],
     ]);

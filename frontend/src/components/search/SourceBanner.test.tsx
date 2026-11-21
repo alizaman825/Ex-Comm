@@ -156,3 +156,30 @@ describe("SourceBanner Telex sync chip", () => {
     expect(screen.queryByTestId("telex-sync-chip")).not.toBeInTheDocument();
   });
 });
+
+describe("SourceBanner Mega sync chip (Phase 2 Part F, same pattern as Telex)", () => {
+  it("shows Mega as synced (not live), from the results, even though it's never in platformStatus", () => {
+    render(<SourceBanner data={response({ source: "live", results: [product([offer({ platform: "mega", url: "https://mega.pk/x", lastScrapedAt: ago(90) })])] })} />);
+    const chip = screen.getByTestId("mega-sync-chip");
+    expect(chip).toHaveTextContent("Mega.pk synced");
+    expect(chip).toHaveTextContent("hour");
+  });
+
+  it("shows both Telex and Mega chips when both appear in the results", () => {
+    render(
+      <SourceBanner
+        data={response({
+          source: "live",
+          results: [product([offer({ platform: "telex", lastScrapedAt: ago(30) }), offer({ platform: "mega", url: "https://mega.pk/x", lastScrapedAt: ago(45) })])],
+        })}
+      />
+    );
+    expect(screen.getByTestId("telex-sync-chip")).toBeInTheDocument();
+    expect(screen.getByTestId("mega-sync-chip")).toBeInTheDocument();
+  });
+
+  it("shows no Mega chip when nothing in the results came from Mega", () => {
+    render(<SourceBanner data={response({ source: "live", results: [] })} />);
+    expect(screen.queryByTestId("mega-sync-chip")).not.toBeInTheDocument();
+  });
+});

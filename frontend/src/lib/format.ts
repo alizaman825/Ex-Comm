@@ -4,6 +4,7 @@ export const PLATFORM_LABEL: Record<Platform, string> = {
   daraz: "Daraz",
   priceoye: "PriceOye",
   telex: "Telex.pk",
+  mega: "Mega.pk",
   aliexpress: "AliExpress",
   ebay: "eBay",
 };
@@ -12,6 +13,7 @@ export const PLATFORM_COLOR: Record<Platform, string> = {
   daraz: "#F57224",
   priceoye: "#1E88E5",
   telex: "#7C3AED",
+  mega: "#16A34A",
   aliexpress: "#E5322D",
   ebay: "#0064D2",
 };
@@ -21,6 +23,7 @@ export const PLATFORM_ROLE: Record<Platform, "retail" | "supplier"> = {
   daraz: "retail",
   priceoye: "retail",
   telex: "retail",
+  mega: "retail",
   aliexpress: "supplier",
   ebay: "supplier",
 };

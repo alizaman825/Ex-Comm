@@ -7,7 +7,7 @@ export const metadata: Metadata = { title: "About", description: "What Ex-Comm i
 
 const FAQ = [
   { q: "Why does a product sometimes show only one store?", a: "Stores name products differently, so Ex-Comm matches them by brand, model and key specs. When the match is not confident the products stay separate. You can always add products to the compare tray and compare them manually." },
-  { q: "How fresh are the prices?", a: "Searches check Daraz and PriceOye live and keep the result for a few hours. Telex.pk is synced in the background every few hours rather than checked on every search. Every result says whether it is live, synced or saved data, and shows when it was updated." },
+  { q: "How fresh are the prices?", a: "Searches check Daraz and PriceOye live and keep the result for a few hours. Telex.pk and Mega.pk are synced in the background every few hours rather than checked on every search. Every result says whether it is live, synced or saved data, and shows when it was updated." },
   { q: "Is the price history real?", a: "Price history recorded after a product is searched, tracked or synced is real, timestamped data. AliExpress supplier prices are kept as a saved reference rather than checked live, and are labelled as such wherever they're shown. See our Methodology page for the full detail." },
   { q: "Do you sell anything?", a: "No. Ex-Comm only compares prices and links to the store. You buy from the store." },
 ];
@@ -26,7 +26,7 @@ export default function AboutPage() {
         <h2 className="t-h2">How it works</h2>
         <ol className="mt-6 grid gap-5 sm:grid-cols-3">
           {[
-            { icon: Search, t: "1. Search", d: "Search by product name. Results are gathered from Daraz, PriceOye and Telex.pk, plus AliExpress and eBay supplier prices checked on demand." },
+            { icon: Search, t: "1. Search", d: "Search by product name. Results are gathered from Daraz, PriceOye, Telex.pk and Mega.pk, plus AliExpress and eBay supplier prices checked on demand." },
             { icon: Scale, t: "2. Compare", d: "The same product from different stores is grouped, so you can see every price, rating and stock status side by side." },
             { icon: LineChart, t: "3. Track", d: "Save products, view price history, and set a target price. You get a notification when it is reached." },
           ].map(({ icon: Icon, t, d }) => (
@@ -62,7 +62,7 @@ export default function AboutPage() {
               <DataSourceBadge source="live" className="ml-auto" />
             </div>
             <p className="mt-2 text-sm leading-relaxed text-slate-600">
-              <strong>Telex.pk</strong> listings are collected by a slow background sync, a handful of products at a time, every few hours - not read live on every search. Each price still shows exactly when it was last checked, never a permanent &ldquo;live&rdquo; claim.
+              <strong>Telex.pk</strong> and <strong>Mega.pk</strong> listings are collected by a slow background sync, a handful of products at a time, every few hours - not read live on every search. Each price still shows exactly when it was last checked, never a permanent &ldquo;live&rdquo; claim.
             </p>
           </div>
           <div className="card p-5">
