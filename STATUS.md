@@ -1,6 +1,9 @@
 # Status
 
-_Last updated: 2026-11-21 — Phase 2 Part F (more sync-based stores)_
+_Last updated: 2026-11-21 — Mega.pk sync enabled per ali's explicit F2 instruction_
+
+## Built
+- **Mega.pk sync turned on (2026-11-21):** ali's Phase 2 brief (F2) explicitly said to build Mega.pk and enable it the same way as Telex, without waiting for a separate approval round. Re-verified `robots.txt`/`sitemap.xml` live (honest UA, two gentle requests several seconds apart) immediately before flipping the switch - unchanged from Part F's build, no new Disallow rules. Set `SYNC_MEGA_ENABLED=true` on the Render service and added a daily cron (`20 3 * * *`, 20 minutes offset from Telex's `0 3 * * *` so the two syncs don't fetch from Render at the same moment) to `.github/workflows/mega-sync.yml`. Same kill-switch/rate-limit/backoff/launch-category/exact-matching safeguards from Part F apply unchanged - this only flips the two gates (env var + schedule) that were deliberately left off.
 
 ## Built
 - **Phase 2 Part F: more stores via sync-based ingestion (2026-11-21):** autonomous pass over the approved Phase 2 brief's F items only (B-E covered elsewhere).

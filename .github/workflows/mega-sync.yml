@@ -1,17 +1,18 @@
 name: Mega.pk sync
 
 # Phase 2 Part F: the Mega.pk background sync, same job-endpoint pattern as telex-sync.yml/
-# daily-refresh.yml. Deliberately workflow_dispatch-only for now, no cron schedule - this mirrors
-# how Telex.pk's own sync first shipped (schedule added only in a later commit, once ali reviewed
-# and approved it). Mega is a brand-new, never-before-hit site; the job's own kill switch
-# (SYNC_MEGA_ENABLED, off by default) is the real gate either way, so even a schedule added here
-# would stay a no-op until that's turned on - but not adding one yet is the more conservative choice.
-# Run manually from the Actions tab (Run workflow) once ready to test it end to end.
+# daily-refresh.yml. ali's brief (F2) asked to enable this once Telex works, so the schedule
+# below mirrors Telex's - offset by 20 minutes so the two syncs don't fetch from Render at the
+# exact same moment. The job's own kill switch (SYNC_MEGA_ENABLED), rate limiting and page cap
+# are still enforced server-side; this schedule is just "ask once a day".
+# Can also be run on demand from the Actions tab (Run workflow).
 #
 # Requires the same two repository secrets as daily-refresh.yml/telex-sync.yml:
 #   RENDER_API_URL  e.g. https://ex-comm-api.onrender.com
 #   JOB_KEY         the same value as the Render service's JOB_KEY env var
 on:
+  schedule:
+    - cron: '20 3 * * *'
   workflow_dispatch: {}
 
 jobs:
