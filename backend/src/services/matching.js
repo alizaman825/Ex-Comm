@@ -35,8 +35,17 @@ const VARIANT_WORDS = new Set(
 // headphones as an accessory and reject the product itself (tests/search.test.js, "model codes with
 // hyphens"). A genuine phone-accessory listing titled e.g. "Earphones for iPhone 15" is still caught by
 // FITS_WORDS ("for"/"compatible"/"fits"/"suitable"), not by this list.
+// Phase 4 Part E (2026-11-21): "lens"/"tray"/"board" added after a production search sweep found spare
+// parts ranking as if they were the device itself ("iphone 18 pro" -> "...Back Lens Available" Rs400,
+// "redmi note 14" -> "...Sim Tray Green" Rs637 and "...Charging Port Board" Rs3918) - none of those
+// titles used "for/compatible/fits", so FITS_WORDS alone didn't catch them. "battery" was deliberately
+// NOT added here even though it caused the same report ("samsung a55" -> "...Battery Premium
+// Replacement" Rs4210): tests/matching.test.js relies on "... 5000 mAh Battery ..." as a normal SPEC in
+// a genuine phone title (two listings of the same real phone, one just states the battery capacity) -
+// adding the word would misclassify the device itself as its own accessory. "battery" needs a phrase
+// check ("battery replacement"/"replacement battery"), not a single-word one; left as a follow-up.
 const ACCESSORY_WORDS = new Set(
-  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard'.split(' ')
+  'case cover protector glass tempered screenguard skin strap holder stand pouch sleeve sticker film charger cable adapter bumper lanyard lens tray board'.split(' ')
 );
 
 // "for/compatible with/fits/suitable for": a title built around one of these words names a product only

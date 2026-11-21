@@ -170,10 +170,21 @@ describe('Phase 4 Part A2: fastLocal (opt-in fast local-first search)', () => {
     expect(['live', 'cache']).toContain(res.body.source);
   });
 
-  test('a brand-new query with no matching local product falls through to the ordinary blocking live check', async () => {
-    mockScrapers({ daraz: async () => [], priceoye: async () => [] });
+  // Phase 4 Part A1: previously this fell through to the ordinary BLOCKING live check (the shopper
+  // waited the full store round trip with no feedback) because fastLocal only engaged when the database
+  // already had a matching product. It now answers instantly with an empty, clearly-"pending" result so
+  // the frontend can show a "searching live stores" state immediately instead of a blank wait.
+  test('a brand-new query with no matching local product answers instantly as pending, instead of blocking on the live check', async () => {
+    let resolveFetch;
+    mockScrapers({
+      daraz: () => new Promise((resolve) => { resolveFetch = resolve; }),
+      priceoye: async () => [],
+    });
     const res = await get('q=zzz nonexistent gadget 9999&fastLocal=true');
-    expect(res.body.liveStatus).toBeNull();
+    expect(res.body.liveStatus).toBe('pending');
+    expect(res.body.total).toBe(0);
+    expect(res.body.results).toEqual([]);
+    resolveFetch([]); // let the background fetch finish so it doesn't leak into the next test
   });
 });
 

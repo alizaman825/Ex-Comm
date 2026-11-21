@@ -224,13 +224,18 @@ async function search(params) {
       const hasCacheEntry = await SearchCache.exists({ queryKey: liveKey });
       if (!hasCacheEntry) {
         const localHit = await localSearch(parsed, { category });
-        if (localHit.length) {
-          fastLocalProducts = localHit;
-          meta = { source: 'fallback', platformStatus: {}, fetchedAt: null, liveStatus: 'pending' };
-          // Not awaited: the next request for this query (the frontend polls while liveStatus is
-          // 'pending') picks up the result via the normal cache path above.
-          liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKey }).catch(() => {});
-        }
+        // Phase 4 Part A1: answer instantly even when the database has NO matching product yet (a
+        // genuinely cold, never-seen query) - previously this branch only fired when `localHit.length`
+        // was non-zero, so a brand-new query with zero local matches fell through to the blocking
+        // live-search path below and the shopper waited the full 3-8s Daraz/PriceOye round trip with no
+        // feedback until it finished. `fastLocalProducts` is now set to the (possibly empty) array either
+        // way; `liveStatus: 'pending'` tells the frontend to show a clearly-labelled "searching live
+        // stores" state (never a silent "no results") and poll again shortly.
+        fastLocalProducts = localHit;
+        meta = { source: 'fallback', platformStatus: {}, fetchedAt: null, liveStatus: 'pending' };
+        // Not awaited: the next request for this query (the frontend polls while liveStatus is
+        // 'pending') picks up the result via the normal cache path above.
+        liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKey }).catch(() => {});
       }
     }
   }
