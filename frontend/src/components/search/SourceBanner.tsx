@@ -18,15 +18,15 @@ function latestTelexSync(data: SearchResponse): string | undefined {
   return latest;
 }
 
-const TONE = {
+export const TONE = {
   live: { chip: "Live", chipCls: "tag-pill tag-pill-best", icon: CheckCircle2 },
   cache: { chip: "Cached", chipCls: "tag-pill tag-pill-neutral", icon: CheckCircle2 },
   fallback: { chip: "Saved", chipCls: "tag-pill tag-pill-warn", icon: AlertTriangle },
   demo: { chip: "Demo", chipCls: "tag-pill tag-pill-warn", icon: Database },
 } as const;
 
-type Kind = keyof typeof TONE;
-const kindOf = (data: SearchResponse): Kind => (data.demoMode ? "demo" : data.source);
+export type Kind = keyof typeof TONE;
+export const kindOf = (data: SearchResponse): Kind => (data.demoMode ? "demo" : data.source);
 
 export function bannerMessage(data: SearchResponse): string {
   if (data.demoMode) return "Demo mode: live store search is switched off, so you are seeing saved data.";

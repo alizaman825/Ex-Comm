@@ -4,7 +4,7 @@ import { useEffect, useRef, type ReactNode } from "react";
 import { X } from "lucide-react";
 
 /** Slide-in panel from the left (used for mobile filters). Closes on Esc or backdrop click; locks page scroll. */
-export function Drawer({ open, onClose, title, children }: { open: boolean; onClose: () => void; title: string; children: ReactNode }) {
+export function Drawer({ open, onClose, title, children, footer }: { open: boolean; onClose: () => void; title: string; children: ReactNode; footer?: ReactNode }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const onCloseRef = useRef(onClose);
   useEffect(() => {
@@ -37,6 +37,7 @@ export function Drawer({ open, onClose, title, children }: { open: boolean; onCl
           </button>
         </div>
         <div className="flex-1 overflow-y-auto px-5 py-5">{children}</div>
+        {footer && <div className="shrink-0 border-t border-slate-200/70 bg-surface px-5 py-4">{footer}</div>}
       </div>
     </div>
   );

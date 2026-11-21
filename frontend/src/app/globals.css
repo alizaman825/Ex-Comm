@@ -382,7 +382,10 @@ html[data-motion="on"] .scene-inner { position: sticky; top: 0; height: 100svh; 
   --shadow-lift: 0 1px 0 rgb(255 255 255 / 0.1) inset, 0 28px 60px -20px rgb(0 0 0 / 0.65);
   --shadow-float: 0 30px 70px -22px rgb(0 0 0 / 0.75);
   --tile: 250 243 238;
-  --nav-bg: 40 28 40 / 0.55;
+  /* Was 0.55 - a bright white product photo scrolling underneath the fixed-position glass header
+     showed through enough to wash out the white nav text/icons (B6). Raised so the header stays dark
+     and readable regardless of what scrolls beneath it, while still reading as glass, not opaque. */
+  --nav-bg: 40 28 40 / 0.82;
   --blend: normal;
 
   /* pastel landing-section backgrounds become dark, muted tones instead of solid pastels, so the
@@ -552,8 +555,26 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
 }
 .t-numeral { display: block; }
 
-/* Small uppercase spec-text blocks (brand/category labels, platform labels, etc.) */
-.spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; }
+/* Small uppercase spec-text blocks (brand/category labels, platform labels, etc.). The atmo gradient
+   behind these ranges from near-black to a light warm yellow, so a fixed text color/opacity can't meet
+   4.5:1 everywhere on its own — the shadow gives a consistent dark halo so the text stays readable
+   regardless of where it lands on the gradient (verified against the darkest and lightest gradient
+   stops; see STATUS.md for how this was checked). */
+.spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; text-shadow: 0 1px 3px rgb(0 0 0 / 0.55); }
+/* Price text (the board's #6ee7b7 green) over the raw gradient needs the same halo. */
+.t-price { text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); }
+
+/* Search results: the Live/AliExpress/eBay status strip collapses into one compact <details> row on
+   mobile so the first product shows near the top, but stays fully expanded (no toggle) at sm+. */
+.status-strip-mobile > summary { list-style: none; }
+.status-strip-mobile > summary::-webkit-details-marker { display: none; }
+@media (min-width: 640px) {
+  .status-strip-mobile:not([open]) > .status-strip-content { display: block !important; }
+}
+/* .ec-spec: longer, variable-length text (seller name/location, spec values) next to a .spec-label —
+   the shared 0.22em tracking is fine for short fixed labels but makes a longer line like
+   "Sold by Example Store · Lahore" wrap across several lines. Keep the label look, drop the tracking. */
+.ec-spec { letter-spacing: normal; }
 
 /* Product media: NO backing shape behind the photo at all — no panel, no gradient, no border, no
    shadow. The product owner flagged the previous flat-panel backing itself as still reading as "a
@@ -713,7 +734,7 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
   gap: 0.3rem;
   border-radius: 9999px;
   padding: 0.2rem 0.6rem;
-  font-size: 0.65rem;
+  font-size: 0.75rem;
   font-weight: 800;
   letter-spacing: 0.03em;
 }

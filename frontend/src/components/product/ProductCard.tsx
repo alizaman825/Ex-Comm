@@ -46,8 +46,8 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
         <WishlistButton productId={product.id} title={product.title} className="absolute right-3 top-3 z-10" />
       </div>
 
-      <div className="flex flex-1 flex-col px-5 pb-5 pt-2">
-        <p className="spec-label truncate text-[11px] font-bold uppercase tracking-wider text-slate-500">{product.brand ?? product.category ?? "Product"}</p>
+      <div className="flex flex-1 flex-col px-4 pb-4 pt-2 sm:px-5 sm:pb-5">
+        <p className="spec-label truncate text-xs font-bold uppercase tracking-wider text-slate-500">{product.brand ?? product.category ?? "Product"}</p>
         <h3 className="mt-1 line-clamp-2 min-h-[2.5rem] font-display text-[15px] font-bold leading-5 text-ink">
           <Link href={`/products/${product.id}`} className="outline-none after:absolute after:inset-0 after:z-0 focus-visible:after:rounded-card focus-visible:after:ring-2 focus-visible:after:ring-brand-500">
             {product.title}
@@ -66,19 +66,22 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
           </p>
         )}
 
-        <ul className="mt-3 space-y-1.5 rounded-2xl bg-white/[0.06] px-3 py-2.5 ring-1 ring-white/10 backdrop-blur-sm" aria-label="Prices by store">
+        {offers.length > 1 && (
+          <p className="mt-1.5 truncate text-xs text-white/55 sm:hidden">Also on {offers.slice(1).map((o) => PLATFORM_LABEL[o.platform]).join(", ")}</p>
+        )}
+        <ul className="mt-3 hidden space-y-1.5 rounded-2xl bg-white/[0.06] px-3 py-2.5 ring-1 ring-white/10 backdrop-blur-sm sm:block" aria-label="Prices by store">
           {offers.map((o) => (
             <li key={o.listingId} className="flex items-center justify-between gap-2 text-xs">
               <span className="flex min-w-0 items-center gap-2 text-white/70">
                 <PlatformDot platform={o.platform} />
                 <span className="truncate">{PLATFORM_LABEL[o.platform]}</span>
-                {o.role === "supplier" && <span className="shrink-0 rounded bg-white/10 px-1 py-px text-[10px] font-medium text-white/65">supplier</span>}
+                {o.role === "supplier" && <span className="shrink-0 rounded bg-white/10 px-1 py-px text-xs font-medium text-white/65">supplier</span>}
                 {o.condition !== "unknown" && o.condition !== "new" && (
-                  <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-[10px] font-medium text-amber-300">{o.condition}</span>
+                  <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-xs font-medium text-amber-300">{o.condition}</span>
                 )}
-                {o.dataSource === "saved" && <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-[10px] font-medium text-amber-300">saved</span>}
+                {o.dataSource === "saved" && <span className="shrink-0 rounded bg-[rgb(255_216_77/0.18)] px-1 py-px text-xs font-medium text-amber-300">saved</span>}
                 {!o.inStock && (
-                  <span className="shrink-0 whitespace-nowrap rounded bg-white/10 px-1 py-px text-[10px] font-medium text-white/55">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
+                  <span className="shrink-0 whitespace-nowrap rounded bg-white/10 px-1 py-px text-xs font-medium text-white/55">out of stock{o.lastScrapedAt ? ` · checked ${timeAgo(o.lastScrapedAt)}` : ""}</span>
                 )}
               </span>
               <span className={clsx("shrink-0 whitespace-nowrap tabular-nums", o === lowest && spread > 0 ? "font-semibold text-emerald-300" : "text-white/70")}>{formatPrice(o.price)}</span>
@@ -86,7 +89,7 @@ export function ProductCard({ product, priority = false }: { product: ProductCar
           ))}
         </ul>
 
-        <div className="mt-auto pt-4">
+        <div className="mt-auto pt-3 sm:pt-4">
           <button
             type="button"
             onClick={() => compare.toggle(product.id)}

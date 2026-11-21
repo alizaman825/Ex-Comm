@@ -73,7 +73,7 @@ export function BestDealsView() {
       <div className="mb-8">
         <div className="mb-2 flex items-end gap-3">
           <span className="t-numeral text-[2.75rem] leading-none sm:text-[3.25rem]">01</span>
-          <span className="spec-label pb-1 text-[10px] sm:text-[11px]">Checked across every store, updated live</span>
+          <span className="spec-label pb-1 text-xs sm:text-xs">Checked across every store, updated live</span>
         </div>
         <h1 className="t-h1">Best deals right now</h1>
         <p className="mt-1.5 max-w-2xl text-sm text-slate-500 sm:text-base">

@@ -35,7 +35,7 @@ function WishlistRow({ item, onRemove }: { item: WishlistItem; onRemove: () => v
         <ProductImage src={p.image} alt="" category={p.category} className="h-28 w-full p-3 sm:w-32" />
       </Link>
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] font-semibold uppercase tracking-wider text-slate-400">{p.brand ?? p.category}</p>
+        <p className="text-xs font-semibold uppercase tracking-wider text-slate-400">{p.brand ?? p.category}</p>
         <h2 className="mt-0.5 line-clamp-2 text-base font-semibold leading-snug text-ink">
           <Link href={`/products/${p.id}`} className="hover:text-brand-700">
             {p.title}

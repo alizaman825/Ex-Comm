@@ -3,7 +3,7 @@
 import { Suspense, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Bell, BellRing, ChevronDown, Heart, LogOut, Search, Settings, X } from "lucide-react";
+import { Bell, BellRing, ChevronDown, Heart, LogOut, Menu, Search, Settings, X } from "lucide-react";
 import clsx from "clsx";
 import { useAuth } from "@/lib/auth";
 import { useUnreadCount } from "@/lib/hooks";
@@ -67,7 +67,7 @@ function UserMenu() {
         aria-haspopup="menu"
         className="flex items-center gap-1.5 rounded-full bg-white py-1 pl-1 pr-3 text-[12.5px] font-bold text-[#0b0812]"
       >
-        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0b0812] text-[10px] font-semibold text-white">{initials(user.name)}</span>
+        <span className="flex h-7 w-7 items-center justify-center rounded-full bg-[#0b0812] text-xs font-semibold text-white">{initials(user.name)}</span>
         <span className="hidden max-w-[7rem] truncate lg:block">{user.name.split(" ")[0]}</span>
         <ChevronDown className={clsx("h-3.5 w-3.5 text-slate-400 transition", open && "rotate-180")} aria-hidden />
       </button>
@@ -125,8 +125,17 @@ export function Navbar() {
   const router = useRouter();
   const pathname = usePathname();
   const [mobileOpenAt, setMobileOpenAt] = useState<string | null>(null);
+  const [focusSearch, setFocusSearch] = useState(false);
   const mobileOpen = mobileOpenAt === pathname;
   const closeMobile = () => setMobileOpenAt(null);
+  const toggleMobile = (focus: boolean) => {
+    if (mobileOpen) {
+      setMobileOpenAt(null);
+    } else {
+      setFocusSearch(focus);
+      setMobileOpenAt(pathname);
+    }
+  };
 
   return (
     <header className="sticky top-3 z-40 px-3 sm:px-4">
@@ -160,7 +169,7 @@ export function Navbar() {
               >
                 <Bell className="h-4 w-4" aria-hidden />
                 {unread > 0 && (
-                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-[10px] font-bold leading-none text-white" data-testid="unread-badge">
+                  <span className="absolute right-0.5 top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-rose-500 px-1 text-xs font-bold leading-none text-white" data-testid="unread-badge">
                     {unread > 9 ? "9+" : unread}
                   </span>
                 )}
@@ -184,27 +193,38 @@ export function Navbar() {
           )}
         </div>
 
-        {/* Mobile: exactly two round glass buttons, as the board's mobile nav shows. */}
-        <div className="flex items-center gap-2 md:hidden">
+        {/* Mobile: an explicit hamburger menu (Home/Categories/Best deals/Compare/Wishlist/Price
+            alerts/Notifications/Profile/Sign in all live in the panel it opens), a quick search
+            shortcut into the same panel, and the theme toggle — each a real >=44px tap target. */}
+        <div className="flex items-center gap-1.5 md:hidden">
+          <button
+            type="button"
+            aria-label={mobileOpen ? "Close menu" : "Menu"}
+            aria-expanded={mobileOpen}
+            onClick={() => toggleMobile(false)}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.14] text-white/85"
+          >
+            {mobileOpen ? <X className="h-4 w-4" aria-hidden /> : <Menu className="h-4 w-4" aria-hidden />}
+          </button>
           <button
             type="button"
             aria-label="Search"
-            onClick={() => setMobileOpenAt(mobileOpen ? null : pathname)}
-            className="flex h-8 w-8 items-center justify-center rounded-full bg-white/[0.14] text-white/85"
+            onClick={() => toggleMobile(true)}
+            className="flex h-11 w-11 items-center justify-center rounded-full bg-white/[0.14] text-white/85"
           >
-            {mobileOpen ? <X className="h-3.5 w-3.5" aria-hidden /> : <Search className="h-3.5 w-3.5" aria-hidden />}
+            <Search className="h-4 w-4" aria-hidden />
           </button>
-          <ThemeToggle className="flex h-8 w-8 items-center justify-center rounded-full bg-white text-[#0b0812]" />
+          <ThemeToggle className="flex h-11 w-11 items-center justify-center rounded-full bg-white text-[#0b0812]" />
         </div>
       </div>
 
-      {/* A second, separate floating glass panel below the pill — the mobile search + the
-          account links the pill itself has no room for. */}
+      {/* A second, separate floating glass panel below the pill — the mobile search + the full
+          nav/account link list the pill itself has no room for. */}
       {mobileOpen && (
         <div className="mobile-panel-cine animate-fade-up mx-auto mt-3 max-w-[78rem] md:hidden">
           <div className="space-y-4 p-4">
             <Suspense fallback={null}>
-              <SearchBar autoFocus />
+              <SearchBar autoFocus={focusSearch} />
             </Suspense>
             <nav className="flex flex-col gap-1" aria-label="Mobile">
               <NavLink href="/" label="Home" onClick={closeMobile} />

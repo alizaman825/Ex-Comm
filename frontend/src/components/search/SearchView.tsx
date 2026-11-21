@@ -17,7 +17,7 @@ import { Drawer } from "@/components/ui/Drawer";
 import { Pagination } from "@/components/ui/Pagination";
 import { ProductCard, ProductGridSkeleton } from "@/components/product/ProductCard";
 import { Filters } from "./Filters";
-import { SourceBanner } from "./SourceBanner";
+import { SourceBanner, bannerMessage, TONE, kindOf } from "./SourceBanner";
 import { AliExpressCheck } from "./AliExpressCheck";
 import { EbayCheck } from "./EbayCheck";
 
@@ -91,9 +91,21 @@ export function SearchView() {
             {data ? (
               <>
                 {data.mode === "live" ? (
-                  <>
-                    Showing {Math.min(state.show, data.total).toLocaleString("en-PK")} of about {Math.max(data.estimatedTotal ?? 0, data.total).toLocaleString("en-PK")} {data.estimatedTotal === 1 ? "product" : "products"} found in the stores
-                  </>
+                  (() => {
+                    const shown = Math.min(state.show, data.total);
+                    const estimated = Math.max(data.estimatedTotal ?? 0, data.total);
+                    const noun = estimated === 1 ? "product" : "products";
+                    // "about" only makes sense once the store total is itself an estimate bigger than what's shown
+                    return estimated > shown ? (
+                      <>
+                        {shown.toLocaleString("en-PK")} of about {estimated.toLocaleString("en-PK")} {noun} from the stores
+                      </>
+                    ) : (
+                      <>
+                        {shown.toLocaleString("en-PK")} {noun} from the stores
+                      </>
+                    );
+                  })()
                 ) : (
                   <>
                     {data.total.toLocaleString("en-PK")} {data.total === 1 ? "product" : "products"}
@@ -141,12 +153,25 @@ export function SearchView() {
         </aside>
 
         <section aria-label="Search results" className="min-w-0">
-          {data && <SourceBanner data={data} onRefresh={refresh} refreshing={refreshing} />}
-          {data && !data.demoMode && state.q && !tooShort && (
-            <>
-              <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />
-              <EbayCheck query={state.q} checkedCount={data.platformStatus.ebay?.loaded} onChecked={() => mutate()} />
-            </>
+          {data && (
+            <details className="status-strip-mobile group rounded-3xl" data-testid="status-strip">
+              <summary className="flex cursor-pointer select-none items-center justify-between gap-2 rounded-3xl glass-panel px-5 py-3 text-sm text-white/85 sm:cursor-default">
+                <span className="inline-flex min-w-0 items-center gap-2">
+                  <span className={clsx("shrink-0", TONE[kindOf(data)].chipCls)}>{TONE[kindOf(data)].chip}</span>
+                  <span className="truncate">{bannerMessage(data)}</span>
+                </span>
+                <ChevronDown className="h-4 w-4 shrink-0 text-white/60 transition-transform group-open:rotate-180 sm:hidden" aria-hidden />
+              </summary>
+              <div className="status-strip-content mt-3 space-y-3">
+                <SourceBanner data={data} onRefresh={refresh} refreshing={refreshing} />
+                {!data.demoMode && state.q && !tooShort && (
+                  <>
+                    <AliExpressCheck query={state.q} checkedCount={data.platformStatus.aliexpress?.loaded} onChecked={() => mutate()} />
+                    <EbayCheck query={state.q} checkedCount={data.platformStatus.ebay?.loaded} onChecked={() => mutate()} />
+                  </>
+                )}
+              </div>
+            </details>
           )}
 
           {error && !data ? (
@@ -169,7 +194,7 @@ export function SearchView() {
               </div>
               {error && <p className="mt-4 text-center text-sm text-rose-600">Could not refresh results. Showing the previous ones.</p>}
               {data.mode === "live" ? (
-                data.hasMore && state.show < SHOW_MAX && (
+                data.hasMore && state.show < SHOW_MAX && data.results.length >= state.show && (
                   <div className="mt-8 flex flex-col items-center gap-2">
                     <button type="button" className="btn-primary" disabled={isValidating} onClick={() => update({ show: state.show + SHOW_STEP }, true)} data-testid="show-more">
                       {isValidating ? <Loader2 className="h-4 w-4 animate-spin" aria-hidden /> : null}
@@ -208,11 +233,17 @@ export function SearchView() {
         </section>
       </div>
 
-      <Drawer open={filtersOpen} onClose={() => setFiltersOpen(false)} title="Filters">
-        <Filters state={state} checkedSuppliers={checkedSuppliers} categories={categories} onChange={(p) => update(p)} onReset={reset} />
-        <button type="button" className="btn-primary mt-6 w-full" onClick={() => setFiltersOpen(false)}>
-          Show {data ? data.total : ""} results
-        </button>
+      <Drawer
+        open={filtersOpen}
+        onClose={() => setFiltersOpen(false)}
+        title="Filters"
+        footer={
+          <button type="button" className="btn-primary w-full" onClick={() => setFiltersOpen(false)}>
+            Show {data ? data.total.toLocaleString("en-PK") : ""} results
+          </button>
+        }
+      >
+        <Filters state={state} checkedSuppliers={checkedSuppliers} categories={categories} onChange={(p) => update(p)} onReset={reset} showTitle={false} />
       </Drawer>
     </div>
   );
