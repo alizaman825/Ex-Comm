@@ -106,6 +106,21 @@ function offersFor(listings) {
     }));
 }
 
+// Phase 4 Part C2: a storage/RAM spec ("8GB/256GB") pulled from the product's own stored titles, used
+// only to disambiguate two cards in the SAME result set that would otherwise render an identical title
+// (a shopper comparing two "Infinix Note 60" cards with no way to tell them apart) - never shown
+// otherwise, and never a substitute for actually merging a true duplicate (see C1/scripts/
+// dedup-identical-products.js: ali's own "Infinix Note 60" example turned out to be a duplicate, not a
+// variant, but two genuinely different storage configs of the same phone can still collide this way).
+function distinguishingSpec(product) {
+  const texts = [product.title, ...(product.altTitles || [])];
+  for (const t of texts) {
+    const m = String(t).match(/(\d{1,3})\s*GB\s*(?:RAM)?\D{0,15}?(\d{2,4})\s*GB\s*(?:ROM|Storage)?\b/i);
+    if (m) return `${m[1]}GB/${m[2]}GB`;
+  }
+  return null;
+}
+
 function toCard(product, listings) {
   const offers = offersFor(listings);
   return {
@@ -121,7 +136,22 @@ function toCard(product, listings) {
     priceChange7d: product.priceChange7d || 0,
     platforms: product.platforms,
     offers,
+    _spec: distinguishingSpec(product), // internal only - stripped by disambiguateTitles() below
   };
+}
+
+// Appends the distinguishing spec to every card in `cards` whose title collides with another card's in
+// the SAME list (never across main results and the separate "other models" group - those are already
+// visually separated). A collision with no spec to show (neither side names one) is left as-is: nothing
+// to tell them apart with, and never guessed.
+function disambiguateTitles(cards) {
+  const counts = new Map();
+  for (const c of cards) counts.set(c.title, (counts.get(c.title) || 0) + 1);
+  for (const c of cards) {
+    if (counts.get(c.title) > 1 && c._spec) c.title = `${c.title} ${c._spec}`;
+    delete c._spec;
+  }
+  return cards;
 }
 
 // Phase 3 Part D1 (2026-11-21): a search/category result this implausible for its category is almost
@@ -165,7 +195,7 @@ async function productsInOrder(ids) {
 //  - live search returns the first `limit` results (more are loaded from the stores when asked for);
 //  - stored data is paginated with page / pageSize.
 async function search(params) {
-  const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, limit = 24, live = true, refresh = false } = params;
+  const { q = '', category, platform, minPrice, maxPrice, minRating, sort = 'relevance', page = 1, pageSize = 12, limit = 24, live = true, refresh = false, fastLocal = false } = params;
   const parsed = parseQuery(q);
   // Phase 2 Part E (E1): coarse stage timing, logged only when SEARCH_LOG_TIMING=true - see
   // scripts/bench-search.js for the before/after numbers this produced.
@@ -173,23 +203,47 @@ async function search(params) {
   let tLive = t0;
   let tDb = t0;
 
-  let meta = { source: 'fallback', platformStatus: {}, fetchedAt: null };
+  let meta = { source: 'fallback', platformStatus: {}, fetchedAt: null, liveStatus: null };
   let liveInfo = null;
-  if (parsed.tokens.length && live && !config.demoMode) {
-    const attempt = await liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKeyOf(q) });
+  let fastLocalProducts = null; // Phase 4 Part A2: results already shown while a cold live check runs in the background
+  const liveKey = liveKeyOf(q);
+  if (fastLocal && parsed.tokens.length && live && !config.demoMode) {
+    // A genuinely cold query (no cache entry at all yet) blocks on the stores otherwise, which is the
+    // slow path A2 fixes: if the database already has matching products, show those immediately and kick
+    // the live check off in the background instead of making the shopper wait for it. A query that DOES
+    // have a cache entry (fresh, stale-but-servable, or short of `need`) is already handled quickly by
+    // liveSearch's own stale-while-revalidate logic below, so this only ever applies to a brand-new query.
+    // Opt-in only (fastLocal=true, sent by the ordinary search page): other callers of this API keep the
+    // existing "always wait for the live answer" contract.
+    if (!refresh) {
+      const hasCacheEntry = await SearchCache.exists({ queryKey: liveKey });
+      if (!hasCacheEntry) {
+        const localHit = await localSearch(parsed, { category });
+        if (localHit.length) {
+          fastLocalProducts = localHit;
+          meta = { source: 'fallback', platformStatus: {}, fetchedAt: null, liveStatus: 'pending' };
+          // Not awaited: the next request for this query (the frontend polls while liveStatus is
+          // 'pending') picks up the result via the normal cache path above.
+          liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKey }).catch(() => {});
+        }
+      }
+    }
+  }
+  if (!fastLocalProducts && parsed.tokens.length && live && !config.demoMode) {
+    const attempt = await liveSearch.ensureLoaded(q, parsed, { need: limit, refresh, key: liveKey });
     tLive = Date.now();
     if (attempt.anySuccess) {
       liveInfo = attempt;
-      meta = { source: attempt.fetchedNow ? 'live' : 'cache', platformStatus: attempt.platformStatus, fetchedAt: attempt.fetchedAt };
+      meta = { source: attempt.fetchedNow ? 'live' : 'cache', platformStatus: attempt.platformStatus, fetchedAt: attempt.fetchedAt, liveStatus: null };
     } else {
       // no store answered: stored data is shown, with the reason for each store
-      meta = { source: 'fallback', platformStatus: attempt.platformStatus, fetchedAt: null };
+      meta = { source: 'fallback', platformStatus: attempt.platformStatus, fetchedAt: null, liveStatus: null };
     }
   } else {
     tLive = Date.now();
   }
 
-  const products = liveInfo ? await productsInOrder(liveInfo.productIds) : await localSearch(parsed, { category });
+  const products = liveInfo ? await productsInOrder(liveInfo.productIds) : fastLocalProducts || (await localSearch(parsed, { category }));
   // PLAN.md item 4: live search's "other models" group (close/loose matches that failed the strict
   // relevance check) - same card-building rules, kept separate so they never rank above a real match.
   const otherProducts = liveInfo && liveInfo.otherProductIds.length ? await productsInOrder(liveInfo.otherProductIds) : [];
@@ -262,6 +316,10 @@ async function search(params) {
   } else {
     cards = cards.slice((page - 1) * pageSize, page * pageSize);
   }
+  // C2: disambiguate identical titles within each visible group separately (never across them - the
+  // main results and "other models" are already visually separated).
+  disambiguateTitles(cards);
+  disambiguateTitles(otherCards);
 
   // Remember the query for the trending list (queries that found something).
   if (parsed.tokens.length) {
@@ -284,6 +342,9 @@ async function search(params) {
     mode: liveInfo ? 'live' : 'stored',
     demoMode: config.demoMode, // true: live scraping is switched off, only saved data is shown
     fetchedAt: meta.fetchedAt,
+    // Phase 4 Part A2: 'pending' means these are database results shown while a first-ever live check
+    // for this query runs in the background - the client should poll again shortly for the live update.
+    liveStatus: meta.liveStatus || null,
     platformStatus: meta.platformStatus,
     total,
     loaded: total,
@@ -300,4 +361,4 @@ async function search(params) {
   };
 }
 
-module.exports = { search, localSearch, queryKeyOf, liveKeyOf, toCard, offersFor, effectiveDataSource };
+module.exports = { search, localSearch, queryKeyOf, liveKeyOf, toCard, offersFor, effectiveDataSource, disambiguateTitles, distinguishingSpec };

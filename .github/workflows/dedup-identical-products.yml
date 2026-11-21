@@ -1,0 +1,38 @@
+name: Dedup identical products
+
+# One-off migration (backend/scripts/dedup-identical-products.js, Phase 4 Part C): merges products that
+# share the exact same (title, brand, category) - the live-site example this fixes is two separately-
+# created "Infinix Note 60" products (ali's report, C1). Click "Run workflow" below with "apply"
+# unchecked first to see a dry-run report in the log (also used for the catalog-wide duplicate count,
+# C3), then run it again with "apply" checked to actually fix the database. A group whose prices look
+# inconsistent is always left separate, apply or not - see the script's own comments.
+#
+# Requires a repository secret MONGO_URI (Settings -> Secrets and variables -> Actions -> New repository
+# secret) set to the same Atlas connection string used by the Render backend.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply the fix (unchecked = dry run only, changes nothing)'
+        type: boolean
+        default: false
+      category:
+        description: 'Limit to one category slug (optional, e.g. mobiles) - leave blank for the whole catalog'
+        type: string
+        default: ''
+
+jobs:
+  dedup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Run dedup script
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/dedup-identical-products.js ${{ inputs.apply && '--apply' || '' }} ${{ inputs.category != '' && format('--category={0}', inputs.category) || '' }}

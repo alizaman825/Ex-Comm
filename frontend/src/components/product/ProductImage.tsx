@@ -153,6 +153,9 @@ interface Props {
   className?: string;
   /** "contain" for product photos on white, "cover" for banners */
   fit?: "contain" | "cover";
+  /** Phase 4 Part B2: the first few above-the-fold cards load eagerly (and at high priority) instead of
+   * lazily, so time-to-first-visible-image does not sit behind the browser's own lazy-load scheduling. */
+  priority?: boolean;
 }
 
 /** Corner radius for every product photo, ported from the concept board's own card radius
@@ -165,9 +168,12 @@ interface Props {
 const IMAGE_RADIUS = "1.25rem";
 
 /** Product photo (multiply-blended on its backdrop in light mode, on a light tile in dark mode), or a category tile when there is no image. */
-export function ProductImage({ src, alt, category, className, fit = "contain" }: Props) {
+export function ProductImage({ src, alt, category, className, fit = "contain", priority = false }: Props) {
   const [failedSrc, setFailedSrc] = useState<string | null>(null);
-  const showImage = Boolean(src) && failedSrc !== src;
+  // Phase 4 Part B2: an empty-string URL (not just null/undefined) is also treated as "no image" - some
+  // listings store "" rather than omitting the field, and that must render the category tile too, never
+  // a blank <img>.
+  const showImage = Boolean(src && src.trim()) && failedSrc !== src;
 
   if (!showImage) return <CategoryTile category={category} label={alt} className={className} />;
   return (
@@ -176,7 +182,9 @@ export function ProductImage({ src, alt, category, className, fit = "contain" }:
     <img
       src={src as string}
       alt={alt}
-      loading="lazy"
+      loading={priority ? "eager" : "lazy"}
+      // @ts-expect-error fetchPriority is a valid DOM attribute not yet in this TS lib's JSX typings
+      fetchpriority={priority ? "high" : "auto"}
       decoding="async"
       referrerPolicy="no-referrer"
       onError={() => setFailedSrc(src as string)}

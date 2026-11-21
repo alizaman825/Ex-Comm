@@ -38,6 +38,10 @@ const searchQuerySchema = z
     // input string.
     live: bool.default(true),
     refresh: bool.default(false), // ignore an earlier live result and check the stores again
+    // Phase 4 Part A2: opt-in - show database results immediately for a brand-new query while the live
+    // store check runs in the background, instead of blocking the response on it. Off by default so
+    // other API callers keep the existing "always wait for the live answer" contract.
+    fastLocal: bool.default(false),
   })
   .refine((v) => v.q || v.category, { message: 'Provide a search term (q) or a category', path: ['q'] })
   .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
