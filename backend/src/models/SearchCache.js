@@ -1,5 +1,6 @@
 const mongoose = require('mongoose');
 const { toJSON } = require('./plugins');
+const { config } = require('../config/env');
 
 const searchCacheSchema = new mongoose.Schema({
   queryKey: { type: String, required: true, unique: true },
@@ -19,6 +20,12 @@ const searchCacheSchema = new mongoose.Schema({
   fetchedAt: { type: Date, required: true, default: Date.now },
 });
 
+// Phase 2 Part E (E5): this collection already IS the persistent (Mongo-backed) cache layer - it survives
+// Render's free-tier spin-downs, unlike an in-memory cache would. This index just prunes entries nobody
+// has searched in a long time (config.search.cacheRetentionDays), so the collection - and therefore every
+// search's lookup - doesn't grow forever on a long-running deployment. An entry still inside its normal
+// freshness/stale-while-revalidate window is always far younger than this and is never affected.
+searchCacheSchema.index({ fetchedAt: 1 }, { expireAfterSeconds: config.search.cacheRetentionDays * 24 * 60 * 60 });
 searchCacheSchema.plugin(toJSON);
 
 module.exports = mongoose.model('SearchCache', searchCacheSchema);

@@ -6,6 +6,17 @@ const { resolveCategory } = require('../services/categories');
 const { excludeSeededInProd, realHistoryFilter, excludeStaleInProd } = require('../services/publicData');
 const { statusOf } = require('../services/priceStatus');
 const { config } = require('../config/env');
+const { memoize } = require('../utils/memoCache');
+
+// Phase 2 Part E (E6): short Cache-Control for read-mostly, non-personalized homepage endpoints. This
+// only lets a browser/CDN reuse the exact same response for a few seconds - it never changes any
+// freshness field inside the JSON itself (lastScrapedAt/fetchedAt are computed once, at response time,
+// and simply replayed), so a reused response is never shown as fresher than when it was generated
+// (hard limit 8). stale-while-revalidate lets a client use a slightly older copy while it quietly fetches
+// a new one in the background, same idea as the server-side cache above.
+function cacheableFor(res, seconds) {
+  res.set('Cache-Control', `public, max-age=${seconds}, stale-while-revalidate=${seconds * 4}`);
+}
 
 const objectId = z.string().regex(/^[a-f0-9]{24}$/i, 'Invalid id');
 const idParams = z.object({ id: objectId });
@@ -99,8 +110,12 @@ async function availableCardsFor(pool, limit) {
 // GET /api/products/trending: most popular, in-stock products.
 async function trending(req, res) {
   const { limit, category } = req.validQuery;
-  const pool = await Product.find(categoryFilter(category)).sort({ popularity: -1, reviewCount: -1 }).limit(limit * 3).lean();
-  res.json({ products: await availableCardsFor(pool, limit) });
+  const products = await memoize(`trending:${category || ''}:${limit}`, config.homeCache.ttlMs, async () => {
+    const pool = await Product.find(categoryFilter(category)).sort({ popularity: -1, reviewCount: -1 }).limit(limit * 3).lean();
+    return availableCardsFor(pool, limit);
+  });
+  cacheableFor(res, 30);
+  res.json({ products });
 }
 
 // A cheap accessory (phone case, cable, ...) swinging a few rupees can post a large *percentage* drop
@@ -123,11 +138,15 @@ function isPromotableDeal(product) {
 // than back-fill it with unverified data.
 async function drops(req, res) {
   const { limit, category } = req.validQuery;
-  const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 }, dealEligible: true })
-    .sort({ priceChange7d: 1 })
-    .limit(limit * 6)
-    .lean();
-  res.json({ products: (await availableCardsFor(pool, limit * 6)).filter(isPromotableDeal).slice(0, limit) });
+  const products = await memoize(`drops:${category || ''}:${limit}`, config.homeCache.ttlMs, async () => {
+    const pool = await Product.find({ ...categoryFilter(category), priceChange7d: { $lt: 0 }, dealEligible: true })
+      .sort({ priceChange7d: 1 })
+      .limit(limit * 6)
+      .lean();
+    return (await availableCardsFor(pool, limit * 6)).filter(isPromotableDeal).slice(0, limit);
+  });
+  cacheableFor(res, 30);
+  res.json({ products });
 }
 
 // GET /api/products/:id: product with every listing (and the user's wishlist/alert state if signed in).

@@ -53,6 +53,30 @@ function describe(platforms, state, ms = {}) {
   );
 }
 
+// Keys currently being refreshed in the background (stale-while-revalidate), so a second request for the
+// same stale query doesn't start a second background refresh - at most one runs per key at a time.
+const backgroundRefreshing = new Set();
+
+// Rebuilds ensureLoaded's return shape from an already-stored SearchCache document, with no scraping and
+// no database write. `fetchedAt` is the document's own, real timestamp - never advanced - so a stale
+// cache hit is never shown as fresher than it actually is (hard limit 8).
+function fromDoc(doc, platforms) {
+  const ids = (doc.productIds || []).map(String);
+  const relevantSet = new Set((doc.relevantProductIds || []).map(String));
+  const platformStatus = doc.platformStatus || {};
+  const state = doc.platformState || {};
+  return {
+    productIds: ids.filter((id) => relevantSet.has(id)),
+    otherProductIds: ids.filter((id) => !relevantSet.has(id)),
+    platformStatus,
+    estimatedTotal: platforms.reduce((sum, p) => sum + ((state[p] && (state[p].total ?? state[p].loaded)) || 0), 0),
+    storesHaveMore: platforms.some((p) => platformStatus[p]?.status === 'success' && state[p] && !state[p].exhausted),
+    fetchedNow: false,
+    fetchedAt: doc.fetchedAt,
+    anySuccess: platforms.some((p) => platformStatus[p]?.status === 'success'),
+  };
+}
+
 /**
  * Makes sure at least `need` relevant results are loaded for the query (or every store is exhausted /
  * failing). Resolves with { productIds, otherProductIds, platformStatus, estimatedTotal, storesHaveMore,
@@ -60,8 +84,46 @@ function describe(platforms, state, ms = {}) {
  * that passed isRelevant(); `otherProductIds` holds the rest, in the order they were found (close/loose
  * matches - e.g. a different storage size or a listing with no recognisable model number at all - shown
  * collapsed as "Other models", never ranked above a real match).
+ *
+ * Phase 2 Part E: before taking the per-query lock at all, a plain (unlocked) read checks whether an
+ * existing cached document can answer immediately - either because it's still fully fresh, or because
+ * it's stale but within the stale-while-revalidate window, in which case it's served as-is right now and
+ * a real refresh is kicked off in the background (not awaited) for the next caller to benefit from. Either
+ * way the fetchedAt reported here is the cached document's own, so a stale-but-served result is always
+ * correctly labelled by its caller (search.js sets source: 'cache' whenever fetchedNow is false).
  */
-function ensureLoaded(query, parsed, { need, refresh = false, key, platforms = scrapers.livePlatforms() }) {
+async function ensureLoaded(query, parsed, { need, refresh = false, key, platforms = scrapers.livePlatforms() }) {
+  if (!refresh) {
+    const existing = await SearchCache.findOne({ queryKey: key }).lean();
+    if (existing && existing.platformState) {
+      const hasResults = Boolean(existing.productIds && existing.productIds.length);
+      const ttl = hasResults ? config.search.cacheTtlMs : config.search.emptyCacheTtlMs;
+      const ageMs = Date.now() - new Date(existing.fetchedAt).getTime();
+      const relevantCount = (existing.relevantProductIds || []).length;
+      // "enough to answer `need` already, or every store is exhausted so loading more wouldn't help
+      // anyway" - otherwise this is a cache the caller is allowed to reuse as a BASE (performRefresh's own
+      // `reusable` check does that), but it still needs more store pages fetched to satisfy `need`
+      // (the "Show more" pagination case), so it must not be short-circuited here.
+      const enough = relevantCount >= need || platforms.every((p) => !existing.platformState[p] || existing.platformState[p].exhausted);
+      if (ageMs < ttl && enough) return fromDoc(existing, platforms); // fully fresh: no scrape, no lock needed
+      const staleWindow = hasResults ? config.search.staleWhileRevalidateMs : 0;
+      if (ageMs >= ttl && enough && staleWindow > 0 && ageMs < ttl + staleWindow) {
+        if (!backgroundRefreshing.has(key)) {
+          backgroundRefreshing.add(key);
+          performRefresh(query, parsed, { need, refresh: false, key, platforms })
+            .catch(() => {}) // a failed background refresh just leaves the stale entry in place
+            .finally(() => backgroundRefreshing.delete(key));
+        }
+        return fromDoc(existing, platforms); // serve the stale-but-usable result right away
+      }
+    }
+  }
+  return performRefresh(query, parsed, { need, refresh, key, platforms });
+}
+
+// The actual (possibly blocking) load: reused by a foreground request with no usable cache, an explicit
+// refresh=true, and a background stale-while-revalidate refresh. Always runs one at a time per query key.
+function performRefresh(query, parsed, { need, refresh = false, key, platforms = scrapers.livePlatforms() }) {
   return serialize(async () => {
     const started = Date.now();
     const doc = await SearchCache.findOne({ queryKey: key });
