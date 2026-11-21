@@ -25,8 +25,19 @@ const searchQuerySchema = z
     page: z.coerce.number().int().min(1).max(100).default(1),
     pageSize: z.coerce.number().int().min(1).max(48).default(12),
     limit: z.coerce.number().int().min(1).max(400).default(24), // live search: how many results to return (more are loaded from the stores on demand)
-    live: bool.default('true'),
-    refresh: bool.default('false'), // ignore an earlier live result and check the stores again
+    // Root cause of a real bug (not test flakiness): zod's `.default()` returns the default value as
+    // the schema's final OUTPUT directly when the field is absent - it does NOT re-run it through the
+    // preceding `.transform()`. `bool.default('false')` therefore produced the literal *string* 'false'
+    // (truthy in JS) whenever `refresh`/`live` were omitted from the query, which is the normal case.
+    // That made `!refresh` false on every ordinary search, so `ensureLoaded` always ran
+    // `scrapers.closeCircuits(platforms)` and `Date.now() - fetchedAt < ttl` was never reachable before
+    // it, which both defeated the 15-minute live-result cache (search.test.js/singlestore.test.js
+    // expected "cache", got "live" every time) and reopened a tripped circuit breaker before every
+    // request (singlestore.test.js's "paused" test saw a fresh TIMEOUT instead of CIRCUIT_OPEN). The
+    // default must be a real boolean, matching `bool`'s post-transform output type, not an unparsed
+    // input string.
+    live: bool.default(true),
+    refresh: bool.default(false), // ignore an earlier live result and check the stores again
   })
   .refine((v) => v.q || v.category, { message: 'Provide a search term (q) or a category', path: ['q'] })
   .refine((v) => v.minPrice === undefined || v.maxPrice === undefined || v.minPrice <= v.maxPrice, {
