@@ -1,0 +1,29 @@
+name: Telex.pk fetch one product
+
+# One-off helper (backend/scripts/telex-fetch-product.js): finds a single product's URL in Telex's
+# own public sitemap and syncs it through the normal telexSync pipeline, instead of waiting for the
+# resumable background sync to cycle back to that sitemap range. Same polite-delay/backoff and
+# matching logic as a normal run - just pointed at one product.
+on:
+  workflow_dispatch:
+    inputs:
+      handle:
+        description: 'Substring to match in the Telex product URL (e.g. iphone-18-pro)'
+        type: string
+        required: true
+
+jobs:
+  fetch:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Fetch and store one Telex product
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/telex-fetch-product.js "${{ inputs.handle }}"

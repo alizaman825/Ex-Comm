@@ -187,4 +187,4 @@ async function runTelexSync({ trigger = 'schedule' } = {}) {
   return { status, summary, durationMs, runId: String(run._id) };
 }
 
-module.exports = { runTelexSync, isRunning, politeDelay };
+module.exports = { runTelexSync, isRunning, politeDelay, storeProduct };
