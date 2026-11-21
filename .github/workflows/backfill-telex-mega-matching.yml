@@ -1,0 +1,33 @@
+name: Backfill Telex/Mega matching
+
+# One-off migration (backend/scripts/backfill-telex-mega-matching.js): re-matches Telex/Mega listings
+# that were created as their own separate, unmatched product before the fuzzy-matching fix in
+# jobs/telexSync.js / jobs/megaSync.js (see STATUS.md, "C1/C4"). Click "Run workflow" below with
+# "apply" unchecked first to see a dry-run report in the log, then run it again with "apply" checked
+# to actually fix the database.
+#
+# Requires a repository secret MONGO_URI (Settings -> Secrets and variables -> Actions -> New repository
+# secret) set to the same Atlas connection string used by the Render backend.
+on:
+  workflow_dispatch:
+    inputs:
+      apply:
+        description: 'Apply the fix (unchecked = dry run only, changes nothing)'
+        type: boolean
+        default: false
+
+jobs:
+  backfill:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - run: npm ci
+        working-directory: backend
+      - name: Run backfill script
+        working-directory: backend
+        env:
+          MONGO_URI: ${{ secrets.MONGO_URI }}
+        run: node scripts/backfill-telex-mega-matching.js ${{ inputs.apply && '--apply' || '' }}
