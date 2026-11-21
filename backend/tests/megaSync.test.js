@@ -78,6 +78,24 @@ test('an existing product with the exact same normalized title is matched, not d
   expect(await Product.countDocuments()).toBe(1);
 });
 
+test('C1/C4 fix (2026-11-21 live-site review): a Mega title that only differs by spec/storage words still joins the existing product, not a duplicate', async () => {
+  const existing = await Product.create({ title: 'Apple iPhone 16 Pro', brand: 'Apple', matchKey: analyzeTitle('Apple iPhone 16 Pro').key, minPrice: 500000 });
+  axios.get
+    .mockResolvedValueOnce({ status: 200, data: sitemapIndexXml, headers: {} })
+    .mockResolvedValueOnce({ status: 200, data: productSitemapXml(['https://www.mega.pk/mobile_products/9001/x.html']), headers: {} })
+    .mockResolvedValueOnce({
+      status: 200,
+      data: productPage({ name: 'Apple IPhone 16 Pro 256GB PTA Approved With Official Warranty', price: '563,999', productID: '9001' }),
+      headers: {},
+    });
+
+  const out = await runMegaSync({});
+  expect(out.summary).toMatchObject({ matched: 1, created: 0 });
+  expect(await Product.countDocuments()).toBe(1);
+  const listing = await Listing.findOne({ platform: 'mega' });
+  expect(String(listing.productId)).toBe(String(existing._id));
+});
+
 test('a title with no confident exact match is kept as its own separate product, not merged', async () => {
   await Product.create({ title: 'HP Victus Gaming Laptop Core i5 Pro', matchKey: analyzeTitle('HP Victus Gaming Laptop Core i5 Pro').key });
   axios.get

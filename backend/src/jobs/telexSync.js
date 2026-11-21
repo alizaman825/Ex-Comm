@@ -5,7 +5,7 @@
 const { Product, Listing, Setting, JobRun } = require('../models');
 const { config } = require('../config/env');
 const telex = require('../scrapers/telex');
-const { analyzeTitle, searchKeyOf } = require('../services/matching');
+const { analyzeTitle, searchKeyOf, findBestMatch } = require('../services/matching');
 const { classify } = require('../services/categories');
 const { appendHistory } = require('../services/ingest');
 const { refreshProductsStats } = require('../services/productStats');
@@ -21,16 +21,39 @@ function politeDelay() {
   return minDelayMs + Math.random() * Math.max(0, maxDelayMs - minDelayMs);
 }
 
-// Exact-model matching only (Phase 2A decision, not the fuzzy similarity services/matching.similarity()
-// uses elsewhere): a Telex listing merges into an existing product only when its normalized title
-// produces the SAME matchKey. Anything less confident is kept as its own, unmatched product rather
-// than risk attaching a Telex offer to the wrong device.
+const escapeRegex = (s) => s.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+const PRICE_FLOOR_RATIO = 0.4; // same bar as services/ingest.js: a price this far under the product's
+// known lowest is more likely a different, cheaper item than a real price for the same model.
+const priceImplausible = (price, product) => {
+  const ref = product && (product.minPrice ?? product.retailMinPrice);
+  return Boolean(ref) && price < ref * PRICE_FLOOR_RATIO;
+};
+
+// A Telex listing merges into an existing product when its normalized title produces the SAME exact
+// matchKey (fast path), OR - Phase 3 Part C, 2026-11-21 live-site review - when services/matching.js's
+// fuzzy brand + similarity match (the same one services/ingest.js uses for Daraz/PriceOye) finds one.
+// Exact-key-only was the original design (Phase 2A), but it meant a Telex listing whose title merely
+// phrased storage/spec words differently from the stored product ("Apple iPhone 18 Pro" vs Telex's
+// "...18 Pro 256GB PTA Approved With Official Warranty") silently became its own second, never-matched
+// product instead of showing up as another store on the product everyone already sees.
+// Returns { product, matched }: matched is false only when a brand new product had to be created.
 async function matchOrCreateProduct(found) {
   const a = analyzeTitle(found.title);
-  const existing = await Product.findOne({ matchKey: a.key });
-  if (existing) return existing;
+  const exact = await Product.findOne({ matchKey: a.key }).select('title brand matchKey minPrice retailMinPrice').lean();
+  if (exact && !priceImplausible(found.price, exact)) return { product: exact, matched: true };
+
+  if (a.brand) {
+    const candidates = await Product.find({ brand: new RegExp(`^${escapeRegex(a.brand)}$`, 'i') })
+      .select('title brand matchKey minPrice retailMinPrice')
+      .limit(600)
+      .lean();
+    const pool = candidates.filter((c) => !priceImplausible(found.price, c));
+    const best = findBestMatch(a, pool);
+    if (best) return { product: best.candidate, matched: true };
+  }
+
   const category = classify(found.title) || undefined;
-  return Product.create({
+  const product = await Product.create({
     title: found.title,
     matchKey: a.key,
     brand: a.brand || undefined,
@@ -38,10 +61,11 @@ async function matchOrCreateProduct(found) {
     searchKey: searchKeyOf(a.brand, found.title),
     image: found.image || undefined,
   });
+  return { product, matched: false };
 }
 
 async function storeProduct(found, now) {
-  const product = await matchOrCreateProduct(found);
+  const { product, matched } = await matchOrCreateProduct(found);
   let listing = await Listing.findOne({ platform: 'telex', externalId: found.externalId });
   const changed = !listing || listing.price !== found.price;
   if (!listing) listing = new Listing({ productId: product._id, platform: 'telex', role: 'retail', externalId: found.externalId });
@@ -62,7 +86,7 @@ async function storeProduct(found, now) {
   // Price history: only ever 'real', at the actual observation time - never simulated or backfilled.
   await appendHistory(listing, found.price, now, { force: changed, source: 'real' });
   await refreshProductsStats([product._id]);
-  return product;
+  return { product, matched };
 }
 
 async function loadState() {
@@ -141,10 +165,8 @@ async function runTelexSync({ trigger = 'schedule' } = {}) {
           continue;
         }
         // eslint-disable-next-line no-await-in-loop
-        const existedBefore = await Product.exists({ matchKey: analyzeTitle(found.title).key });
-        // eslint-disable-next-line no-await-in-loop
-        await storeProduct(found, new Date());
-        if (existedBefore) summary.matched += 1;
+        const { matched } = await storeProduct(found, new Date());
+        if (matched) summary.matched += 1;
         else summary.created += 1;
       }
       state.visited[sitemapUrl] = [...visitedSet];

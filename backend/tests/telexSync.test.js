@@ -75,6 +75,27 @@ test('an existing product with the exact same normalized title is matched, not d
   expect(await Product.countDocuments()).toBe(1);
 });
 
+test('C1/C4 fix (2026-11-21 live-site review): a Telex title that only differs by spec/storage words still joins the existing product, not a duplicate', async () => {
+  // Same shape as the live bug: Daraz's stored product never mentions storage, Telex's title does, plus
+  // warranty/approval words - analyzeTitle's exact matchKey differs ("apple 18 iphone pro" vs
+  // "apple 18 256gb iphone pro"), so only the fuzzy brand+similarity fallback can find this one.
+  const existing = await Product.create({ title: 'Apple iPhone 18 Pro', brand: 'Apple', matchKey: analyzeTitle('Apple iPhone 18 Pro').key, minPrice: 530000 });
+  axios.get
+    .mockResolvedValueOnce({ status: 200, data: sitemapIndexXml, headers: {} })
+    .mockResolvedValueOnce({ status: 200, data: productSitemapXml(['https://www.telex.pk/products/iphone-18-pro']), headers: {} })
+    .mockResolvedValueOnce({
+      status: 200,
+      data: productPage({ title: 'Apple IPhone 18 Pro 256GB PTA Approved With Official Warranty', price: '563,999.00' }),
+      headers: {},
+    });
+
+  const out = await runTelexSync({});
+  expect(out.summary).toMatchObject({ matched: 1, created: 0 });
+  expect(await Product.countDocuments()).toBe(1); // joined the existing product, no duplicate
+  const listing = await Listing.findOne({ platform: 'telex' });
+  expect(String(listing.productId)).toBe(String(existing._id));
+});
+
 test('a title with no confident exact match is kept as its own separate product, not merged', async () => {
   await Product.create({ title: 'Infinix Hot 60i Pro', matchKey: analyzeTitle('Infinix Hot 60i Pro').key });
   axios.get

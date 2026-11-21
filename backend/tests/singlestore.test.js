@@ -123,6 +123,30 @@ describe('nothing is hidden: non-matches move to otherResults, they are never dr
     expect(seen[1]).toEqual(seen[0]);
     expect(seen[2]).toEqual(seen[0]);
   });
+
+  test('D1 fix (2026-11-21 live-site review): a "laptop" search demotes a monitor mistitled as a laptop and an implausibly cheap junk listing into otherResults, keeping real laptops as the results', async () => {
+    const real = ['HP Victus Gaming Laptop Core i5 12th Gen', 'Lenovo IdeaPad Slim 3 Laptop Ryzen 5'];
+    const junk = ['Dell P22T Laptop', 'md laptop stand holder cooling pad']; // a monitor mistitled as the device, and a clearly-not-a-laptop low-value listing
+    const items = [...real.map((t, i) => listing('daraz', t, 90000 + i * 1000)), ...junk.map((t, i) => listing('daraz', t, 9700 + i))];
+    stores({ daraz: () => withMeta(items) });
+    const res = await search('laptop');
+    expect(res.body.total).toBe(await distinctProductsOf(real, (t) => cardFor(res, t)));
+    expect(res.body.otherTotal).toBe(await distinctProductsOf(junk, (t) => otherCardFor(res, t)));
+    // never dropped outright - still reachable in the "Other models" group, same invariant as the rest of this file
+    for (const t of junk) expect(await otherCardFor(res, t)).toBeTruthy();
+  });
+
+  test('D1 fix: the category price floor never touches a legitimate cheap item in an unrelated category', async () => {
+    stores({ daraz: () => withMeta([listing('daraz', 'Casio Digital Resin Watch', 800), listing('daraz', 'Wired Earphones With Mic', 350)]) });
+    const watchRes = await search('casio watch');
+    expect((await cardFor(watchRes, 'Casio Digital Resin Watch'))).toBeTruthy();
+    expect(await otherCardFor(watchRes, 'Casio Digital Resin Watch')).toBeFalsy();
+    await SearchCache.deleteMany({});
+    stores({ daraz: () => withMeta([listing('daraz', 'Wired Earphones With Mic', 350)]) });
+    const audioRes = await search('wired earphones');
+    expect(await cardFor(audioRes, 'Wired Earphones With Mic')).toBeTruthy();
+    expect(await otherCardFor(audioRes, 'Wired Earphones With Mic')).toBeFalsy();
+  });
 });
 
 describe('same store never merged; different stores grouped for comparison', () => {

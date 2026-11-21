@@ -4,7 +4,7 @@ const AppError = require('../utils/AppError');
 const search = require('../services/search');
 const { resolveCategory } = require('../services/categories');
 const { excludeSeededInProd, realHistoryFilter, excludeStaleInProd } = require('../services/publicData');
-const { statusOf } = require('../services/priceStatus');
+const { statusOf, isTrustworthy } = require('../services/priceStatus');
 const { config } = require('../config/env');
 const { memoize } = require('../utils/memoCache');
 
@@ -41,7 +41,13 @@ function categoryFilter(category) {
   return category ? { category: resolveCategory(category) || '__none__' } : {};
 }
 
-async function cardsFor(products) {
+// trustworthyOnly: drop every listing that isn't currently "checked_recently" before the card's offers
+// are built (owner decision 2026-11-20, sharpened 2026-11-21 after a live-site review found a "saved"
+// PriceOye row still visible inside a Best deals / price-drop card: a stale price must not appear at all
+// in a deals context, not just stay out of the headline price). Only used for drops/trending - the
+// product detail page's full offer table intentionally keeps every store, saved ones included, so a
+// shopper can see what AliExpress/PriceOye last showed even when it's not "live".
+async function cardsFor(products, { trustworthyOnly = false } = {}) {
   if (!products.length) return [];
   const listings = await Listing.find(excludeStaleInProd(excludeSeededInProd({ productId: { $in: products.map((p) => p._id) } }))).lean();
   const by = new Map();
@@ -50,7 +56,11 @@ async function cardsFor(products) {
     if (!by.has(k)) by.set(k, []);
     by.get(k).push(l);
   }
-  return products.map((p) => search.toCard(p, by.get(String(p._id)) || []));
+  return products.map((p) => {
+    let ls = by.get(String(p._id)) || [];
+    if (trustworthyOnly) ls = ls.filter((l) => isTrustworthy(l));
+    return search.toCard(p, ls);
+  });
 }
 
 async function loadProduct(id) {
@@ -99,10 +109,10 @@ function isFreshEnough(card) {
 
 // A product with nothing currently in stock anywhere, or nothing checked recently enough to trust,
 // shouldn't lead a promotional rail (home page trending/drops); fetch extra candidates and drop them.
-async function availableCardsFor(pool, limit) {
-  const cards = await cardsFor(pool);
+async function availableCardsFor(pool, limit, { trustworthyOnly = false } = {}) {
+  const cards = await cardsFor(pool, { trustworthyOnly });
   return cards
-    .filter((c) => c.offers.some((o) => o.inStock))
+    .filter((c) => c.offers.length && c.offers.some((o) => o.inStock))
     .filter(isFreshEnough)
     .slice(0, limit);
 }
@@ -143,7 +153,7 @@ async function drops(req, res) {
       .sort({ priceChange7d: 1 })
       .limit(limit * 6)
       .lean();
-    return (await availableCardsFor(pool, limit * 6)).filter(isPromotableDeal).slice(0, limit);
+    return (await availableCardsFor(pool, limit * 6, { trustworthyOnly: true })).filter(isPromotableDeal).slice(0, limit);
   });
   cacheableFor(res, 30);
   res.json({ products });

@@ -93,8 +93,12 @@ const config = {
   // "true" before the scheduler or the manual endpoint actually syncs anything (jobs/telexSync.js).
   telexSync: {
     enabled: process.env.SYNC_TELEX_ENABLED === 'true',
-    cron: process.env.TELEX_SYNC_CRON || '0 */6 * * *',
-    maxPagesPerRun: Number(process.env.TELEX_MAX_PAGES_PER_RUN) || 10,
+    // Phase 3 Part C2 (2026-11-21): every 6h/10 pages (40 pages/day) was too slow to cover the catalog -
+    // production logs showed Telex products ali could see live on telex.pk still missing from search
+    // days later. Raised to every 3h/20 pages (160 pages/day) - still one request every 3-5s (politeDelay
+    // below, unchanged) and well inside the GitHub Action trigger's own 150s curl timeout.
+    cron: process.env.TELEX_SYNC_CRON || '0 */3 * * *',
+    maxPagesPerRun: Number(process.env.TELEX_MAX_PAGES_PER_RUN) || 20,
     minDelayMs: Number(process.env.TELEX_MIN_DELAY_MS ?? 3000),
     maxDelayMs: Number(process.env.TELEX_MAX_DELAY_MS ?? 5000),
     timeoutMs: Number(process.env.TELEX_TIMEOUT_MS) || 10000,
@@ -112,8 +116,11 @@ const config = {
   // call is to let ali turn it on explicitly once this PR is reviewed.
   megaSync: {
     enabled: process.env.SYNC_MEGA_ENABLED === 'true',
-    cron: process.env.MEGA_SYNC_CRON || '0 4 * * *',
-    maxPagesPerRun: Number(process.env.MEGA_MAX_PAGES_PER_RUN) || 10,
+    // Phase 3 Part C2 (2026-11-21): once/day at 10 pages was too slow for the same reason as Telex above.
+    // Raised to twice a day (offset from Telex's own runs) at 20 pages/run - still gentle (one request
+    // every 3-5s, politeDelay below unchanged).
+    cron: process.env.MEGA_SYNC_CRON || '0 4,16 * * *',
+    maxPagesPerRun: Number(process.env.MEGA_MAX_PAGES_PER_RUN) || 20,
     minDelayMs: Number(process.env.MEGA_MIN_DELAY_MS ?? 3000),
     maxDelayMs: Number(process.env.MEGA_MAX_DELAY_MS ?? 5000),
     timeoutMs: Number(process.env.MEGA_TIMEOUT_MS) || 10000,
@@ -142,6 +149,27 @@ const config = {
     // is included for when that category exists, and is simply never matched until then.
     categories: (process.env.DEALS_CATEGORIES || 'mobiles,laptops,audio,watches,gpus,home-appliances')
       .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
+  },
+  // Phase 3 Part D1 (2026-11-21 live-site review): a "laptop" search returning a Rs 9,700 "md laptop" or
+  // a monitor titled "...Laptop" by the seller. Two independent, configurable guards (search.js's
+  // categoryQualityFilter), applied to every search/category result, not just deals:
+  //  - a minimum plausible price per category (a genuine laptop/phone/appliance below this is almost
+  //    always a misfiled accessory or junk listing, not a real find);
+  //  - excluded keywords per category (a store-mislabeled monitor, or an obvious accessory the title
+  //    itself names) - same idea as deals.excludedKeywords above, generalized per category.
+  // A category not listed here (or a product search.js can't classify into one) is never filtered.
+  categoryQuality: {
+    minPrice: {
+      mobiles: Number(process.env.CATEGORY_MIN_PRICE_MOBILES) || 4000,
+      laptops: Number(process.env.CATEGORY_MIN_PRICE_LAPTOPS) || 25000,
+      audio: Number(process.env.CATEGORY_MIN_PRICE_AUDIO) || 500,
+      watches: Number(process.env.CATEGORY_MIN_PRICE_WATCHES) || 1000,
+      'home-appliances': Number(process.env.CATEGORY_MIN_PRICE_HOME_APPLIANCES) || 1500,
+    },
+    excludedKeywords: {
+      laptops: (process.env.CATEGORY_EXCLUDED_KEYWORDS_LAPTOPS || 'monitor,screen protector,laptop bag,laptop sleeve,laptop stand,laptop table,cooling pad,docking station,laptop charger,laptop adapter,laptop battery,laptop skin,laptop cover')
+        .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
+    },
   },
   // Contact form (Phase 2 Part D): recipient address and the pepper used to hash a submitter's IP
   // (never stored raw). CONTACT_RECIPIENT_EMAIL is the owner's own inbox, set only in the deploy
@@ -177,6 +205,14 @@ const config = {
     // expires). Only applies when the cached entry actually has results - an empty result has nothing
     // useful to serve stale, so it still blocks on emptyCacheTtlMs as before.
     staleWhileRevalidateMs: Number(process.env.SEARCH_STALE_WHILE_REVALIDATE_MS) || 10 * 60 * 1000,
+    // Phase 3 Part B (B1/B2, 2026-11-21 live-site review): a query with few real matches (a specific
+    // phone model, say) never reaches the default page-size `need`, and every store page already loaded
+    // is kept - so without this, a FRESH cache entry (age < cacheTtlMs) that hasn't reached `need` was
+    // still treated as "not enough" and blocked on a brand new live round-trip on every single request,
+    // including an immediate reload. That's the "still shows skeletons on reload a minute later" bug.
+    // Now a fresh-but-incomplete entry is served immediately once it's this old, and only topped up with
+    // one more (non-blocking) background round per cooldown - same pattern as staleWhileRevalidateMs.
+    topUpCooldownMs: Number(process.env.SEARCH_TOPUP_COOLDOWN_MS) || 60 * 1000,
     // Verbose per-search stage timings (db/scrape/total ms) to stdout, for measuring Part E's effect.
     // Off by default (would be noisy in production logs); see scripts/bench-search.js.
     logTiming: process.env.SEARCH_LOG_TIMING === 'true',
