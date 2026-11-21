@@ -178,7 +178,16 @@ describe('Phase 4 Part A2: fastLocal (opt-in fast local-first search)', () => {
 });
 
 describe('Phase 4 Part C2: disambiguating identical card titles', () => {
-  const { disambiguateTitles, distinguishingSpec } = require('../src/services/search');
+  const { disambiguateTitles, distinguishingSpec, toCard } = require('../src/services/search');
+
+  // Regression test: toCard's internal _spec field leaked into the product-detail/similar-products
+  // endpoints (products.controller.js calls toCard() directly, never disambiguateTitles()) until this
+  // was caught live on production right after merging. Never opt a caller into _spec by accident.
+  test('toCard never includes the internal _spec field unless explicitly asked for', () => {
+    const product = { _id: 'abc', title: 'X', altTitles: ['X - 8GB RAM 256GB ROM'], platforms: ['daraz'] };
+    expect('_spec' in toCard(product, [])).toBe(false);
+    expect('_spec' in toCard(product, [], { withSpec: true })).toBe(true);
+  });
 
   test('distinguishingSpec pulls a RAM/storage spec from the product\'s own titles', () => {
     expect(distinguishingSpec({ title: 'Infinix Note 60', altTitles: ['Infinix Note 60 - 8GB RAM 256GB ROM'] })).toBe('8GB/256GB');

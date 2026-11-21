@@ -121,9 +121,13 @@ function distinguishingSpec(product) {
   return null;
 }
 
-function toCard(product, listings) {
+// `withSpec`: true only for search.js's own buildCards() (below) - every other caller of toCard
+// (products.controller.js's product-detail/similar-products endpoints) gets a plain card with no
+// internal field, since disambiguation only makes sense within a single search RESULT LIST and those
+// endpoints never run disambiguateTitles() to strip it back off again.
+function toCard(product, listings, { withSpec = false } = {}) {
   const offers = offersFor(listings);
-  return {
+  const card = {
     id: String(product._id),
     title: product.title,
     brand: product.brand || null,
@@ -136,8 +140,9 @@ function toCard(product, listings) {
     priceChange7d: product.priceChange7d || 0,
     platforms: product.platforms,
     offers,
-    _spec: distinguishingSpec(product), // internal only - stripped by disambiguateTitles() below
   };
+  if (withSpec) card._spec = distinguishingSpec(product); // internal only - stripped by disambiguateTitles() below
+  return card;
 }
 
 // Appends the distinguishing spec to every card in `cards` whose title collides with another card's in
@@ -272,7 +277,7 @@ async function search(params) {
       if (maxPrice !== undefined) listings = listings.filter((l) => l.price <= maxPrice);
       if (minRating !== undefined) listings = listings.filter((l) => (l.rating || 0) >= minRating);
       if (!listings.length) continue;
-      const card = toCard(p, listings);
+      const card = toCard(p, listings, { withSpec: true });
       if (wanted || minPrice !== undefined || maxPrice !== undefined || minRating !== undefined) {
         // Headline price = the retail listings that matched (supplier prices only headline when nothing else matched).
         const retail = listings.filter((l) => l.role !== 'supplier');
