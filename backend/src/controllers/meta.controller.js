@@ -1,4 +1,4 @@
-const { Category, Product, SearchCache } = require('../models');
+const { Category, Product, SearchCache, Listing } = require('../models');
 const scrapers = require('../scrapers');
 const { config } = require('../config/env');
 
@@ -31,8 +31,13 @@ const PLATFORM_META = [
 ];
 
 // GET /api/platforms: supported stores and whether each can be scraped live right now.
-function listPlatforms(_req, res) {
+// `listingCount`/`hasListings` are computed from real Listing documents (never hardcoded) so the
+// frontend can hide a store with nothing currently listed, and the home page can state an accurate
+// store count (C4) instead of a fixed number that drifts out of date as stores are added/removed.
+async function listPlatforms(_req, res) {
   const circuits = Object.fromEntries(scrapers.platformStatus().map((s) => [s.platform, s]));
+  const counts = await Listing.aggregate([{ $group: { _id: '$platform', count: { $sum: 1 } } }]);
+  const countOf = Object.fromEntries(counts.map((c) => [c._id, c.count]));
   res.json({
     demoMode: config.demoMode,
     platforms: PLATFORM_META.map((p) => ({
@@ -42,6 +47,8 @@ function listPlatforms(_req, res) {
       retryAt: circuits[p.id]?.retryAt || null,
       lastError: circuits[p.id]?.lastError || null,
       lastSuccessAt: circuits[p.id]?.lastSuccessAt || null,
+      listingCount: countOf[p.id] || 0,
+      hasListings: Boolean(countOf[p.id]),
     })),
   });
 }

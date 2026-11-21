@@ -8,14 +8,14 @@ export default function TermsPage() {
     <div className="page max-w-3xl">
       <header className="mb-10">
         <h1 className="t-h1">Terms of use</h1>
-        <p className="t-lead mt-3">Last updated: [OWNER TO CONFIRM — set the date this page goes live].</p>
+        <p className="t-lead mt-3">Last updated: 21 November 2026.</p>
       </header>
 
       <div className="prose-section space-y-8 text-sm leading-relaxed text-slate-700">
         <section>
           <h2 className="t-h3">What Ex-Comm is</h2>
           <p className="mt-2">
-            Ex-Comm is a price comparison service for online shopping in Pakistan. We read publicly available prices from Daraz and PriceOye, and supplier reference prices from AliExpress and eBay, and show them side by side so you can compare. We don&apos;t sell products ourselves and we aren&apos;t a party to any purchase you make on another store — see our <Link href="/methodology" className="underline">Methodology</Link> page for exactly how prices are collected and labelled.
+            Ex-Comm is a price comparison service for online shopping in Pakistan, operated by an individual in Pakistan. We read publicly available prices from Daraz and PriceOye, and supplier reference prices from AliExpress and eBay, and show them side by side so you can compare. We don&apos;t sell products ourselves and we aren&apos;t a party to any purchase you make on another store — see our <Link href="/methodology" className="underline">Methodology</Link> page for exactly how prices are collected and labelled.
           </p>
         </section>
 
@@ -52,7 +52,7 @@ export default function TermsPage() {
         <section>
           <h2 className="t-h3">No warranty, limited liability</h2>
           <p className="mt-2">
-            Ex-Comm is provided &quot;as is&quot;. [OWNER TO CONFIRM — this section usually states that Ex-Comm is not liable for losses from relying on a price or from a purchase made on another store; confirm the exact wording and whether a jurisdiction/governing-law clause is needed before publishing, ideally with a lawyer&apos;s input since this is a liability-limiting clause.]
+            Ex-Comm is provided &quot;as is&quot;, with no warranty of any kind. To the fullest extent permitted by law, Ex-Comm and the individual who operates it are not liable for any loss arising from relying on a price, availability or rating shown here, or from a purchase you make on another store. Your use of any linked store is governed by that store&apos;s own terms.
           </p>
         </section>
 
@@ -64,7 +64,7 @@ export default function TermsPage() {
         <section>
           <h2 className="t-h3">Contact</h2>
           <p className="mt-2">
-            Questions about these terms go to [OWNER TO CONFIRM — contact email/address] or via our <Link href="/contact" className="underline">Contact page</Link>.
+            Questions about these terms go through our <Link href="/contact" className="underline">Contact page</Link>.
           </p>
         </section>
       </div>

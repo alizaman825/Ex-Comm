@@ -122,6 +122,23 @@ describe('trending and platforms', () => {
     ]);
     expect(res.body.platforms.find((p) => p.id === 'aliexpress').live).toBe(false);
   });
+
+  test('GET /api/platforms computes listingCount/hasListings from real Listing documents (C4), not a hardcoded flag', async () => {
+    const { Listing } = require('../src/models');
+    const res = await request(app).get('/api/platforms');
+    const daraz = res.body.platforms.find((p) => p.id === 'daraz');
+    const realCount = await Listing.countDocuments({ platform: 'daraz' });
+    expect(realCount).toBeGreaterThan(0);
+    expect(daraz.listingCount).toBe(realCount);
+    expect(daraz.hasListings).toBe(true);
+
+    // Telex is a real platform with no seeded listings in this test database (its sync is off by
+    // default) - it must report hasListings: false rather than assume every known store has stock.
+    const telexCount = await Listing.countDocuments({ platform: 'telex' });
+    const telex = res.body.platforms.find((p) => p.id === 'telex');
+    expect(telex.listingCount).toBe(telexCount);
+    expect(telex.hasListings).toBe(telexCount > 0);
+  });
 });
 
 describe('headline price is the retail price', () => {

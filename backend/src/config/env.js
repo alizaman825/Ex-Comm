@@ -104,6 +104,21 @@ const config = {
   home: {
     freshnessHours: Number(process.env.HOME_FRESHNESS_HOURS) || 48,
   },
+  // "Biggest price drops" quality rules (C1): a cheap accessory with a big percentage swing was crowding
+  // out real deals on real products. Configurable via env rather than magic numbers buried in the query,
+  // per the owner's ask - a cheap phone case moving from Rs 200 to Rs 150 is a 25% "drop" that means
+  // nothing next to a flagship phone's real Rs 10,000 cut.
+  deals: {
+    minPrice: Number(process.env.DEALS_MIN_PRICE) || 2000,
+    excludedKeywords: (process.env.DEALS_EXCLUDED_KEYWORDS || 'case,cover,screen protector,tempered glass,cable,charger,adapter,strap,pouch,sleeve,skin')
+      .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
+    // Launch categories only (PLAN.md decisions) - a category slug not in this list never leads the
+    // "Biggest price drops" rail even if it technically qualifies on price/history. Matches the real
+    // category slugs in services/categories.js (mobiles/laptops/audio/watches/home-appliances); "gpus"
+    // is included for when that category exists, and is simply never matched until then.
+    categories: (process.env.DEALS_CATEGORIES || 'mobiles,laptops,audio,watches,gpus,home-appliances')
+      .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
+  },
   smtp: {
     host: process.env.SMTP_HOST || '',
     port: Number(process.env.SMTP_PORT) || 587,

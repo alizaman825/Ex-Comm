@@ -21,11 +21,7 @@ export default function ContactPage() {
         <div className="card p-5">
           <h2 className="t-h3">Everything else</h2>
           <p className="mt-2">
-            Email: <strong>[OWNER TO CONFIRM — support/contact email address]</strong>
-            <br />
-            Address: <strong>[OWNER TO CONFIRM — if a physical/registered address is required]</strong>
-            <br />
-            Phone: <strong>[OWNER TO CONFIRM — only if you want to publish one]</strong>
+            Use the Contact form on this page for anything else — an account question, a privacy request, or anything not covered by &quot;Report a problem&quot; above. Ex-Comm is operated by an individual in Pakistan rather than a company, so there&apos;s no separate office address or phone line to list.
           </p>
         </div>
 
