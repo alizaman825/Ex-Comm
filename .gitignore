@@ -43,3 +43,6 @@ playwright-report/
 test-results/
 *.tsbuildinfo
 next-env.d.ts
+
+# Phase 4 scratch screenshots - not part of the report, never committed
+.phase4-screenshots/
