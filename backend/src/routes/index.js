@@ -30,6 +30,7 @@ module.exports = () => {
   api.use('/notifications', notificationsRouter());
   api.use('/jobs', require('./jobs.routes')());
   api.use('/reports', require('./reports.routes')());
+  api.use('/contact', require('./contact.routes')());
 
   return api;
 };

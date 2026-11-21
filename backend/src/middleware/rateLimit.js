@@ -34,4 +34,15 @@ const searchLimiter = () =>
 const reportLimiter = () =>
   rateLimit({ windowMs: config.rateLimit.windowMs, limit: config.rateLimit.reportMax, standardHeaders: 'draft-7', legacyHeaders: false, handler });
 
-module.exports = { apiLimiter, authLimiter, searchLimiter, reportLimiter };
+// Contact form (Part D): no auth, so IP alone is the key, and its own hourly window (not the shared
+// 15-minute one) since a genuine visitor needs at most one or two messages ever, let alone per window.
+const contactLimiter = () =>
+  rateLimit({
+    windowMs: config.rateLimit.contactWindowMs,
+    limit: config.rateLimit.contactMax,
+    standardHeaders: 'draft-7',
+    legacyHeaders: false,
+    handler,
+  });
+
+module.exports = { apiLimiter, authLimiter, searchLimiter, reportLimiter, contactLimiter };

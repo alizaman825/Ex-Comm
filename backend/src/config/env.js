@@ -95,8 +95,8 @@ const config = {
     timeoutMs: Number(process.env.TELEX_TIMEOUT_MS) || 10000,
     maxRetries: Number(process.env.TELEX_MAX_RETRIES) || 3,
     // Owner-confirmed contact (2026-11-20): URL only, no personal email, per agents.md's identification
-    // guidance.
-    userAgent: process.env.TELEX_USER_AGENT || 'Ex-CommBot/1.0 (+https://ex-comm.vercel.app)',
+    // guidance. Points at the real Contact page (Part D) rather than the bare domain.
+    userAgent: process.env.TELEX_USER_AGENT || 'Ex-CommBot/1.0 (+https://ex-comm.vercel.app/contact)',
   },
   // How recently a product needs to have been checked to lead a home-page rail (trending/drops). A product
   // whose freshest offer is older than this is left off rather than risk showing stock/price that an idle
@@ -118,6 +118,20 @@ const config = {
     // is included for when that category exists, and is simply never matched until then.
     categories: (process.env.DEALS_CATEGORIES || 'mobiles,laptops,audio,watches,gpus,home-appliances')
       .split(',').map((x) => x.trim().toLowerCase()).filter(Boolean),
+  },
+  // Contact form (Phase 2 Part D): recipient address and the pepper used to hash a submitter's IP
+  // (never stored raw). CONTACT_RECIPIENT_EMAIL is the owner's own inbox, set only in the deploy
+  // environment (Render) - never hardcoded or committed.
+  contact: {
+    recipientEmail: process.env.CONTACT_RECIPIENT_EMAIL || '',
+    ipHashSalt: process.env.CONTACT_IP_HASH_SALT || '',
+  },
+  // Outbound notification email, HTTP API based (not SMTP - Render's free tier is known to block
+  // outbound SMTP ports). One provider (Resend) plus the no-op fallback in services/email.js when
+  // either var below is unset.
+  email: {
+    resendApiKey: process.env.RESEND_API_KEY || '',
+    resendFrom: process.env.RESEND_FROM_EMAIL || 'onboarding@resend.dev',
   },
   smtp: {
     host: process.env.SMTP_HOST || '',
@@ -156,6 +170,10 @@ const config = {
     authMax: Number(process.env.AUTH_RATE_LIMIT_MAX) || 20,
     // "Report a wrong price or product" has no account, so this is keyed on IP alone - deliberately tight.
     reportMax: Number(process.env.REPORT_RATE_LIMIT_MAX) || 5,
+    // Contact form (Part D): its own, tighter hourly window rather than sharing the 15-minute window
+    // above - an honest visitor needs at most one or two contact messages ever, not every 15 minutes.
+    contactMax: Number(process.env.CONTACT_RATE_LIMIT_MAX) || 3,
+    contactWindowMs: Number(process.env.CONTACT_RATE_LIMIT_WINDOW_MS) || 60 * 60 * 1000,
   },
 };
 
