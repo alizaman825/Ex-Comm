@@ -559,8 +559,18 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
    behind these ranges from near-black to a light warm yellow, so a fixed text color/opacity can't meet
    4.5:1 everywhere on its own — the shadow gives a consistent dark halo so the text stays readable
    regardless of where it lands on the gradient (verified against the darkest and lightest gradient
-   stops; see STATUS.md for how this was checked). */
-.spec-label { color: rgb(var(--slate-400)); letter-spacing: 0.22em; text-shadow: 0 1px 3px rgb(0 0 0 / 0.55); }
+   stops; see STATUS.md for how this was checked).
+   E2 fix (2026-11-21 live-site review): this rule sat outside any @layer, so per Tailwind's cascade it
+   always beat a text-white/NN utility placed alongside it in the same className, everywhere in the app.
+   Several call sites (e.g. "Get notified the moment it falls" on the home page) pass such a utility
+   specifically to brighten the label over a lighter stretch of the gradient, but it was silently dead:
+   every one still rendered in this rule's own muted color regardless, which is unreadable on the
+   palest part of the gradient that particular label sits over. Moving the color into @layer components
+   lets a utility class override it as intended, while usages with no color utility keep this default. */
+.spec-label { letter-spacing: 0.22em; text-shadow: 0 1px 3px rgb(0 0 0 / 0.55); }
+@layer components {
+  .spec-label { color: rgb(var(--slate-400)); }
+}
 /* Price text (the board's #6ee7b7 green) over the raw gradient needs the same halo. */
 .t-price { text-shadow: 0 1px 3px rgb(0 0 0 / 0.5); }
 
