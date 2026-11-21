@@ -56,6 +56,11 @@ function describe(platforms, state, ms = {}) {
 // Keys currently being refreshed in the background (stale-while-revalidate), so a second request for the
 // same stale query doesn't start a second background refresh - at most one runs per key at a time.
 const backgroundRefreshing = new Set();
+// In-memory throttle for the "fresh but short of `need`" background top-up (Phase 3 Part B): independent
+// of the SearchCache doc's own fetchedAt, which intentionally never advances just because a reusable
+// continuation fetched another store page - using fetchedAt here would re-trigger a background attempt on
+// every single request once past the cooldown once, instead of at most once per cooldown window.
+const lastTopUpAt = new Map();
 
 // Rebuilds ensureLoaded's return shape from an already-stored SearchCache document, with no scraping and
 // no database write. `fetchedAt` is the document's own, real timestamp - never advanced - so a stale
@@ -105,7 +110,31 @@ async function ensureLoaded(query, parsed, { need, refresh = false, key, platfor
       // `reusable` check does that), but it still needs more store pages fetched to satisfy `need`
       // (the "Show more" pagination case), so it must not be short-circuited here.
       const enough = relevantCount >= need || platforms.every((p) => !existing.platformState[p] || existing.platformState[p].exhausted);
-      if (ageMs < ttl && enough) return fromDoc(existing, platforms); // fully fresh: no scrape, no lock needed
+      // Have we already tried, for THIS cache entry, at least as hard as this request asks? A genuine
+      // "Show more" click raises `need` past anything tried before and must still block for a real answer
+      // (paging test below); a plain reload repeats the same `need` that previously came up short on a
+      // narrow query (few real matches) and must not re-trigger the same live round-trip every time.
+      const alreadyPursuedThisMuch = (existing.lastNeed || 0) >= need;
+      if (ageMs < ttl) {
+        // Fully fresh. Already enough, or genuinely nothing more to find: serve as-is, no scrape, no lock.
+        if (enough) return fromDoc(existing, platforms);
+        if (hasResults && alreadyPursuedThisMuch) {
+          // Fresh, short of `need`, but we already tried this hard for this query and it didn't help -
+          // serve what's cached right now rather than block on another live round-trip, and - no more than
+          // once per topUpCooldownMs - kick a background round in case the stores have moved on since.
+          const lastAttempt = lastTopUpAt.get(key) || 0;
+          if (Date.now() - lastAttempt >= config.search.topUpCooldownMs && !backgroundRefreshing.has(key)) {
+            lastTopUpAt.set(key, Date.now());
+            backgroundRefreshing.add(key);
+            performRefresh(query, parsed, { need, refresh: false, key, platforms })
+              .catch(() => {})
+              .finally(() => backgroundRefreshing.delete(key));
+          }
+          return fromDoc(existing, platforms);
+        }
+        // Either no results at all yet, or `need` is bigger than anything tried before (a real "Show
+        // more"): fall through to a blocking fetch, same as before.
+      }
       const staleWindow = hasResults ? config.search.staleWhileRevalidateMs : 0;
       if (ageMs >= ttl && enough && staleWindow > 0 && ageMs < ttl + staleWindow) {
         if (!backgroundRefreshing.has(key)) {
@@ -188,11 +217,13 @@ function performRefresh(query, parsed, { need, refresh = false, key, platforms =
     // stores added on demand (AliExpress) keep their entry; they are not part of the ordinary live search
     const platformStatus = describe(Object.keys(state), state, ms);
     const relevantProductIds = ids.filter((id) => relevantIds.has(id));
+    const lastNeed = Math.max(need, (reusable && doc && doc.lastNeed) || 0);
     await SearchCache.updateOne(
       { queryKey: key },
-      { $set: { query: query.trim().toLowerCase(), productIds: ids, relevantProductIds, platformState: state, platformStatus, source: 'live', fetchedAt } },
+      { $set: { query: query.trim().toLowerCase(), productIds: ids, relevantProductIds, platformState: state, platformStatus, source: 'live', fetchedAt, lastNeed } },
       { upsert: true }
     );
+    if (fetchedNow) lastTopUpAt.set(key, Date.now()); // throttle base: last time this query was actually scraped
 
     const anySuccess = platforms.some((p) => state[p].status === 'success');
     const estimatedTotal = platforms.reduce((sum, p) => sum + (state[p].total ?? state[p].loaded ?? 0), 0);

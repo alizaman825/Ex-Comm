@@ -124,6 +124,28 @@ function toCard(product, listings) {
   };
 }
 
+// Phase 3 Part D1 (2026-11-21): a search/category result this implausible for its category is almost
+// always a misfiled accessory, or (same bug, a different shape) a monitor/bag/stand the seller titled
+// as the device itself - keyword matching on the title catches what classify() can't, since a seller's
+// own mis-title ("Dell P22T Laptop" for an actual monitor) still says the device category's own word.
+// Scoped to 'laptops' only (the live-site finding this fixes): other categories' price floors stay
+// configurable for future use, but a flat per-category price gate is too blunt for categories whose
+// legitimate items vary far more widely in price (e.g. mobiles - accessories already have their own
+// gate above, via parsed.wantsAccessory).
+const QUALITY_GATED_CATEGORIES = new Set(['laptops']);
+function passesCategoryQuality(card) {
+  const slug = card.category;
+  if (!slug || !QUALITY_GATED_CATEGORIES.has(slug)) return true;
+  const floor = config.categoryQuality.minPrice[slug];
+  if (floor && (card.minPrice ?? 0) < floor) return false;
+  const excluded = config.categoryQuality.excludedKeywords[slug];
+  if (excluded && excluded.length) {
+    const title = `${card.brand || ''} ${card.title}`.toLowerCase();
+    if (excluded.some((kw) => kw && title.includes(kw))) return false;
+  }
+  return true;
+}
+
 const SORTS = {
   relevance: null,
   price_asc: (a, b) => a.minPrice - b.minPrice,
@@ -204,13 +226,28 @@ async function search(params) {
         card.minPrice = Math.min(...headline.map((l) => l.price));
         card.maxPrice = Math.max(...headline.map((l) => l.price));
       }
+      // Live search: demote (never hide - PLAN.md item 4's "nothing the store returned is dropped" rule
+      // extends to this too) a result that fails the category quality check into "Other models", the
+      // same group a wrong-model/accessory match already collapses into. Stored/category-browsing results
+      // are left alone - D1's report was specifically about a live search ("laptop"), and demoting there
+      // would need its own "other" concept that browsing/demo mode don't have.
+      // An accessory query ("laptop sleeve", "apple watch strap") legitimately matches cheap,
+      // accessory-titled items - the quality floor is for a bare category query ("laptop") whose
+      // results should be actual products, not for a query that asked for an accessory.
+      if (liveInfo && !parsed.wantsAccessory && !passesCategoryQuality(card)) {
+        card._qualityDemoted = true;
+      }
       built.push(card);
     }
     return built;
   }
-  let cards = buildCards(products);
+  const builtMain = buildCards(products);
+  let cards = builtMain.filter((c) => !c._qualityDemoted);
+  const demoted = builtMain.filter((c) => c._qualityDemoted);
   // Collapsed, capped group - a shopper can open it, but it is never what "N results" counts as.
-  const otherCards = buildCards(otherProducts).slice(0, 20);
+  const otherCards = [...demoted, ...buildCards(otherProducts)].slice(0, 20);
+  // Internal marker only - never part of the API response.
+  for (const c of otherCards) delete c._qualityDemoted;
   if (SORTS[sort]) cards.sort(SORTS[sort]); // sorts what is loaded; "best match first" is the stores' order with matches ranked up
 
   const total = cards.length;

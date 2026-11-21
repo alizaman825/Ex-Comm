@@ -665,7 +665,11 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
 .nav-pill-cine {
   padding: 10px 10px 10px 18px;
   border-radius: 9999px;
-  background: rgb(255 255 255 / 0.1);
+  /* E1 fix (2026-11-21 live-site review): this was a flat rgb(255 255 255 / 0.1), the exact bug
+     --nav-bg (above) already exists to fix - a bright white product photo scrolling underneath the
+     fixed-position glass pill showed through enough to wash out the white nav text/icons. Using the
+     token keeps >=4.5:1 contrast for the white nav text/icons regardless of what scrolls beneath. */
+  background: rgb(var(--nav-bg));
   border: 1px solid rgb(255 255 255 / 0.28);
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.35) inset, 0 12px 30px rgb(0 0 0 / 0.35);
   -webkit-backdrop-filter: blur(22px) saturate(160%);
@@ -706,7 +710,8 @@ body { background-color: transparent; color: rgb(var(--slate-600)); }
 /* the mobile menu: a second, separate floating glass panel below the pill, not welded to it */
 .mobile-panel-cine {
   border-radius: 1.75rem;
-  background: rgb(255 255 255 / 0.1);
+  /* E1 fix: same washed-out-glass bug as .nav-pill-cine above. */
+  background: rgb(var(--nav-bg));
   border: 1px solid rgb(255 255 255 / 0.22);
   box-shadow: 0 1px 0 rgb(255 255 255 / 0.3) inset, 0 20px 44px -16px rgb(0 0 0 / 0.5);
   -webkit-backdrop-filter: blur(22px) saturate(160%);

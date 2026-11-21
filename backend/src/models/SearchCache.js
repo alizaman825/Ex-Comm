@@ -17,6 +17,12 @@ const searchCacheSchema = new mongoose.Schema({
   platformState: mongoose.Schema.Types.Mixed,
   hits: { type: Number, default: 0 }, // times searched; drives trending searches
   lastSearchedAt: Date,
+  // The largest `need` (limit) a live request has ever actually tried to satisfy for this query (Phase 3
+  // Part B, 2026-11-21). Lets ensureLoaded tell a plain reload (same or smaller need than we've already
+  // tried and come up short on - nothing more to find right now, serve the cache) apart from a genuine
+  // "Show more" ask (a bigger need than we've ever pursued - worth a real, blocking attempt at more pages).
+  // Without it, a narrow query (few real matches) reran a full live round-trip on every single reload.
+  lastNeed: { type: Number, default: 0 },
   fetchedAt: { type: Date, required: true, default: Date.now },
 });
 

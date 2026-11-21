@@ -98,6 +98,36 @@ describe('fallback and cache', () => {
     expect((await SearchCache.findOne({ hits: { $gt: 0 } })).hits).toBe(2);
   });
 
+  test('B1 fix: a fresh cache entry that found fewer than `need` results is served immediately, not re-scraped on every request', async () => {
+    // Far more pages exist (total: 500) than were ever loaded, so this query's cache never becomes
+    // "exhausted" - exactly the shape of a narrow query (one real match) that previously caused every
+    // request, including an immediate reload, to block on a brand new live round-trip (2026-11-21 review).
+    // A brand new, unique title - never touches the shared "galaxy a55" sample product other tests use.
+    const spy = jest.fn(async () =>
+      Object.assign(
+        [{ platform: 'daraz', externalId: 'zv-1', title: 'Zephyr Vortex Speaker X900', price: 89999, url: 'https://daraz.pk/x', currency: 'PKR', reviewCount: 10, inStock: true }],
+        { meta: { total: 500, pageSize: 40 } }
+      )
+    );
+    mockScrapers({ daraz: spy, priceoye: async () => [] });
+
+    const first = await get('q=zephyr vortex speaker x900'); // cold: need=24, only 1 relevant match ever loads
+    expect(first.body.source).toBe('live');
+    const callsAfterFirst = spy.mock.calls.length;
+
+    const second = await get('q=zephyr vortex speaker x900'); // immediate reload
+    expect(second.body.source).toBe('cache');
+    expect(second.body.results.length).toBe(first.body.results.length);
+    expect(spy).toHaveBeenCalledTimes(callsAfterFirst); // no new scrape - this is the bug this fixes
+
+    const third = await get('q=zephyr vortex speaker x900'); // still fresh, still short of `need`: still served from cache
+    expect(third.body.source).toBe('cache');
+    expect(third.body.results.length).toBe(first.body.results.length);
+    // A background top-up (throttled to once per topUpCooldownMs, via the polite per-store queue) is what
+    // eventually fills a cache entry like this in further - not separately asserted here to avoid a test
+    // that depends on real wall-clock timing against the scraper queue's own politeness delay.
+  });
+
   test('one platform failing still returns the other platform and marks the failure', async () => {
     mockScrapers({
       daraz: fail(),

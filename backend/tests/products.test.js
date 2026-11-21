@@ -128,6 +128,24 @@ describe('product lists', () => {
     expect(res.body.products.map((p) => p.id)).toContain(victim.id);
   });
 
+  test('drops never shows a saved/stale offer (A1): a listing checked too long ago is dropped from the card entirely, not just from the headline price', async () => {
+    const before = await request(app).get('/api/products/drops?limit=20');
+    const victim = before.body.products.find((p) => p.offers.length >= 2);
+    expect(victim).toBeTruthy();
+    const staleOffer = victim.offers[victim.offers.length - 1]; // not the headline/cheapest offer
+
+    const staleAt = new Date(Date.now() - 20 * 24 * 60 * 60 * 1000); // well past every platform's stale window
+    await Listing.updateOne({ _id: staleOffer.listingId }, { $set: { lastScrapedAt: staleAt } });
+
+    const after = await request(app).get('/api/products/drops?limit=20');
+    const card = after.body.products.find((p) => p.id === victim.id);
+    expect(card).toBeTruthy(); // the product itself still qualifies - its other offer is still fresh
+    expect(card.offers.map((o) => o.listingId)).not.toContain(staleOffer.listingId);
+    card.offers.forEach((o) => expect(o.status).toBe('checked_recently'));
+
+    await Listing.updateOne({ _id: staleOffer.listingId }, { $set: { lastScrapedAt: new Date() } });
+  });
+
   test('similar suggests other products for manual comparison, never itself', async () => {
     const res = await request(app).get(`/api/products/${a55}/similar`);
     expect(res.status).toBe(200);
