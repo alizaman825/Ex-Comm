@@ -71,6 +71,23 @@ describe('planMerges', () => {
     expect(moves.every((m) => m.to._id === id(2))).toBe(true);
   });
 
+  test('a mixed group merges the safe candidate(s) even when another candidate in the same group fails the price check (live dry-run finding, 2026-11-21)', () => {
+    // Exactly the live case: "Infinix Note 60" the phone (Rs 104,449, 8 listings, the keeper),
+    // "Infinix Note 60" a genuine duplicate of that SAME phone (Rs 114,499, 1 listing), and
+    // "Infinix Note 60" an unrelated phone case (Rs 449, 1 listing) - all three share the exact same
+    // (title, brand, category). The phone duplicate must still merge; the phone case must not.
+    const products = [
+      { _id: id(1), title: 'Infinix Note 60', brand: 'Infinix', category: 'mobiles', minPrice: 104449 },
+      { _id: id(2), title: 'Infinix Note 60', brand: 'Infinix', category: 'mobiles', minPrice: 114499 },
+      { _id: id(3), title: 'Infinix Note 60', brand: 'Infinix', category: 'mobiles', minPrice: 449 },
+    ];
+    const listingCountOf = new Map([[id(1), 8], [id(2), 1], [id(3), 1]]);
+    const { mergeableGroups, unsureGroups, moves } = planMerges(products, listingCountOf);
+    expect(mergeableGroups).toBe(1);
+    expect(unsureGroups).toBe(1);
+    expect(moves).toEqual([{ from: products[1], to: products[0] }]);
+  });
+
   test('a unique product (no duplicate) produces no moves and no duplicate-group count', () => {
     const products = [{ _id: id(1), title: 'Only One', brand: 'Acme', category: 'audio', minPrice: 1000 }];
     const { byCategory, moves } = planMerges(products, new Map());

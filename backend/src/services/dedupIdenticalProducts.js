@@ -41,13 +41,19 @@ function planMerges(products, listingCountOf) {
     });
     const [keeper, ...rest] = sorted;
     const keeperPrice = keeper.minPrice ?? keeper.retailMinPrice;
-    const unsure = rest.some((p) => !priceRatioOk(keeperPrice, p.minPrice ?? p.retailMinPrice));
-    if (unsure) {
-      unsureGroups += 1;
-      continue;
-    }
-    mergeableGroups += 1;
-    for (const dupe of rest) moves.push({ from: dupe, to: keeper });
+    // Phase 4 Part C fix (2026-11-21 live dry run): a group can have 3+ members where only ONE is a bad
+    // price match (the live "Infinix Note 60" case - a Rs 104,449 phone, a Rs 114,499 duplicate of the
+    // SAME phone, and an unrelated Rs 449 phone case all titled exactly "Infinix Note 60") - skipping the
+    // WHOLE group over that one outlier would also block the two members that are genuinely safe to
+    // merge. Each candidate is judged against the keeper on its own instead: a candidate that fails the
+    // price-plausibility guard is left separate (counted in `unsureGroups` once per such group), every
+    // other candidate in the same group still merges.
+    const safe = [];
+    const unsafe = [];
+    for (const p of rest) (priceRatioOk(keeperPrice, p.minPrice ?? p.retailMinPrice) ? safe : unsafe).push(p);
+    if (unsafe.length) unsureGroups += 1;
+    if (safe.length) mergeableGroups += 1;
+    for (const dupe of safe) moves.push({ from: dupe, to: keeper });
   }
 
   return { byCategory, mergeableGroups, unsureGroups, moves };
