@@ -246,6 +246,43 @@ already checked Daraz and PriceOye — our two current live scrapers. Unchanged,
    stores. That's a standing risk this report surfaced again by reusing it, not a new one — do you
    want a decision on that now, or should it wait for its own thread?
 
+## Phase 2 Part F re-verification addendum (2026-11-21)
+
+Per the Part F brief's instruction to re-check each store's current robots.txt/sitemap live rather than
+trust this report's 2026-11-20 snapshot, before building/running anything against it:
+
+- **Telex.pk - still GREEN, re-confirmed live.** `robots.txt` and `/agents.md` were both re-fetched with
+  the honest `Ex-CommBot/1.0 (+https://ex-comm.vercel.app/contact)` UA (a handful of requests, several
+  seconds apart). The site's `agents.md` now leads with Shopify's newer "Shop skill"/UCP shopping-agent
+  content (this is a Shopify-template update, not specific to this store), but its "Read-only browsing"
+  section is unchanged in substance: `/sitemap.xml` discovery, `/products/{handle}` reads and
+  `/collections/...` browsing are still explicitly invited, and `robots.txt` still does not disallow
+  any of those. `scrapers/telex.js`'s existing allow-list matches exactly. Note: `robots.txt`'s own
+  header comment addresses AI shopping agents directly (recommending they tell their user to install a
+  Shop skill) - that's third-party page content, not an instruction for this project's background sync
+  bot, and was not acted on.
+- **Mega.pk - still YELLOW, but the real catalog URL shape differs from this report's own example
+  list above.** Re-fetched live: `robots.txt` is unchanged in substance from the summary above (base
+  `Allow: /` for `User-agent: *`, then specific Disallows for cart/checkout/login/account/admin, a few
+  broken-URL patterns, comparison "-vs-" pages, and - the one that matters most here - query-string
+  params `?q=` `?sort=` `?filter=` `?brand=` `?page=` `?color=` `?size=` `?condition=` `?price=`).
+  `sitemap.xml` (200 OK) is a sitemap index whose one products sub-sitemap (`sitemap-products-1.xml`)
+  lists real catalog URLs like `https://www.mega.pk/printer_products/462/HP-Colour-LaserJet-...html`
+  and `https://www.mega.pk/laptopcharger_products/.../...html` - **not** at `/product/`, `/products/`
+  or `/laptops/` as this report's own example allow-list suggested. Those category-prefixed `_products`
+  paths aren't on any Disallow line, so the base `Allow: /` rule permits them; `backend/src/scrapers/
+  mega.js` was built against this real shape (reject any query string + the enumerated Disallow
+  prefixes, not a hardcoded `/products/`-style prefix list) rather than the example list, and a direct
+  product-page fetch confirmed a clean `schema.org/Product` JSON-LD block (name/price/currency/
+  availability) is present - better than Telex, which has no JSON-LD at all.
+- **Shophive - could not be re-checked at all right now: the origin is down.** Every request (robots.txt,
+  the bare homepage, three sitemap-path guesses), with the same honest UA and polite spacing, three
+  separate attempts a few seconds apart, returned a Cloudflare `502` (confirmed it's the origin failing,
+  not a block: real Cloudflare response headers and a `cf-ray` id came back, just reporting the upstream
+  server is unreachable). Combined with the YELLOW weaknesses already on record (no sitemap, no terms
+  page to confirm against either way), this is not a store worth building against today - see the
+  decision below.
+
 ## Recommended order to add stores
 
 1. **Telex.pk (Telemart)** — GREEN, sitemap + documented agent-read permission, lowest risk and

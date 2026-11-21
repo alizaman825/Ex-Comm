@@ -3,10 +3,12 @@ const { config } = require('../config/env');
 const { runPriceCheck } = require('./priceCheck');
 const { runCatalogSync } = require('./catalogSync');
 const { runTelexSync } = require('./telexSync');
+const { runMegaSync } = require('./megaSync');
 
 let task;
 let syncTask;
 let telexTask;
+let megaTask;
 
 // Starts the recurring price check (default every 6 hours). In DEMO_MODE nothing is scraped.
 function startScheduler() {
@@ -35,6 +37,16 @@ function startScheduler() {
   } else {
     console.log('Telex sync disabled (SYNC_TELEX_ENABLED is not true)');
   }
+  // Mega.pk sync (Phase 2 Part F): same pattern as Telex, off by default - a brand-new, never-before-hit
+  // site stays off until the owner explicitly turns it on (SYNC_MEGA_ENABLED), even in production.
+  if (config.megaSync.enabled && cron.validate(config.megaSync.cron)) {
+    megaTask = cron.schedule(config.megaSync.cron, () => {
+      runMegaSync({ trigger: 'schedule' }).catch((err) => console.error('Scheduled Mega sync error:', err));
+    });
+    console.log(`Mega sync scheduled: ${config.megaSync.cron} (${config.megaSync.maxPagesPerRun} pages per run)`);
+  } else {
+    console.log('Mega sync disabled (SYNC_MEGA_ENABLED is not true)');
+  }
   return task;
 }
 
@@ -42,9 +54,11 @@ function stopScheduler() {
   if (task) task.stop();
   if (syncTask) syncTask.stop();
   if (telexTask) telexTask.stop();
+  if (megaTask) megaTask.stop();
   task = undefined;
   syncTask = undefined;
   telexTask = undefined;
+  megaTask = undefined;
 }
 
 module.exports = { startScheduler, stopScheduler };

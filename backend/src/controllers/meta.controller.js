@@ -35,6 +35,9 @@ const PLATFORM_META = [
   // Telex (Phase 2A): a background sync, not a live-on-search adapter - `live` below is always false
   // for it, since it is never in config.scraper.livePlatforms.
   { id: 'telex', label: 'Telex.pk', role: 'retail', site: 'https://www.telex.pk' },
+  // Mega (Phase 2 Part F): also a background sync, never a live-on-search adapter - `live` below is
+  // always false, since it is never in config.scraper.livePlatforms.
+  { id: 'mega', label: 'Mega.pk', role: 'retail', site: 'https://www.mega.pk' },
   { id: 'aliexpress', label: 'AliExpress', role: 'supplier', site: 'https://www.aliexpress.com' },
   { id: 'ebay', label: 'eBay', role: 'supplier', site: 'https://www.ebay.com' },
 ];

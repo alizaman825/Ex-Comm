@@ -31,7 +31,7 @@ function groupByPlatform(listings: Listing[]): SellerGroup[] {
 
 /** The board's exact 2-letter store badges (Dz / Po / Ax), tinted with the same platform color used
  * everywhere else in the app (PLATFORM_COLOR). eBay (not on the board) gets the same treatment. */
-const BADGE_LETTERS: Record<Platform, string> = { daraz: "Dz", priceoye: "Po", telex: "Tx", aliexpress: "Ax", ebay: "Eb" };
+const BADGE_LETTERS: Record<Platform, string> = { daraz: "Dz", priceoye: "Po", telex: "Tx", mega: "Mg", aliexpress: "Ax", ebay: "Eb" };
 
 function StoreBadge({ platform }: { platform: Platform }) {
   return (

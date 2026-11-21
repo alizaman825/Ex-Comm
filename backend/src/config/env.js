@@ -65,6 +65,11 @@ const config = {
         recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_TELEX) || 72,
         staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_TELEX) || 336,
       },
+      // Mega (Phase 2 Part F): same reasoning as telex above - its own window, not borrowed from Daraz.
+      mega: {
+        recentHours: Number(process.env.PRICE_STATUS_RECENT_HOURS_MEGA) || 72,
+        staleHours: Number(process.env.PRICE_STATUS_STALE_HOURS_MEGA) || 336,
+      },
     },
   },
   // A listing older than this never shows in public results, cheapest or deals/alerts, even as "unknown"
@@ -97,6 +102,25 @@ const config = {
     // Owner-confirmed contact (2026-11-20): URL only, no personal email, per agents.md's identification
     // guidance. Points at the real Contact page (Part D) rather than the bare domain.
     userAgent: process.env.TELEX_USER_AGENT || 'Ex-CommBot/1.0 (+https://ex-comm.vercel.app/contact)',
+  },
+  // Mega.pk background catalog sync (Phase 2 Part F, docs/SOURCES-REPORT.md): discovers products via
+  // /sitemap.xml and reads each product page read-only, honest User-Agent, polite delay, exponential
+  // backoff on 429/5xx, immediate stop if blocked - same shape as telexSync above. Off by default -
+  // SYNC_MEGA_ENABLED must be set to "true" before the scheduler or the manual endpoint syncs anything
+  // (jobs/megaSync.js). Deliberately defaults to disabled even once built (unlike Telex, which was
+  // already approved and turned on): Mega is a brand-new, never-before-hit site, so the conservative
+  // call is to let ali turn it on explicitly once this PR is reviewed.
+  megaSync: {
+    enabled: process.env.SYNC_MEGA_ENABLED === 'true',
+    cron: process.env.MEGA_SYNC_CRON || '0 4 * * *',
+    maxPagesPerRun: Number(process.env.MEGA_MAX_PAGES_PER_RUN) || 10,
+    minDelayMs: Number(process.env.MEGA_MIN_DELAY_MS ?? 3000),
+    maxDelayMs: Number(process.env.MEGA_MAX_DELAY_MS ?? 5000),
+    timeoutMs: Number(process.env.MEGA_TIMEOUT_MS) || 10000,
+    maxRetries: Number(process.env.MEGA_MAX_RETRIES) || 3,
+    // Same bot identity as Telex (URL only, no personal email) - one honestly-identified first-party
+    // bot across our own sync jobs, per agents.md-style identification guidance.
+    userAgent: process.env.MEGA_USER_AGENT || 'Ex-CommBot/1.0 (+https://ex-comm.vercel.app/contact)',
   },
   // How recently a product needs to have been checked to lead a home-page rail (trending/drops). A product
   // whose freshest offer is older than this is left off rather than risk showing stock/price that an idle
