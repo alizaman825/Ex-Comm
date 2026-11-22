@@ -137,7 +137,9 @@ async function runMegaSync({ trigger = 'schedule' } = {}) {
         break;
       }
       const visitedSet = new Set(state.visited[sitemapUrl] || []);
-      for (const url of productUrls) {
+      // Launch categories (phones/laptops/GPUs/audio/watches/appliances) first, decided from the URL's
+      // own category segment with no request made - see scrapers/mega.js's prioritizeLaunchUrls().
+      for (const url of mega.prioritizeLaunchUrls(productUrls)) {
         if (stopped || summary.pagesFetched >= maxPages) break;
         if (visitedSet.has(url)) continue;
         // eslint-disable-next-line no-await-in-loop

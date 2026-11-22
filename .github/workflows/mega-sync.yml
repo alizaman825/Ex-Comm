@@ -2,17 +2,23 @@ name: Mega.pk sync
 
 # Phase 2 Part F: the Mega.pk background sync, same job-endpoint pattern as telex-sync.yml/
 # daily-refresh.yml. ali's brief (F2) asked to enable this once Telex works, so the schedule
-# below mirrors Telex's - offset by 20 minutes so the two syncs don't fetch from Render at the
-# exact same moment. The job's own kill switch (SYNC_MEGA_ENABLED), rate limiting and page cap
-# are still enforced server-side; this schedule is just "ask once a day".
-# Can also be run on demand from the Actions tab (Run workflow).
+# below mirrors Telex's - offset so the two syncs don't fetch from Render at the exact same
+# moment. The job's own kill switch (SYNC_MEGA_ENABLED), rate limiting and page cap are still
+# enforced server-side. Can also be run on demand from the Actions tab (Run workflow).
+#
+# 2026-11-22 live-site coverage audit: once/day was too slow for the same reason as telex-sync.yml's
+# own comment (Render free-plan spin-down leaves the in-process cron mostly unable to fire; this
+# external trigger is the real driver). Raised to every 6h (4 runs/day instead of 1), offset 20
+# minutes from Telex's, with maxPagesPerRun 20->30 (MEGA_MAX_PAGES_PER_RUN on Render) and the sync
+# job itself now visiting launch-category URLs first (scrapers/mega.js's prioritizeLaunchUrls()).
+# --max-time raised to 280s to match telex-sync.yml's headroom for the larger page cap.
 #
 # Requires the same two repository secrets as daily-refresh.yml/telex-sync.yml:
 #   RENDER_API_URL  e.g. https://ex-comm-api.onrender.com
 #   JOB_KEY         the same value as the Render service's JOB_KEY env var
 on:
   schedule:
-    - cron: '20 3 * * *'
+    - cron: '20 */6 * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -31,5 +37,5 @@ jobs:
 
       - name: Run one Mega.pk sync batch
         run: |
-          curl -fsS --max-time 150 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/mega-sync" \
+          curl -fsS --max-time 280 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/mega-sync" \
             -H "x-job-key: ${{ secrets.JOB_KEY }}"

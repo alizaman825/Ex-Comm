@@ -126,6 +126,25 @@ const LAUNCH_CATEGORY_RE =
   /\b(phone|smartphone|mobile|iphone|galaxy|redmi|infinix|tecno|vivo|oppo|realme|honor|poco|laptop|notebook|macbook|ultrabook|chromebook|thinkpad|ideapad|vivobook|elitebook|graphics card|video card|\bgpu\b|geforce|radeon|\brtx\b|\bgtx\b|earbuds?|earphones?|headphones?|headset|airpods|\bbuds\b|speaker|soundbar|\btws\b|\bwatch\b|smartwatch|fitness band|amazfit|garmin|fitbit|g-?shock|air fryer|vacuum|blender|inverter|washing machine|\bled tv\b|microwave|refrigerator|\bfridge\b|\bkettle\b|geyser|\bheater\b|purifier)\b/i;
 const isLaunchCategory = (title) => LAUNCH_CATEGORY_RE.test(String(title || ''));
 
+// Mega's sitemap is ONE flat, unordered list (unlike Telex's per-range sub-sitemaps) that in practice
+// walks old/irrelevant categories first (printers, laptop chargers, PS4 games - confirmed against the
+// real sitemap, 2026-11-22 live-site review): at a capped pages-per-run, a purely sequential walk could
+// take a very long time to ever reach phones/laptops/audio/watches/GPUs/appliances. Mega's own URLs
+// carry their category right in the path (e.g. "/mobile_products/...", "/laptop_products/...",
+// "/graphicscard_products/..."), so - unlike Telex, whose handle-based URLs carry no category - the
+// launch categories can be prioritized WITHOUT fetching anything: a cheap string check on the URL itself,
+// before any request is made. Stable sort: launch-looking URLs first, original relative order preserved
+// within each group, so the (still eventually visited) rest of the catalog isn't reordered arbitrarily.
+const LAUNCH_URL_SEGMENT_RE =
+  /\/(mobile|smartphone|cellphone|laptop|notebook|macbook|chromebook|ultrabook|graphicscard|videocard|gpu|processor|motherboard|ram|ssd|powersupply|psu|earphone|earbud|headphone|headset|airpod|speaker|soundbar|smartwatch|watch|fitnessband|airfryer|vacuum|blender|inverter|washingmachine|ledtv|television|microwave|refrigerator|fridge|kettle|geyser|heater|purifier)s?_products\//i;
+const isLaunchCategoryUrl = (url) => LAUNCH_URL_SEGMENT_RE.test(String(url || ''));
+function prioritizeLaunchUrls(urls) {
+  const launch = [];
+  const rest = [];
+  for (const u of urls) (isLaunchCategoryUrl(u) ? launch : rest).push(u);
+  return [...launch, ...rest];
+}
+
 // Parses a Mega.pk product page's schema.org Product JSON-LD block (unlike Telex, Mega's pages carry
 // a clean <script type="application/ld+json"> Product block with name/productID/image/offers.price/
 // offers.priceCurrency/offers.availability - no og:price meta tags needed). Throws (PARSE) rather than
@@ -180,6 +199,8 @@ module.exports = {
   parseProductSitemap,
   parseProductPage,
   isLaunchCategory,
+  isLaunchCategoryUrl,
+  prioritizeLaunchUrls,
   discoverProductSitemaps,
   discoverProductUrls,
   fetchProductPage,

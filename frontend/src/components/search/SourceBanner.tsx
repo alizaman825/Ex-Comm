@@ -4,10 +4,7 @@ import { PLATFORM_LABEL, timeAgo } from "@/lib/format";
 import type { Platform, SearchResponse } from "@/lib/types";
 import { PlatformDot } from "@/components/product/badges";
 import { storeProblems } from "@/lib/stores";
-
-/** Stores synced in the background on a schedule, not checked per search, so they never appear in
- * data.platformStatus (Telex: Phase 2A; Mega: Phase 2 Part F). */
-const BACKGROUND_SYNC_PLATFORMS: Platform[] = ["telex", "mega"];
+import { BACKGROUND_SYNC_PLATFORMS } from "@/lib/search";
 
 /** Finds a background-synced store's freshness from the results themselves, since it never appears
  * in data.platformStatus (that's only populated for stores checked live, per search). */
