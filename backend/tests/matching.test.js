@@ -108,4 +108,28 @@ describe('findBestMatch: storage-less listings and variant ambiguity', () => {
     const result = findBestMatch(query, candidates);
     expect(result && result.candidate.title).toBe('Apple iPhone 16 256GB');
   });
+
+  // 2026-11-22 live-site review: a storage-less Telex "Samsung Galaxy A17 Dual Sim With Official
+  // Warranty" listing refused to join the correct, unambiguous "Samsung Galaxy A17" product (an exact
+  // token match, score 1) because OTHER, lower-scoring storage-specific siblings ("...A17 128GB",
+  // "...A17 Smartphone 4GB 128GB...") also cleared MATCH_THRESHOLD - a near-miss, not a real tie for
+  // the top spot. Only a genuine tie at the BEST score should refuse to guess.
+  test('a clearly-best (unique top score) match is not blocked by a lower-scoring sibling of different storage', () => {
+    const query = analyzeTitle('Samsung Galaxy A17 Dual Sim With Official Warranty');
+    const candidates = [
+      { title: 'Samsung Galaxy A17' }, // exact token match: the umbrella/base listing, no storage named
+      { title: 'Samsung Galaxy A17 128GB' }, // scores lower: a real but different-specificity sibling
+      { title: 'Samsung Galaxy A17 Smartphone 4GB 128GB 6.7" Super AMOLED Display' },
+    ];
+    const result = findBestMatch(query, candidates);
+    expect(result && result.candidate.title).toBe('Samsung Galaxy A17');
+  });
+
+  test('two candidates genuinely TIED for the top score still refuse to guess', () => {
+    const query = analyzeTitle('Apple iPhone 16');
+    // Both candidates differ from the query (and from each other) only by storage, so both score
+    // identically - the real "tied, truly unknowable" case the previous test is not.
+    const candidates = [{ title: 'Apple iPhone 16 128GB' }, { title: 'Apple iPhone 16 256GB' }];
+    expect(findBestMatch(query, candidates)).toBeNull();
+  });
 });

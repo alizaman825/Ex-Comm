@@ -3,6 +3,11 @@ import type { Platform } from "./types";
 export const PLATFORMS: Platform[] = ["daraz", "priceoye", "telex", "mega", "aliexpress", "ebay"];
 /** Checked on demand, not part of the default live search (see Filters' showSuppliers prop). */
 export const SUPPLIER_PLATFORMS: Platform[] = ["aliexpress", "ebay"];
+/** Stores synced in the background on a schedule, not checked per search (Telex: Phase 2A; Mega:
+ * Phase 2 Part F) - they never appear in data.platformStatus, and a zero-result search with one of
+ * these checked means "not found in what we've synced so far", not "confirmed absent from the store"
+ * (2026-11-22: the empty state's wording depends on this - see SearchView.tsx's NoResults). */
+export const BACKGROUND_SYNC_PLATFORMS: Platform[] = ["telex", "mega"];
 export const SORTS = [
   { value: "relevance", label: "Best match" },
   { value: "price_asc", label: "Price: low to high" },

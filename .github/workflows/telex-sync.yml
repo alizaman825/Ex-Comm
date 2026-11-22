@@ -1,17 +1,26 @@
 name: Telex.pk sync
 
 # Phase 2A: the Telex.pk background sync, matching how daily-refresh.yml calls the other job
-# endpoints. Runs once a day (ali approved turning this on, 2026-11-20) - the job itself still
-# enforces its own kill switch (SYNC_TELEX_ENABLED), rate limiting and page cap server-side, so
-# this schedule is just "ask once a day", not a guarantee of how much it actually fetches.
-# Can also be run on demand from the Actions tab (Run workflow).
+# endpoints. The job itself still enforces its own kill switch (SYNC_TELEX_ENABLED), rate limiting
+# and page cap server-side, so this schedule is just "ask this often", not a guarantee of how much
+# it actually fetches. Can also be run on demand from the Actions tab (Run workflow).
+#
+# 2026-11-22 live-site coverage audit: once/day (combined with the Render free-plan's own spin-down,
+# which leaves the in-process cron.schedule() in src/jobs/scheduler.js mostly unable to fire on its
+# own - see config/env.js's telexSync comment) meant real coverage of Telex's ~12-sitemap, thousands-
+# of-listing catalog built up far slower than intended; ali's "Samsung Galaxy A17" report traced to a
+# matching bug (fixed in services/matching.js), not this alone, but the slow cadence is real and
+# compounds it. Raised to every 4h (6 runs/day instead of 1) with maxPagesPerRun 20->30
+# (TELEX_MAX_PAGES_PER_RUN on Render) - at 30 pages * (3-5s polite delay + page-fetch time), a run
+# stays well under 150s in the common case; --max-time raised to 280s as headroom for a slower batch,
+# still far under this job's own request timeout (TELEX_TIMEOUT_MS) times maxRetries.
 #
 # Requires the same two repository secrets as daily-refresh.yml:
 #   RENDER_API_URL  e.g. https://ex-comm-api.onrender.com
 #   JOB_KEY         the same value as the Render service's JOB_KEY env var
 on:
   schedule:
-    - cron: '0 3 * * *'
+    - cron: '0 */4 * * *'
   workflow_dispatch: {}
 
 jobs:
@@ -30,5 +39,5 @@ jobs:
 
       - name: Run one Telex.pk sync batch
         run: |
-          curl -fsS --max-time 150 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/telex-sync" \
+          curl -fsS --max-time 280 -X POST "${{ steps.api.outputs.api_url }}/api/jobs/telex-sync" \
             -H "x-job-key: ${{ secrets.JOB_KEY }}"

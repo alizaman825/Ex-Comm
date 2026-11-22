@@ -97,8 +97,18 @@ const config = {
     // production logs showed Telex products ali could see live on telex.pk still missing from search
     // days later. Raised to every 3h/20 pages (160 pages/day) - still one request every 3-5s (politeDelay
     // below, unchanged) and well inside the GitHub Action trigger's own 150s curl timeout.
+    // 2026-11-22 live-site review (coverage audit): this in-process cron.schedule() is NOT the reliable
+    // driver it looks like - the Render service is on the FREE plan, which spins the whole process down
+    // after ~15 min of no inbound HTTP request and only restarts it on the next one (confirmed from
+    // Render logs: a fresh "Telex sync scheduled: ..." line, i.e. a brand-new process/instance id, every
+    // 20-90 min all day). node-cron's timer only fires if the process happens to be alive at the exact
+    // moment the schedule matches, so most of its ticks are silently missed; .github/workflows/
+    // telex-sync.yml's own external HTTP trigger (which both wakes the service AND is the only thing
+    // that reliably runs a batch) is the real cadence. maxPagesPerRun raised 20->30 and the workflow's
+    // schedule raised from once/day to every 4h (and its curl timeout raised to match) - see that file's
+    // own comment for the page-count math.
     cron: process.env.TELEX_SYNC_CRON || '0 */3 * * *',
-    maxPagesPerRun: Number(process.env.TELEX_MAX_PAGES_PER_RUN) || 20,
+    maxPagesPerRun: Number(process.env.TELEX_MAX_PAGES_PER_RUN) || 30,
     minDelayMs: Number(process.env.TELEX_MIN_DELAY_MS ?? 3000),
     maxDelayMs: Number(process.env.TELEX_MAX_DELAY_MS ?? 5000),
     timeoutMs: Number(process.env.TELEX_TIMEOUT_MS) || 10000,
@@ -119,8 +129,15 @@ const config = {
     // Phase 3 Part C2 (2026-11-21): once/day at 10 pages was too slow for the same reason as Telex above.
     // Raised to twice a day (offset from Telex's own runs) at 20 pages/run - still gentle (one request
     // every 3-5s, politeDelay below unchanged).
+    // 2026-11-22 live-site review: same free-Render-plan caveat as telexSync's comment above - this
+    // in-process schedule mostly doesn't get to fire; .github/workflows/mega-sync.yml's own external
+    // trigger is the real cadence. maxPagesPerRun raised 20->30 and the workflow's schedule raised from
+    // once/day to every 6h. Mega's one flat (unordered) sitemap also now visits launch-category URLs
+    // (phones/laptops/GPUs/audio/watches/appliances, decided from the URL path itself - see
+    // scrapers/mega.js's prioritizeLaunchUrls()) before the rest of the catalog, so a capped run makes
+    // visible progress on what matters first instead of spending its budget on old printers/PS4 games.
     cron: process.env.MEGA_SYNC_CRON || '0 4,16 * * *',
-    maxPagesPerRun: Number(process.env.MEGA_MAX_PAGES_PER_RUN) || 20,
+    maxPagesPerRun: Number(process.env.MEGA_MAX_PAGES_PER_RUN) || 30,
     minDelayMs: Number(process.env.MEGA_MIN_DELAY_MS ?? 3000),
     maxDelayMs: Number(process.env.MEGA_MAX_DELAY_MS ?? 5000),
     timeoutMs: Number(process.env.MEGA_TIMEOUT_MS) || 10000,

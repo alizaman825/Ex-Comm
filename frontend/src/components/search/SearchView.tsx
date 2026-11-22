@@ -10,8 +10,9 @@ import { api, errorMessage, fetcher } from "@/lib/api";
 import { useToast } from "@/components/ui/Toast";
 import { problemsSentence, storeProblems } from "@/lib/stores";
 import { useCategories, useTrendingSearches } from "@/lib/hooks";
-import { SHOW_MAX, SHOW_STEP, SORTS, SUPPLIER_PLATFORMS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
-import type { SearchResponse } from "@/lib/types";
+import { BACKGROUND_SYNC_PLATFORMS, SHOW_MAX, SHOW_STEP, SORTS, SUPPLIER_PLATFORMS, activeFilterCount, parseSearchParams, toSearchParams, type SearchState, type SortValue } from "@/lib/search";
+import { PLATFORM_LABEL } from "@/lib/format";
+import type { Platform, SearchResponse } from "@/lib/types";
 import { ErrorState, EmptyState } from "@/components/ui/primitives";
 import { Drawer } from "@/components/ui/Drawer";
 import { Pagination } from "@/components/ui/Pagination";
@@ -203,7 +204,7 @@ export function SearchView() {
               <ProductGridSkeleton count={PAGE_SIZE} />
             </div>
           ) : data && data.total === 0 ? (
-            <NoResults query={state.q} filterCount={filterCount} onReset={reset} />
+            <NoResults query={state.q} filterCount={filterCount} platform={state.platform} onReset={reset} />
           ) : data ? (
             <>
               <div className={clsx("mt-5 grid grid-cols-1 gap-6 transition-opacity sm:grid-cols-2 xl:grid-cols-3", (isValidating || refreshing) && "opacity-60")} data-testid="results-grid">
@@ -268,16 +269,38 @@ export function SearchView() {
   );
 }
 
-function NoResults({ query, filterCount, onReset }: { query: string; filterCount: number; onReset: () => void }) {
+function NoResults({ query, filterCount, platform, onReset }: { query: string; filterCount: number; platform: Platform[]; onReset: () => void }) {
   const { data } = useTrendingSearches(6);
+  // 2026-11-22 live-site review: Telex/Mega are synced in the background on a schedule, not checked
+  // live per search (SourceBanner's own BACKGROUND_SYNC_PLATFORMS), so a zero-result search with one
+  // of them checked means "not found in what we've synced from that store so far" - it does NOT mean
+  // the store doesn't carry the product (ali's "Samsung Galaxy A17 on Telex.pk" report: the listing
+  // existed on the real site but hadn't been matched into search yet). Telling a shopper "no products
+  // match" here would read as a confirmed absence we can't actually back up, so the wording says what
+  // we know instead whenever a background-synced store is part of the active filter.
+  const syncOnlyStores = platform.filter((p) => BACKGROUND_SYNC_PLATFORMS.includes(p));
+  const syncOnlyNames = syncOnlyStores.map((p) => PLATFORM_LABEL[p]).join(" or ");
+  const title =
+    filterCount > 0
+      ? syncOnlyStores.length
+        ? query
+          ? `No “${query}” matches among what we’ve synced from ${syncOnlyNames} so far`
+          : `No matches among what we’ve synced from ${syncOnlyNames} so far`
+        : query
+          ? `No “${query}” products match these filters`
+          : "No products match these filters"
+      : `No products found for “${query}”`;
+  const description = syncOnlyStores.length
+    ? `${syncOnlyNames} ${syncOnlyStores.length > 1 ? "are" : "is"} synced on a schedule, not checked live per search - this product may still be on their site and not yet matched into search. Try removing that filter, or check back later.`
+    : filterCount > 0
+      ? "Try removing a filter, or search for something broader."
+      : "Check the spelling, or try a more general name such as the brand and model (for example “galaxy a55”).";
   return (
     <div className="mt-5">
       <EmptyState
         icon={PackageSearch}
-        title={filterCount > 0 ? (query ? `No “${query}” products match these filters` : "No products match these filters") : `No products found for “${query}”`}
-        description={
-          filterCount > 0 ? "Try removing a filter, or search for something broader." : "Check the spelling, or try a more general name such as the brand and model (for example “galaxy a55”)."
-        }
+        title={title}
+        description={description}
         action={filterCount > 0 ? <button type="button" className="btn-primary" onClick={onReset}>Clear all filters</button> : <Link href="/categories" className="btn-secondary">Browse categories</Link>}
       />
       {data && data.trending.length > 0 && (

@@ -61,6 +61,35 @@ describe('launch category filter (phones, laptops, audio, watches, GPUs, home ap
   });
 });
 
+// 2026-11-22 live-site review: Mega's one flat sitemap walks old/irrelevant categories (printers,
+// laptop chargers, PS4 games) before ever reaching phones/laptops/GPUs at a capped pages-per-run, so a
+// purely sequential walk could take a very long time to surface anything in a launch category. The URL
+// itself names its category, so this can be decided with no request made.
+describe('mega launch-category URL prioritization (no request made)', () => {
+  test('a launch-category URL is recognised from its path segment alone', () => {
+    expect(mega.isLaunchCategoryUrl('https://www.mega.pk/mobile_products/9/Samsung-Galaxy-A17.html')).toBe(true);
+    expect(mega.isLaunchCategoryUrl('https://www.mega.pk/laptop_products/9/HP-Victus.html')).toBe(true);
+    expect(mega.isLaunchCategoryUrl('https://www.mega.pk/graphicscard_products/9/RTX-4060.html')).toBe(true);
+    expect(mega.isLaunchCategoryUrl('https://www.mega.pk/printer_products/462/HP-LaserJet.html')).toBe(false);
+    expect(mega.isLaunchCategoryUrl('https://www.mega.pk/ps4games_products/8655/Battlefield-4.html')).toBe(false);
+  });
+
+  test('prioritizeLaunchUrls moves launch-category URLs first, stable otherwise', () => {
+    const urls = [
+      'https://www.mega.pk/printer_products/1/a.html',
+      'https://www.mega.pk/mobile_products/2/b.html',
+      'https://www.mega.pk/mouse_products/3/c.html',
+      'https://www.mega.pk/laptop_products/4/d.html',
+    ];
+    expect(mega.prioritizeLaunchUrls(urls)).toEqual([
+      'https://www.mega.pk/mobile_products/2/b.html',
+      'https://www.mega.pk/laptop_products/4/d.html',
+      'https://www.mega.pk/printer_products/1/a.html',
+      'https://www.mega.pk/mouse_products/3/c.html',
+    ]);
+  });
+});
+
 describe('disallowed URLs are refused (hard limit 2 + the brief\'s explicit ?q=/sort/filter/brand/page requirement)', () => {
   test('any query string is refused, including ?q=, ?sort=, ?filter=, ?brand= and ?page=', () => {
     expect(() => mega.assertAllowed('https://www.mega.pk/laptops/?q=laptop')).toThrow();

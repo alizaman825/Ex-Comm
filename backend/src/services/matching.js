@@ -231,7 +231,16 @@ function findBestMatch(analyzed, candidates) {
   if (bestScore < MATCH_THRESHOLD) return null;
   if (!queryHasStorage) {
     const bestStorage = setOf((best.analyzed || analyzeTitle(best.title)).tokens, isStorage);
-    const conflicting = scored.some(({ cAnalyzed, score }) => score >= MATCH_THRESHOLD && !sameSet(setOf(cAnalyzed.tokens, isStorage), bestStorage));
+    // "Equally match" means tied for the TOP score, not merely "also above the pass bar": a product
+    // named with no storage at all (an umbrella/base listing, e.g. "Samsung Galaxy A17") legitimately
+    // outscores a same-model-but-specific-storage sibling ("...A17 128GB") on sheer token overlap, and
+    // that sibling's mere existence should not block the confident top match - only a genuine TIE between
+    // two different-storage candidates means the real variant is unknowable (2026-11-22, live-site A17
+    // case: a storage-less Telex listing refused to join the correct, unambiguous "Samsung Galaxy A17"
+    // product because OTHER, lower-scoring "A17 128GB"/"A17 256GB" sibling products also cleared
+    // MATCH_THRESHOLD - a near-miss, not a real tie).
+    const EPS = 1e-9;
+    const conflicting = scored.some(({ cAnalyzed, score }) => score >= bestScore - EPS && !sameSet(setOf(cAnalyzed.tokens, isStorage), bestStorage));
     if (conflicting) return null;
   }
   return { candidate: best, score: bestScore };
